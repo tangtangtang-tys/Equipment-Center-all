@@ -251,8 +251,7 @@ button {
 }
 
 .hero-card,
-.tab-card,
-.health-strip {
+.tab-card {
   border-radius: 8px;
   background: var(--panel);
   box-shadow: 0 1px 0 rgba(31, 39, 51, 0.02);
@@ -414,80 +413,6 @@ button {
 
 .danger-text {
   color: #f04438;
-}
-
-.health-strip {
-  margin-top: 18px;
-  padding: 20px 24px 24px;
-}
-
-.health-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.health-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 74px;
-  border: 1px solid var(--line);
-  border-left-width: 4px;
-  border-radius: 8px;
-  padding: 14px 16px;
-  background: #fff;
-}
-
-.health-card div {
-  display: grid;
-  gap: 8px;
-}
-
-.health-card strong {
-  font-size: 14px;
-}
-
-.health-card span {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.health-card b {
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-.health-card.green {
-  border-left-color: var(--green);
-}
-
-.health-card.green b {
-  color: var(--green);
-}
-
-.health-card.amber {
-  border-left-color: #f5a623;
-}
-
-.health-card.amber b {
-  color: var(--amber);
-}
-
-.health-card.red {
-  border-left-color: var(--red);
-}
-
-.health-card.red b {
-  color: var(--red);
-}
-
-.health-card.gray {
-  border-left-color: #b7c0cf;
-}
-
-.health-card.gray b {
-  color: #788397;
 }
 
 .tab-card {
@@ -1063,7 +988,6 @@ button {
   }
 
   .fact-grid,
-  .health-grid,
   .service-grid {
     grid-template-columns: repeat(2, minmax(160px, 1fr));
   }

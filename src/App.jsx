@@ -37,7 +37,6 @@ import {
   alarmLogs,
   boundUsers,
   device,
-  healthModules,
   loginLogs,
   mapRanking,
   p2pTimeline,
@@ -47,7 +46,7 @@ import {
   services,
   simCards,
 } from './data/mockData';
-import { cls, formatNumber, statusText, statusTone } from './utils';
+import { cls, formatNumber } from './utils';
 
 const ReactECharts = lazy(() => import('echarts-for-react'));
 
@@ -205,7 +204,6 @@ function DetailView({ activeTab, setActiveTab, logTab, setLogTab, onBack, onDraw
       </button>
 
       <DeviceHero onModal={onModal} />
-      <HealthOverview />
 
       <section className="tab-card">
         <div className="tabs">
@@ -276,28 +274,6 @@ function DeviceHero({ onModal }) {
           <Fact label="设备元数据" value={<button className="link-button" onClick={() => onModal('metadata')}>查看元数据</button>} />
           <Fact label="固件版本号" value={`最新版本号：${device.latestVersion}`} />
         </FactGroup>
-      </div>
-    </section>
-  );
-}
-
-function HealthOverview() {
-  return (
-    <section className="health-strip">
-      <div className="section-heading">
-        <span />
-        设备健康概览
-      </div>
-      <div className="health-grid">
-        {healthModules.map((item) => (
-          <article key={item.key} className={cls('health-card', statusTone(item.status))}>
-            <div>
-              <strong>{item.name}</strong>
-              <span>{item.value}</span>
-            </div>
-            <b>{statusText(item.status)}</b>
-          </article>
-        ))}
       </div>
     </section>
   );
@@ -549,7 +525,7 @@ function DataModal({ type, onClose }) {
             <X size={21} />
           </button>
         </div>
-        {type === 'metadata' && <JsonBlock data={{ ...device, health: healthModules.map((item) => item.value) }} />}
+        {type === 'metadata' && <JsonBlock data={device} />}
         {type === 'raw' && <JsonBlock data={alarmLogs[0].raw} />}
         {type === 'resources' && <ResourceFiles />}
         {type === 'power' && <PowerChart />}
