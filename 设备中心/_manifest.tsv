@@ -1,0 +1,21 @@
+type	nodeId	name	localPathOrReason
+DIR	2Amq4vjg89gPDeg0uPNdX4w1V3kdP0wQ	产品文档	设备中心/产品文档
+FILE	qnYMoO1rWxDK4bDas02dr7pKW47Z3je9	设备中心系统需求文档	设备中心/产品文档/设备中心系统需求文档.md
+DIR	qnYMoO1rWxDK4bDas02dr7pKW47Z3je9	设备中心系统需求文档 children	设备中心/产品文档/设备中心系统需求文档
+FILE	gwva2dxOW4K2XyKYIAa52zZg8bkz3BRL	设备中心-数据字典	设备中心/产品文档/设备中心系统需求文档/设备中心-数据字典.md
+DIR	gwva2dxOW4K2XyKYIAa52zZg8bkz3BRL	设备中心-数据字典 children	设备中心/产品文档/设备中心系统需求文档/设备中心-数据字典
+LINK	P7QG4Yx2Jp7eD37LiByMwr7bV9dEq3XD	设备中心字典大纲	设备中心/产品文档/设备中心系统需求文档/设备中心-数据字典/设备中心字典大纲.amind.md
+FILE	KGZLxjv9VG347d3qsxv5nKboV6EDybno	设备中心问题	设备中心/产品文档/设备中心系统需求文档/设备中心问题.md
+DIR	14lgGw3P8vveXLvRSpXjlO9B85daZ90D	开发文档	设备中心/开发文档
+DIR	Qnp9zOoBVBZx7eZYuL2GyEXrV1DK0g6l	前端文档	设备中心/开发文档/前端文档
+FILE	Obva6QBXJw9wK69as2xqEMPOWn4qY5Pr	设备中心异常说明产品文档	设备中心/开发文档/前端文档/设备中心异常说明产品文档.md
+DIR	jb9Y4gmKWr7wMb7PijwKpYgXVGXn6lpz	01.接口文档	设备中心/开发文档/01.接口文档
+DIR	qnYMoO1rWxDK4bDasz9MXapxW47Z3je9	新架构	设备中心/开发文档/01.接口文档/新架构
+FILE	o14dA3GK8g5ZLz5jHKrzwKbnV9ekBD76	子节点查询设备数据接口	设备中心/开发文档/01.接口文档/新架构/子节点查询设备数据接口.md
+FILE	20eMKjyp81RkjOR3i47bqq9yWxAZB1Gv	主节点批量查询设备数据接口	设备中心/开发文档/01.接口文档/新架构/主节点批量查询设备数据接口.md
+FILE	m9bN7RYPWdlGLXlMfkq4bOyLWZd1wyK0	主节点批量查询设备所属子节点信息接口	设备中心/开发文档/01.接口文档/新架构/主节点批量查询设备所属子节点信息接口.md
+FILE	Y1OQX0akWm3Z4l3xsvwkaoPKJGlDd3mE	查询设备信息（全部）	设备中心/开发文档/01.接口文档/查询设备信息（全部）.md
+DIR	Obva6QBXJw9wK69as2BnR4LDWn4qY5Pr	02.部署文档	设备中心/开发文档/02.部署文档
+FILE	dpYLaezmVNLN9gLeTG2om0768rMqPxX6	设备中心部署文档	设备中心/开发文档/02.部署文档/设备中心部署文档.md
+DIR	P7QG4Yx2Jp7eD37LigYGkOd3V9dEq3XD	03.设计文档	设备中心/开发文档/03.设计文档
+FILE	Y1OQX0akWm3Z4l3xsvYzQ6K5JGlDd3mE	设备中心存储设计文档	设备中心/开发文档/03.设计文档/设备中心存储设计文档.md
