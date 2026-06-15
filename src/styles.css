@@ -560,68 +560,92 @@ button {
   font-weight: 800;
   line-height: 1;
   vertical-align: middle;
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.14);
 }
 
-.annotation-panel {
-  display: grid;
-  gap: 14px;
-  border: 1px solid #cfe0f8;
-  border-radius: 8px;
-  margin-top: 18px;
-  padding: 18px;
-  background: #f7fbff;
+.annotation-dot.active,
+.annotation-dot:hover {
+  color: #fff;
+  background: var(--blue);
 }
 
-.annotation-panel-head {
-  display: grid;
-  gap: 4px;
+.annotation-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
 }
 
-.annotation-panel-head strong {
-  color: #1f2733;
-  font-size: 16px;
+.annotation-anchor .annotation-dot {
+  border-radius: 50%;
+  padding: 0;
 }
 
-.annotation-panel-head span {
-  color: #7b8496;
-  font-size: 12px;
-}
-
-.annotation-list {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.annotation-card {
+.annotation-popover {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  z-index: 80;
   display: grid;
   gap: 12px;
-  border: 1px solid #dfe8f5;
+  width: 320px;
+  border: 1px solid #bdd7ff;
   border-radius: 8px;
   padding: 14px;
+  color: #354155;
   background: #fff;
+  box-shadow: 0 16px 40px rgba(27, 48, 82, 0.2);
 }
 
-.annotation-card-title {
+.annotation-popover::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 13px;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid #bdd7ff;
+  border-top: 1px solid #bdd7ff;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+.annotation-popover-title {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.annotation-card-title strong {
+.annotation-popover-title span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--blue);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.annotation-popover-title strong {
   color: #1f2733;
 }
 
-.annotation-card span {
-  color: #7b8496;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.annotation-card ul {
+.annotation-popover section {
   display: grid;
   gap: 6px;
-  margin: 7px 0 0;
+}
+
+.annotation-popover b {
+  color: #7b8496;
+  font-size: 12px;
+}
+
+.annotation-popover ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
   padding-left: 17px;
   color: #526075;
   font-size: 12px;
@@ -1005,24 +1029,6 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.inline-annotation-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  border: 1px dashed #b9d5ff;
-  border-radius: 8px;
-  padding: 8px 10px;
-  color: #526075;
-  background: #f7fbff;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.inline-annotation-note .annotation-dot {
-  width: 18px;
-  height: 18px;
 }
 
 .usage-control p {
@@ -2519,10 +2525,6 @@ button {
 
   .requirement-hero {
     grid-template-columns: 1fr;
-  }
-
-  .annotation-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .map-layout {

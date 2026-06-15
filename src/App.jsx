@@ -586,40 +586,49 @@ function DisableRequirementPage() {
   );
 }
 
-function AnnotationDot({ id }) {
-  return <span className="annotation-dot" aria-label={`原型标注 ${id}`}>{id}</span>;
+function AnnotationDot({ id, activeId, onToggle }) {
+  const active = activeId === id;
+
+  return (
+    <span className="annotation-anchor" onClick={(event) => event.stopPropagation()}>
+      <button
+        className={cls('annotation-dot', active && 'active')}
+        type="button"
+        aria-label={`查看原型批注 ${id}`}
+        aria-expanded={active}
+        onClick={() => onToggle(id)}
+      >
+        {id}
+      </button>
+      {active && <AnnotationPopover id={id} />}
+    </span>
+  );
 }
 
-function AnnotationPanel() {
+function AnnotationPopover({ id }) {
+  const item = detailAnnotationItems.find((annotation) => annotation.id === id);
+
+  if (!item) return null;
+
   return (
-    <aside className="annotation-panel">
-      <div className="annotation-panel-head">
-        <strong>交互与字段说明</strong>
-        <span>仅用于原型评审和研发对齐</span>
+    <article className="annotation-popover" onClick={(event) => event.stopPropagation()}>
+      <div className="annotation-popover-title">
+        <span>{item.id}</span>
+        <strong>{item.title}</strong>
       </div>
-      <div className="annotation-list">
-        {detailAnnotationItems.map((item) => (
-          <article className="annotation-card" key={item.id}>
-            <div className="annotation-card-title">
-              <AnnotationDot id={item.id} />
-              <strong>{item.title}</strong>
-            </div>
-            <div>
-              <span>交互逻辑</span>
-              <ul>
-                {item.logic.map((line) => <li key={line}>{line}</li>)}
-              </ul>
-            </div>
-            <div>
-              <span>字段格式</span>
-              <ul>
-                {item.fields.map((line) => <li key={line}>{line}</li>)}
-              </ul>
-            </div>
-          </article>
-        ))}
-      </div>
-    </aside>
+      <section>
+        <b>交互逻辑</b>
+        <ul>
+          {item.logic.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      </section>
+      <section>
+        <b>字段格式</b>
+        <ul>
+          {item.fields.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      </section>
+    </article>
   );
 }
 
@@ -636,14 +645,30 @@ function DetailView({
   annotationMode,
   onToggleAnnotation,
 }) {
+  const [activeAnnotation, setActiveAnnotation] = useState(null);
+  const handleToggleAnnotation = (id) => {
+    setActiveAnnotation((current) => (current === id ? null : id));
+  };
+  const annotationProps = {
+    activeId: activeAnnotation,
+    onToggle: handleToggleAnnotation,
+  };
+
   return (
-    <section className={cls('detail-page', annotationMode && 'annotating')}>
+    <section className={cls('detail-page', annotationMode && 'annotating')} onClick={() => setActiveAnnotation(null)}>
       <div className="detail-topline">
         <button className="backline" onClick={onBack}>
           <ChevronLeft size={16} />
           设备详情
         </button>
-        <button className={cls('annotation-toggle', annotationMode && 'active')} onClick={onToggleAnnotation}>
+        <button
+          className={cls('annotation-toggle', annotationMode && 'active')}
+          onClick={(event) => {
+            event.stopPropagation();
+            setActiveAnnotation(null);
+            onToggleAnnotation();
+          }}
+        >
           原型标注：{annotationMode ? '开启' : '关闭'}
         </button>
       </div>
@@ -654,6 +679,7 @@ function DetailView({
         onModal={onModal}
         onDrawer={onDrawer}
         annotationMode={annotationMode}
+        annotationProps={annotationProps}
       />
 
       <section className="tab-card">
@@ -665,8 +691,12 @@ function DetailView({
           ))}
         </div>
         <div className="tab-content">
-          {activeTab === '添加该设备的用户' && <UsersPanel isDisabled={isDisabled} annotationMode={annotationMode} />}
-          {activeTab === '增值服务' && <ServicesPanel annotationMode={annotationMode} />}
+          {activeTab === '添加该设备的用户' && (
+            <UsersPanel isDisabled={isDisabled} annotationMode={annotationMode} annotationProps={annotationProps} />
+          )}
+          {activeTab === '增值服务' && (
+            <ServicesPanel annotationMode={annotationMode} annotationProps={annotationProps} />
+          )}
           {activeTab === '日志记录' && (
             <LogsPanel logTab={logTab} setLogTab={setLogTab} onDrawer={onDrawer} onModal={onModal} />
           )}
@@ -674,12 +704,11 @@ function DetailView({
           {activeTab === '物联网卡' && <SimPanel />}
         </div>
       </section>
-      {annotationMode && <AnnotationPanel />}
     </section>
   );
 }
 
-function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer, annotationMode }) {
+function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer, annotationMode, annotationProps }) {
   return (
     <section className="hero-card">
       <div className="device-identity">
@@ -716,6 +745,7 @@ function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer, annotationMode
                 onModal={onModal}
                 onDrawer={onDrawer}
                 annotationMode={annotationMode}
+                annotationProps={annotationProps}
               />
               <Fact label="使用TF卡" value="否" />
             </div>
@@ -738,13 +768,13 @@ function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer, annotationMode
   );
 }
 
-function UsageControl({ isDisabled, disableInfo, onModal, onDrawer, annotationMode }) {
+function UsageControl({ isDisabled, disableInfo, onModal, onDrawer, annotationMode, annotationProps }) {
   return (
     <div className="usage-control">
       <div className="usage-title">
         <span>设备使用状态</span>
         <Info size={13} />
-        {annotationMode && <AnnotationDot id="01" />}
+        {annotationMode && <AnnotationDot id="01" {...annotationProps} />}
       </div>
       <div className="usage-row">
         <span className={cls('pill', isDisabled ? 'red' : 'green')}>{isDisabled ? '禁用' : '正常'}</span>
@@ -753,28 +783,23 @@ function UsageControl({ isDisabled, disableInfo, onModal, onDrawer, annotationMo
         </button>
         <button className="usage-action annotated-action" onClick={() => onDrawer('disableRecords')}>
           日志
-          {annotationMode && <AnnotationDot id="04" />}
+          {annotationMode && <AnnotationDot id="04" {...annotationProps} />}
         </button>
       </div>
-      {annotationMode && (
-        <div className="inline-annotation-note">
-          <AnnotationDot id="05" />
-          <span>禁用 / 启用按钮打开高风险操作弹窗，原因和说明必填。</span>
-        </div>
-      )}
+      {annotationMode && <AnnotationDot id="05" {...annotationProps} />}
       <p>{isDisabled && disableInfo ? disableInfo.reason : '允许绑定和使用核心能力'}</p>
     </div>
   );
 }
 
-function UsersPanel({ isDisabled, annotationMode }) {
+function UsersPanel({ isDisabled, annotationMode, annotationProps }) {
   return (
     <div className={cls('users-panel', isDisabled && 'disabled')}>
       {isDisabled && (
         <div className="diagnosis-note">
           <AlertTriangle size={16} />
           <span>设备已禁用，绑定用户暂不可使用实时预览、远程控制、配置下发和告警推送等核心能力；绑定关系与历史记录已保留。</span>
-          {annotationMode && <AnnotationDot id="02" />}
+          {annotationMode && <AnnotationDot id="02" {...annotationProps} />}
         </div>
       )}
       {boundUsers.map((user) => (
@@ -795,13 +820,13 @@ function UsersPanel({ isDisabled, annotationMode }) {
   );
 }
 
-function ServicesPanel({ annotationMode }) {
+function ServicesPanel({ annotationMode, annotationProps }) {
   return (
     <div className="services-panel">
       <div className="service-impact-note">
         <Cloud size={18} />
         <span>设备禁用期间禁止新增购买和手动续费；已有关联服务不自动退款、延期或转移，历史云录像仍可查看。</span>
-        {annotationMode && <AnnotationDot id="03" />}
+        {annotationMode && <AnnotationDot id="03" {...annotationProps} />}
       </div>
       <div className="service-grid">
         {services.map((service, index) => {
@@ -1077,6 +1102,11 @@ function DisableRecords({ records }) {
 }
 
 function DataModal({ type, isDisabled, disableInfo, annotationMode, onDisable, onRestore, onClose }) {
+  const [activeAnnotation, setActiveAnnotation] = useState(null);
+  const modalAnnotationProps = {
+    activeId: activeAnnotation,
+    onToggle: (id) => setActiveAnnotation((current) => (current === id ? null : id)),
+  };
   const title = {
     metadata: `设备元数据：${device.id}`,
     raw: '报警元数据',
@@ -1087,7 +1117,7 @@ function DataModal({ type, isDisabled, disableInfo, annotationMode, onDisable, o
   }[type];
 
   return (
-    <div className="modal-layer">
+    <div className="modal-layer" onClick={() => setActiveAnnotation(null)}>
       <button className="modal-scrim" onClick={onClose} aria-label="关闭弹窗" />
       <section
         className={cls(
@@ -1121,11 +1151,17 @@ function DataModal({ type, isDisabled, disableInfo, annotationMode, onDisable, o
         {type === 'resources' && <ResourceFiles />}
         {type === 'power' && <PowerChart />}
         {type === 'disableDevice' && (
-          <DisableDeviceModal annotationMode={annotationMode} onCancel={onClose} onConfirm={onDisable} />
+          <DisableDeviceModal
+            annotationMode={annotationMode}
+            annotationProps={modalAnnotationProps}
+            onCancel={onClose}
+            onConfirm={onDisable}
+          />
         )}
         {type === 'restoreDevice' && (
           <RestoreDeviceModal
             annotationMode={annotationMode}
+            annotationProps={modalAnnotationProps}
             disableInfo={disableInfo}
             onCancel={onClose}
             onConfirm={onRestore}
@@ -1136,7 +1172,7 @@ function DataModal({ type, isDisabled, disableInfo, annotationMode, onDisable, o
   );
 }
 
-function DisableDeviceModal({ annotationMode, onCancel, onConfirm }) {
+function DisableDeviceModal({ annotationMode, annotationProps, onCancel, onConfirm }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [note, setNote] = useState('');
   const boundUser = boundUsers[0];
@@ -1177,7 +1213,7 @@ function DisableDeviceModal({ annotationMode, onCancel, onConfirm }) {
         </section>
 
         <label className="form-field">
-          <span><b>*</b> 禁用原因 {annotationMode && <AnnotationDot id="05" />}</span>
+          <span><b>*</b> 禁用原因 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
           <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
             <option value="">请选择禁用原因</option>
             {disableReasons.map((reason) => (
@@ -1187,7 +1223,7 @@ function DisableDeviceModal({ annotationMode, onCancel, onConfirm }) {
         </label>
 
         <label className="form-field">
-          <span><b>*</b> 处理依据 / 备注 {annotationMode && <AnnotationDot id="05" />}</span>
+          <span><b>*</b> 处理依据 / 备注 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -1205,7 +1241,7 @@ function DisableDeviceModal({ annotationMode, onCancel, onConfirm }) {
   );
 }
 
-function RestoreDeviceModal({ annotationMode, disableInfo, onCancel, onConfirm }) {
+function RestoreDeviceModal({ annotationMode, annotationProps, disableInfo, onCancel, onConfirm }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [note, setNote] = useState('');
   const canSubmit = Boolean(selectedReason && note.trim());
@@ -1220,7 +1256,7 @@ function RestoreDeviceModal({ annotationMode, disableInfo, onCancel, onConfirm }
         </div>
       )}
       <label className="form-field">
-        <span><b>*</b> 恢复原因 {annotationMode && <AnnotationDot id="05" />}</span>
+        <span><b>*</b> 恢复原因 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
         <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
           <option value="">请选择恢复原因</option>
           {restoreReasons.map((reason) => (
@@ -1229,7 +1265,7 @@ function RestoreDeviceModal({ annotationMode, disableInfo, onCancel, onConfirm }
         </select>
       </label>
       <label className="form-field">
-        <span><b>*</b> 恢复说明 {annotationMode && <AnnotationDot id="05" />}</span>
+        <span><b>*</b> 恢复说明 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
