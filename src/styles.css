@@ -582,32 +582,19 @@ button {
 }
 
 .annotation-popover {
-  position: absolute;
-  top: 28px;
-  left: 0;
-  z-index: 80;
+  position: fixed;
+  z-index: 1000;
   display: grid;
   gap: 12px;
   width: 320px;
+  max-height: min(420px, 62vh);
+  overflow: auto;
   border: 1px solid #bdd7ff;
   border-radius: 8px;
   padding: 14px;
   color: #354155;
   background: #fff;
   box-shadow: 0 16px 40px rgba(27, 48, 82, 0.2);
-}
-
-.annotation-popover::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: 13px;
-  width: 10px;
-  height: 10px;
-  border-left: 1px solid #bdd7ff;
-  border-top: 1px solid #bdd7ff;
-  background: #fff;
-  transform: rotate(45deg);
 }
 
 .annotation-popover-title {
@@ -1029,13 +1016,6 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.usage-control p {
-  margin: 0;
-  color: #687386;
-  font-size: 12px;
-  font-weight: 500;
 }
 
 .usage-action {
@@ -2149,6 +2129,10 @@ button {
 .form-field > span .annotation-dot {
   width: 18px;
   height: 18px;
+}
+
+.form-field > span .annotation-popover {
+  width: 300px;
 }
 
 .form-field b {

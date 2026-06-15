@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -231,7 +231,7 @@ const detailAnnotationItems = [
     fields: [
       '状态枚举：正常 / 禁用。',
       '按钮文案：禁用 / 启用 / 日志。',
-      '状态说明：正常展示“允许绑定和使用核心能力”；禁用展示最近禁用原因。',
+      '状态说明：不在详情页常驻展示；禁用原因进入日志和禁用上下文。',
     ],
   },
   {
@@ -251,6 +251,7 @@ const detailAnnotationItems = [
     id: '03',
     title: '增值服务影响提示',
     logic: [
+      '仅设备处于禁用状态时展示，正常状态不展示。',
       '提示禁用期间服务处理边界，避免误解为自动退款、延期或转移。',
       '该提示属于服务影响说明，不触发任何订单状态变更。',
     ],
@@ -299,7 +300,7 @@ function App() {
   const [isDisabled, setIsDisabled] = useState(false);
   const [disableInfo, setDisableInfo] = useState(null);
   const [disableRecords, setDisableRecords] = useState(defaultDisableRecords);
-  const [annotationMode, setAnnotationMode] = useState(false);
+  const [annotationMode, setAnnotationMode] = useState(true);
 
   const goDetail = () => {
     setView('detail');
@@ -586,32 +587,64 @@ function DisableRequirementPage() {
   );
 }
 
-function AnnotationDot({ id, activeId, onToggle }) {
-  const active = activeId === id;
+function AnnotationDot({ id, markerKey = id, activeId, onToggle }) {
+  const active = activeId === markerKey;
+  const anchorRef = useRef(null);
+  const [popoverStyle, setPopoverStyle] = useState({});
+
+  const updatePopoverPosition = () => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+
+    const rect = anchor.getBoundingClientRect();
+    const width = 320;
+    const gap = 10;
+    const viewportPadding = 12;
+    const left = Math.min(
+      Math.max(viewportPadding, rect.left),
+      window.innerWidth - width - viewportPadding,
+    );
+    const preferTop = rect.bottom + 320 > window.innerHeight && rect.top > 320;
+    const top = preferTop
+      ? Math.max(viewportPadding, rect.top - gap)
+      : Math.min(rect.bottom + gap, window.innerHeight - viewportPadding);
+
+    setPopoverStyle({
+      left,
+      top,
+      transform: preferTop ? 'translateY(-100%)' : 'none',
+    });
+  };
+
+  const handleClick = () => {
+    updatePopoverPosition();
+    onToggle(markerKey);
+  };
 
   return (
     <span className="annotation-anchor" onClick={(event) => event.stopPropagation()}>
       <button
+        ref={anchorRef}
         className={cls('annotation-dot', active && 'active')}
         type="button"
         aria-label={`查看原型批注 ${id}`}
         aria-expanded={active}
-        onClick={() => onToggle(id)}
+        onClick={handleClick}
       >
         {id}
       </button>
-      {active && <AnnotationPopover id={id} />}
+      {active && <AnnotationPopover id={id} style={popoverStyle} />}
     </span>
   );
 }
 
-function AnnotationPopover({ id }) {
+function AnnotationPopover({ id, style }) {
   const item = detailAnnotationItems.find((annotation) => annotation.id === id);
 
   if (!item) return null;
 
   return (
-    <article className="annotation-popover" onClick={(event) => event.stopPropagation()}>
+    <article className="annotation-popover" style={style} onClick={(event) => event.stopPropagation()}>
       <div className="annotation-popover-title">
         <span>{item.id}</span>
         <strong>{item.title}</strong>
@@ -695,7 +728,11 @@ function DetailView({
             <UsersPanel isDisabled={isDisabled} annotationMode={annotationMode} annotationProps={annotationProps} />
           )}
           {activeTab === '增值服务' && (
-            <ServicesPanel annotationMode={annotationMode} annotationProps={annotationProps} />
+            <ServicesPanel
+              isDisabled={isDisabled}
+              annotationMode={annotationMode}
+              annotationProps={annotationProps}
+            />
           )}
           {activeTab === '日志记录' && (
             <LogsPanel logTab={logTab} setLogTab={setLogTab} onDrawer={onDrawer} onModal={onModal} />
@@ -786,8 +823,7 @@ function UsageControl({ isDisabled, disableInfo, onModal, onDrawer, annotationMo
           {annotationMode && <AnnotationDot id="04" {...annotationProps} />}
         </button>
       </div>
-      {annotationMode && <AnnotationDot id="05" {...annotationProps} />}
-      <p>{isDisabled && disableInfo ? disableInfo.reason : '允许绑定和使用核心能力'}</p>
+      {annotationMode && <AnnotationDot id="05" markerKey="05-usage-action" {...annotationProps} />}
     </div>
   );
 }
@@ -820,14 +856,16 @@ function UsersPanel({ isDisabled, annotationMode, annotationProps }) {
   );
 }
 
-function ServicesPanel({ annotationMode, annotationProps }) {
+function ServicesPanel({ isDisabled, annotationMode, annotationProps }) {
   return (
     <div className="services-panel">
-      <div className="service-impact-note">
-        <Cloud size={18} />
-        <span>设备禁用期间禁止新增购买和手动续费；已有关联服务不自动退款、延期或转移，历史云录像仍可查看。</span>
-        {annotationMode && <AnnotationDot id="03" {...annotationProps} />}
-      </div>
+      {isDisabled && (
+        <div className="service-impact-note">
+          <Cloud size={18} />
+          <span>设备已禁用，新增购买和手动续费暂不可用；已有关联服务不自动退款、延期或转移，历史云录像仍可查看。</span>
+          {annotationMode && <AnnotationDot id="03" {...annotationProps} />}
+        </div>
+      )}
       <div className="service-grid">
         {services.map((service, index) => {
           const Icon = serviceIcons[index % serviceIcons.length];
@@ -1213,7 +1251,7 @@ function DisableDeviceModal({ annotationMode, annotationProps, onCancel, onConfi
         </section>
 
         <label className="form-field">
-          <span><b>*</b> 禁用原因 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
+          <span><b>*</b> 禁用原因 {annotationMode && <AnnotationDot id="05" markerKey="05-disable-reason" {...annotationProps} />}</span>
           <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
             <option value="">请选择禁用原因</option>
             {disableReasons.map((reason) => (
@@ -1223,7 +1261,7 @@ function DisableDeviceModal({ annotationMode, annotationProps, onCancel, onConfi
         </label>
 
         <label className="form-field">
-          <span><b>*</b> 处理依据 / 备注 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
+          <span><b>*</b> 处理依据 / 备注 {annotationMode && <AnnotationDot id="05" markerKey="05-disable-note" {...annotationProps} />}</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -1256,7 +1294,7 @@ function RestoreDeviceModal({ annotationMode, annotationProps, disableInfo, onCa
         </div>
       )}
       <label className="form-field">
-        <span><b>*</b> 恢复原因 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
+        <span><b>*</b> 恢复原因 {annotationMode && <AnnotationDot id="05" markerKey="05-restore-reason" {...annotationProps} />}</span>
         <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
           <option value="">请选择恢复原因</option>
           {restoreReasons.map((reason) => (
@@ -1265,7 +1303,7 @@ function RestoreDeviceModal({ annotationMode, annotationProps, disableInfo, onCa
         </select>
       </label>
       <label className="form-field">
-        <span><b>*</b> 恢复说明 {annotationMode && <AnnotationDot id="05" {...annotationProps} />}</span>
+        <span><b>*</b> 恢复说明 {annotationMode && <AnnotationDot id="05" markerKey="05-restore-note" {...annotationProps} />}</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
