@@ -109,6 +109,29 @@ const disableReasons = [
 
 const restoreReasons = ['误禁用', '设备找回', '售后纠纷解除', '平台复核通过'];
 
+const defaultDisableRecords = [
+  {
+    type: '恢复启用',
+    before: '禁用',
+    after: '正常',
+    reason: '误禁用',
+    note: '复核后确认设备不应被限制，已恢复用户正常使用。',
+    source: '后台手动操作',
+    operator: '汤彦珊',
+    time: '2026-06-13 15:06:32',
+  },
+  {
+    type: '禁用',
+    before: '正常',
+    after: '禁用',
+    reason: '售后纠纷/仅退款',
+    note: '客户申请仅退款，售后工单已确认需临时限制设备核心能力。',
+    source: '后台手动操作',
+    operator: '汤彦珊',
+    time: '2026-06-13 14:20:11',
+  },
+];
+
 function App() {
   const [view, setView] = useState('search');
   const [query, setQuery] = useState('');
@@ -118,7 +141,7 @@ function App() {
   const [modal, setModal] = useState(null);
   const [isDisabled, setIsDisabled] = useState(false);
   const [disableInfo, setDisableInfo] = useState(null);
-  const [disableRecords, setDisableRecords] = useState([]);
+  const [disableRecords, setDisableRecords] = useState(defaultDisableRecords);
 
   const goDetail = () => {
     setView('detail');
@@ -389,7 +412,7 @@ function UsageControl({ isDisabled, disableInfo, onModal, onDrawer }) {
         <button className={cls('usage-action', isDisabled ? 'primary' : 'danger')} onClick={() => onModal(isDisabled ? 'restoreDevice' : 'disableDevice')}>
           {isDisabled ? '启用' : '禁用'}
         </button>
-        <button className="usage-action" onClick={() => onDrawer('disableRecords')}>记录</button>
+        <button className="usage-action" onClick={() => onDrawer('disableRecords')}>日志</button>
       </div>
       <p>{isDisabled && disableInfo ? disableInfo.reason : '允许绑定和使用核心能力'}</p>
     </div>
@@ -398,7 +421,13 @@ function UsageControl({ isDisabled, disableInfo, onModal, onDrawer }) {
 
 function UsersPanel({ isDisabled }) {
   return (
-    <div className="users-panel">
+    <div className={cls('users-panel', isDisabled && 'disabled')}>
+      {isDisabled && (
+        <div className="diagnosis-note">
+          <AlertTriangle size={16} />
+          <span>设备已禁用，绑定用户暂不可使用实时预览、远程控制、配置下发和告警推送等核心能力；绑定关系与历史记录已保留。</span>
+        </div>
+      )}
       {boundUsers.map((user) => (
         <article className="user-card" key={user.id}>
           <span className="user-avatar">{user.avatar}</span>
@@ -413,14 +442,6 @@ function UsersPanel({ isDisabled }) {
           </div>
         </article>
       ))}
-      <div className="diagnosis-note">
-        <AlertTriangle size={18} />
-        <span>
-          {isDisabled
-            ? '该设备已禁用。系统保留当前绑定关系，用户不可使用实时预览、远程控制、配置下发、报警推送等核心能力，历史云录像仍可查看。'
-            : '若执行禁用，系统将保留当前绑定关系，但用户不可使用实时预览、远程控制、配置下发、报警推送等核心能力，历史云录像仍可查看。'}
-        </span>
-      </div>
     </div>
   );
 }
@@ -612,7 +633,7 @@ function SideDrawer({ type, records, onClose }) {
       <button className="drawer-scrim" onClick={onClose} aria-label="关闭抽屉" />
       <aside className="drawer">
         <div className="drawer-head">
-          <h2>{type === 'p2p' ? '日志' : type === 'disableRecords' ? '禁用记录' : '详情'}</h2>
+          <h2>{type === 'p2p' ? '日志' : type === 'disableRecords' ? '设备使用状态日志' : '详情'}</h2>
           <button onClick={onClose} aria-label="关闭">
             <X size={22} />
           </button>
@@ -651,32 +672,22 @@ function DisableRecords({ records }) {
 
   const latest = records[0];
   const currentStatus = latest?.after || '正常';
-  const latestOperation = latest?.type || '暂无操作';
+  const statusTone = currentStatus === '禁用' ? 'disabled' : 'normal';
 
   return (
     <div className="audit-records">
-      <div className={cls('current-audit-summary', currentStatus === '禁用' && 'disabled')}>
-        <div>
+      <section className={cls('current-audit-summary', statusTone)}>
+        <div className="current-audit-main">
           <span>当前状态</span>
           <strong>{currentStatus}</strong>
         </div>
-        <div>
-          <span>最近操作</span>
-          <strong>{latestOperation}</strong>
+        <div className="current-audit-copy">
+          <p>
+            最近由 <b>{latest.operator}</b> 于 <b>{latest.time}</b> {latest.type}
+          </p>
+          <span>设备 {device.id}</span>
         </div>
-        <div>
-          <span>最近原因</span>
-          <strong>{latest?.reason}</strong>
-        </div>
-        <div>
-          <span>操作时间</span>
-          <strong>{latest?.time}</strong>
-        </div>
-      </div>
-      <div className="record-filter-line">
-        <span>当前设备：{device.id}</span>
-        <span>处理时间线 · 按操作时间倒序</span>
-      </div>
+      </section>
       <div className="audit-card-list">
         {records.map((record, index) => (
           <article className="audit-card" key={`${record.time}-${index}`}>
@@ -689,24 +700,24 @@ function DisableRecords({ records }) {
                   <span className={cls('audit-badge', record.type === '恢复启用' ? 'restore' : 'disable')}>
                     {record.type}
                   </span>
-                  <strong>{record.reason}</strong>
+                  <strong className="status-flow">
+                    <b>{record.before}</b>
+                    <ChevronRight size={14} />
+                    <b className={cls(record.after === '禁用' ? 'risk-status' : 'normal-status')}>{record.after}</b>
+                  </strong>
                 </div>
                 <time>{record.time}</time>
               </div>
               <div className="audit-card-meta">
-                <span>
-                  状态变化
-                  <b>{record.before}</b>
-                  <ChevronRight size={13} />
-                  <b>{record.after}</b>
-                </span>
+                <span>{record.type === '恢复启用' ? '恢复原因' : '禁用原因'}：<b>{record.reason}</b></span>
                 <span>操作人：<b>{record.operator}</b></span>
-                <span>来源：{record.source}</span>
               </div>
-              <div className="audit-note">
-                <span>说明</span>
-                <p>{record.note}</p>
-              </div>
+              {record.note && (
+                <div className="audit-note">
+                  <span>说明</span>
+                  <p>{record.note}</p>
+                </div>
+              )}
             </div>
           </article>
         ))}
@@ -746,7 +757,7 @@ function DataModal({ type, isDisabled, disableInfo, onDisable, onRestore, onClos
               </p>
             )}
           </div>
-          {(type === 'disableDevice' || type === 'restoreDevice') && (
+          {type === 'restoreDevice' && (
             <div className="modal-shield">
               <ShieldCheck size={30} />
             </div>
@@ -771,18 +782,43 @@ function DataModal({ type, isDisabled, disableInfo, onDisable, onRestore, onClos
 function DisableDeviceModal({ onCancel, onConfirm }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [note, setNote] = useState('');
+  const boundUser = boundUsers[0];
   const canSubmit = Boolean(selectedReason && note.trim());
 
   return (
     <div className="risk-modal-content">
       <section className="soft-form-card">
-        <div className="soft-card-head">
-          <div>
-            <strong>填写禁用信息</strong>
-            <span>设备：{device.id}</span>
-          </div>
+        <div className="risk-inline-head">
           <span className="risk-tag">高风险</span>
+          <span>请核对设备对象，并填写本次处理依据。</span>
         </div>
+        <dl className="device-confirm-grid compact">
+          <div>
+            <dt>设备编号</dt>
+            <dd>{device.id}</dd>
+          </div>
+          <div>
+            <dt>绑定用户</dt>
+            <dd>{boundUser ? `${boundUser.role} ${boundUser.userId}` : '暂无绑定用户'}</dd>
+          </div>
+          <div>
+            <dt>最近心跳</dt>
+            <dd>{device.p2p.lastWakeTime}</dd>
+          </div>
+        </dl>
+
+        <section className="impact-panel" aria-label="禁用影响">
+          <div className="impact-title">
+            <AlertTriangle size={16} />
+            <strong>禁用后影响</strong>
+          </div>
+          <ul className="impact-list">
+            <li>用户将无法使用实时预览、远程控制、配置下发和告警推送等核心能力。</li>
+            <li>系统会保留当前绑定关系、历史记录、告警记录和操作审计。</li>
+            <li>禁用不会自动解绑用户，也不会自动处理退款、延期或补偿。</li>
+          </ul>
+        </section>
+
         <label className="form-field">
           <span><b>*</b> 禁用原因</span>
           <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
@@ -792,17 +828,18 @@ function DisableDeviceModal({ onCancel, onConfirm }) {
             ))}
           </select>
         </label>
+
         <label className="form-field">
-          <span><b>*</b> 禁用说明</span>
+          <span><b>*</b> 处理依据 / 备注</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="请填写处理依据，例如工单号、客户说明、设备清单或业务确认记录"
+            placeholder="请填写本次处理依据，例如客户申请说明、异常记录、设备清单或复核结论"
             rows={4}
           />
+          <small className="field-helper">建议写清楚来源、判断依据和处理结论，方便后续追溯。</small>
         </label>
       </section>
-      <p className="form-footnote">禁用不会自动解绑用户，也不会自动处理退款、延期或补偿。</p>
       <div className="modal-actions">
         <button className="secondary-action" onClick={onCancel}>取消</button>
         <button className="danger-action" disabled={!canSubmit} onClick={() => onConfirm({ reason: selectedReason, note: note.trim() })}>确认禁用</button>
