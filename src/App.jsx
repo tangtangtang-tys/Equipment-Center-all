@@ -132,6 +132,163 @@ const defaultDisableRecords = [
   },
 ];
 
+const disableFlowSteps = [
+  {
+    title: '触发诉求',
+    owner: '经销商 / 用户 / 客服 / 风控',
+    desc: '售后纠纷、被盗遗失、渠道欠款或平台风险触发禁用诉求。',
+  },
+  {
+    title: '提交材料',
+    owner: '申请方 / 客服',
+    desc: '提供设备 ID、订单、退款截图、报失证明、风控记录或合同依据。',
+  },
+  {
+    title: '平台核验',
+    owner: '客服 / 运营',
+    desc: '核对设备归属、绑定用户、组织关系、增值服务和误禁风险。',
+  },
+  {
+    title: '执行禁用',
+    owner: '超管 / 风控',
+    desc: '选择禁用原因，填写处理依据，将设备使用状态从正常改为禁用。',
+  },
+  {
+    title: '能力冻结',
+    owner: '设备服务',
+    desc: '禁止新增绑定，限制实时预览、远程控制、配置下发和告警推送。',
+  },
+  {
+    title: '分层展示',
+    owner: 'App / 经销商 / 后台',
+    desc: '不同端展示不同口径，终端用户不暴露内部敏感原因。',
+  },
+  {
+    title: '恢复启用',
+    owner: '超管 / 风控',
+    desc: '纠纷解除、设备找回或复核通过后，记录原因并恢复设备能力。',
+  },
+];
+
+const disableScenarioCards = [
+  {
+    title: '售后纠纷 / 仅退款',
+    trigger: '经销商提交设备与订单材料',
+    check: '核验订单、退款记录、设备归属和绑定用户',
+    action: '单设备禁用，App 端仅提示设备不可用',
+    restore: '纠纷解除、平台复核通过或误禁用后恢复',
+  },
+  {
+    title: '被盗 / 遗失',
+    trigger: '用户、经销商或客服反馈报失',
+    check: '核验绑定账号、购买凭证、报警回执和最后在线信息',
+    action: '限制核心能力并禁止新增绑定，保留历史记录用于取证',
+    restore: '设备找回或权属确认后恢复启用',
+  },
+  {
+    title: '渠道欠款 / 项目回款纠纷',
+    trigger: '上级经销商或供应方提供欠款和设备清单',
+    check: '区分未绑定、已绑定、归属不匹配和有关联服务设备',
+    action: '第一阶段仅支持明确单设备处理，不做批量执行',
+    restore: '欠款结清、双方和解或发现误禁后恢复',
+  },
+  {
+    title: '平台风控',
+    trigger: '风控系统或人工排查发现异常设备',
+    check: '核验风险证据、异常日志、绑定关系和误伤风险',
+    action: '风控或超管执行禁用，客服同步对外口径',
+    restore: '风险解除或平台复核通过后恢复',
+  },
+];
+
+const phaseOneScope = [
+  ['做', '设备详情页展示设备使用状态'],
+  ['做', '超管 / 风控单设备禁用和恢复'],
+  ['做', '禁用原因、处理依据和使用状态日志'],
+  ['做', '禁用前展示核心影响，禁用后保留绑定关系与历史记录'],
+  ['不做', '经销商线上申请流和复杂审批流'],
+  ['不做', '批量禁用、临时禁用、批量恢复'],
+  ['不做', '自动退款、延期、补偿或自动解绑用户'],
+  ['不做', '自动关闭第三方续费'],
+];
+
+const channelMessages = [
+  ['App 用户端', '只展示设备当前不可用及售后联系口径，不展示内部纠纷原因。'],
+  ['经销商端', '展示设备状态和处理结果，原因可做业务简化，不暴露平台风控细节。'],
+  ['客服后台', '查看具体原因、服务影响和操作记录，用于对外解释。'],
+  ['超管 / 风控后台', '查看全部信息，可执行禁用、恢复和审计追溯。'],
+];
+
+const detailAnnotationItems = [
+  {
+    id: '01',
+    title: '设备使用状态',
+    logic: [
+      '根据后台设备使用状态展示“正常”或“禁用”。',
+      '正常状态显示“禁用”按钮；禁用状态显示“启用”按钮。',
+      '“日志”打开设备使用状态日志，查看禁用和恢复记录。',
+    ],
+    fields: [
+      '状态枚举：正常 / 禁用。',
+      '按钮文案：禁用 / 启用 / 日志。',
+      '状态说明：正常展示“允许绑定和使用核心能力”；禁用展示最近禁用原因。',
+    ],
+  },
+  {
+    id: '02',
+    title: '绑定用户禁用提示',
+    logic: [
+      '仅设备处于禁用状态时展示，正常状态不展示。',
+      '用于说明绑定用户当前受到的直接影响，不展示规则性假设说明。',
+    ],
+    fields: [
+      '提示类型：状态提示。',
+      '展示条件：设备使用状态 = 禁用。',
+      '提示内容：核心能力不可用，绑定关系与历史记录保留。',
+    ],
+  },
+  {
+    id: '03',
+    title: '增值服务影响提示',
+    logic: [
+      '提示禁用期间服务处理边界，避免误解为自动退款、延期或转移。',
+      '该提示属于服务影响说明，不触发任何订单状态变更。',
+    ],
+    fields: [
+      '服务状态：未开通 / 有效中 / 已过期。',
+      '历史云录像：允许继续查看。',
+      '新增购买与手动续费：禁用期间不允许。',
+    ],
+  },
+  {
+    id: '04',
+    title: '设备使用状态日志',
+    logic: [
+      '记录禁用和恢复启用的完整状态流转。',
+      '按操作时间倒序展示，最新记录决定当前摘要。',
+    ],
+    fields: [
+      '记录字段：操作类型、操作前状态、操作后状态、原因、操作人、操作时间、说明。',
+      '原因字段动态展示：禁用原因 / 恢复原因。',
+      '状态流转格式：正常 → 禁用，禁用 → 正常。',
+    ],
+  },
+  {
+    id: '05',
+    title: '禁用 / 恢复弹窗',
+    logic: [
+      '禁用和恢复都是高风险操作，必须填写原因和说明后才能提交。',
+      '禁用弹窗展示对象核对和禁用影响；恢复弹窗展示当前禁用上下文。',
+    ],
+    fields: [
+      '禁用原因：下拉单选，必填。',
+      '处理依据 / 备注：多行文本，必填。',
+      '恢复原因：下拉单选，必填。',
+      '恢复说明：多行文本，必填。',
+    ],
+  },
+];
+
 function App() {
   const [view, setView] = useState('search');
   const [query, setQuery] = useState('');
@@ -142,6 +299,7 @@ function App() {
   const [isDisabled, setIsDisabled] = useState(false);
   const [disableInfo, setDisableInfo] = useState(null);
   const [disableRecords, setDisableRecords] = useState(defaultDisableRecords);
+  const [annotationMode, setAnnotationMode] = useState(false);
 
   const goDetail = () => {
     setView('detail');
@@ -166,9 +324,12 @@ function App() {
               onModal={setModal}
               isDisabled={isDisabled}
               disableInfo={disableInfo}
+              annotationMode={annotationMode}
+              onToggleAnnotation={() => setAnnotationMode((enabled) => !enabled)}
             />
           )}
           {view === 'map' && <MapView />}
+          {view === 'disableRequirement' && <DisableRequirementPage />}
         </main>
       </div>
 
@@ -178,6 +339,7 @@ function App() {
           type={modal}
           isDisabled={isDisabled}
           disableInfo={disableInfo}
+          annotationMode={annotationMode}
           onDisable={({ reason, note }) => {
             const nextInfo = {
               reason,
@@ -253,7 +415,7 @@ function Sidebar({ view, onNavigate }) {
       <div className="side-title">设备中心平台</div>
       <nav>
         <button
-          className={cls('side-item', view !== 'map' && 'active')}
+          className={cls('side-item', (view === 'search' || view === 'detail') && 'active')}
           onClick={() => onNavigate('search')}
         >
           <Search size={16} />
@@ -262,6 +424,13 @@ function Sidebar({ view, onNavigate }) {
         <button className={cls('side-item', view === 'map' && 'active')} onClick={() => onNavigate('map')}>
           <MapPin size={17} />
           设备地图
+        </button>
+        <button
+          className={cls('side-item', view === 'disableRequirement' && 'active')}
+          onClick={() => onNavigate('disableRequirement')}
+        >
+          <FileClock size={16} />
+          禁用需求说明
         </button>
       </nav>
     </aside>
@@ -300,6 +469,160 @@ function SearchHome({ query, setQuery, onSubmit }) {
   );
 }
 
+function DisableRequirementPage() {
+  return (
+    <section className="requirement-page">
+      <div className="requirement-hero">
+        <div>
+          <span className="requirement-kicker">高风险能力设计</span>
+          <h1>禁用需求说明</h1>
+          <p>
+            禁用设备不是解绑设备，而是冻结设备核心使用能力。第一阶段聚焦后台单设备禁用与恢复闭环，
+            保留绑定关系、历史记录和审计线索，不自动处理退款、延期、补偿或解绑。
+          </p>
+        </div>
+        <div className="requirement-status-card">
+          <span>第一阶段范围</span>
+          <strong>单设备正式禁用 / 恢复</strong>
+          <p>不含申请流、审批流、批量执行和自动售后处理。</p>
+        </div>
+      </div>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
+            <h2>上下游主链路</h2>
+            <p>从业务诉求触发，到平台核验、设备能力冻结、各端展示，再到后续恢复启用。</p>
+          </div>
+        </div>
+        <div className="flow-board">
+          {disableFlowSteps.map((step, index) => (
+            <article className="flow-step" key={step.title}>
+              <div className="flow-index">{String(index + 1).padStart(2, '0')}</div>
+              <div>
+                <strong>{step.title}</strong>
+                <span>{step.owner}</span>
+                <p>{step.desc}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
+            <h2>典型场景链路</h2>
+            <p>四类禁用场景共用单设备禁用能力，但核验重点和对外口径不同。</p>
+          </div>
+        </div>
+        <div className="scenario-grid">
+          {disableScenarioCards.map((scenario) => (
+            <article className="scenario-card" key={scenario.title}>
+              <h3>{scenario.title}</h3>
+              <dl>
+                <div>
+                  <dt>触发</dt>
+                  <dd>{scenario.trigger}</dd>
+                </div>
+                <div>
+                  <dt>核验</dt>
+                  <dd>{scenario.check}</dd>
+                </div>
+                <div>
+                  <dt>执行</dt>
+                  <dd>{scenario.action}</dd>
+                </div>
+                <div>
+                  <dt>恢复</dt>
+                  <dd>{scenario.restore}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="requirement-split">
+        <div className="requirement-section compact">
+          <div className="requirement-section-head">
+            <span />
+            <div>
+              <h2>第一阶段边界</h2>
+              <p>明确做什么和不做什么，避免禁用能力被扩展成复杂售后系统。</p>
+            </div>
+          </div>
+          <div className="scope-list">
+            {phaseOneScope.map(([type, content]) => (
+              <div className={cls('scope-row', type === '做' ? 'include' : 'exclude')} key={`${type}-${content}`}>
+                <b>{type}</b>
+                <span>{content}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="requirement-section compact">
+          <div className="requirement-section-head">
+            <span />
+            <div>
+              <h2>各端展示口径</h2>
+              <p>同一禁用状态，不同端展示不同粒度，避免敏感原因直接暴露。</p>
+            </div>
+          </div>
+          <div className="channel-list">
+            {channelMessages.map(([channel, message]) => (
+              <article key={channel}>
+                <strong>{channel}</strong>
+                <p>{message}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function AnnotationDot({ id }) {
+  return <span className="annotation-dot" aria-label={`原型标注 ${id}`}>{id}</span>;
+}
+
+function AnnotationPanel() {
+  return (
+    <aside className="annotation-panel">
+      <div className="annotation-panel-head">
+        <strong>交互与字段说明</strong>
+        <span>仅用于原型评审和研发对齐</span>
+      </div>
+      <div className="annotation-list">
+        {detailAnnotationItems.map((item) => (
+          <article className="annotation-card" key={item.id}>
+            <div className="annotation-card-title">
+              <AnnotationDot id={item.id} />
+              <strong>{item.title}</strong>
+            </div>
+            <div>
+              <span>交互逻辑</span>
+              <ul>
+                {item.logic.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </div>
+            <div>
+              <span>字段格式</span>
+              <ul>
+                {item.fields.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
 function DetailView({
   activeTab,
   setActiveTab,
@@ -310,19 +633,27 @@ function DetailView({
   onModal,
   isDisabled,
   disableInfo,
+  annotationMode,
+  onToggleAnnotation,
 }) {
   return (
-    <section className="detail-page">
-      <button className="backline" onClick={onBack}>
-        <ChevronLeft size={16} />
-        设备详情
-      </button>
+    <section className={cls('detail-page', annotationMode && 'annotating')}>
+      <div className="detail-topline">
+        <button className="backline" onClick={onBack}>
+          <ChevronLeft size={16} />
+          设备详情
+        </button>
+        <button className={cls('annotation-toggle', annotationMode && 'active')} onClick={onToggleAnnotation}>
+          原型标注：{annotationMode ? '开启' : '关闭'}
+        </button>
+      </div>
 
       <DeviceHero
         isDisabled={isDisabled}
         disableInfo={disableInfo}
         onModal={onModal}
         onDrawer={onDrawer}
+        annotationMode={annotationMode}
       />
 
       <section className="tab-card">
@@ -334,8 +665,8 @@ function DetailView({
           ))}
         </div>
         <div className="tab-content">
-          {activeTab === '添加该设备的用户' && <UsersPanel isDisabled={isDisabled} />}
-          {activeTab === '增值服务' && <ServicesPanel />}
+          {activeTab === '添加该设备的用户' && <UsersPanel isDisabled={isDisabled} annotationMode={annotationMode} />}
+          {activeTab === '增值服务' && <ServicesPanel annotationMode={annotationMode} />}
           {activeTab === '日志记录' && (
             <LogsPanel logTab={logTab} setLogTab={setLogTab} onDrawer={onDrawer} onModal={onModal} />
           )}
@@ -343,11 +674,12 @@ function DetailView({
           {activeTab === '物联网卡' && <SimPanel />}
         </div>
       </section>
+      {annotationMode && <AnnotationPanel />}
     </section>
   );
 }
 
-function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer }) {
+function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer, annotationMode }) {
   return (
     <section className="hero-card">
       <div className="device-identity">
@@ -378,7 +710,13 @@ function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer }) {
               <Fact label="设备型号" value={device.model} />
             </div>
             <div className="profile-column">
-              <UsageControl isDisabled={isDisabled} disableInfo={disableInfo} onModal={onModal} onDrawer={onDrawer} />
+              <UsageControl
+                isDisabled={isDisabled}
+                disableInfo={disableInfo}
+                onModal={onModal}
+                onDrawer={onDrawer}
+                annotationMode={annotationMode}
+              />
               <Fact label="使用TF卡" value="否" />
             </div>
           </div>
@@ -400,32 +738,43 @@ function DeviceHero({ isDisabled, disableInfo, onModal, onDrawer }) {
   );
 }
 
-function UsageControl({ isDisabled, disableInfo, onModal, onDrawer }) {
+function UsageControl({ isDisabled, disableInfo, onModal, onDrawer, annotationMode }) {
   return (
     <div className="usage-control">
       <div className="usage-title">
         <span>设备使用状态</span>
         <Info size={13} />
+        {annotationMode && <AnnotationDot id="01" />}
       </div>
       <div className="usage-row">
         <span className={cls('pill', isDisabled ? 'red' : 'green')}>{isDisabled ? '禁用' : '正常'}</span>
         <button className={cls('usage-action', isDisabled ? 'primary' : 'danger')} onClick={() => onModal(isDisabled ? 'restoreDevice' : 'disableDevice')}>
           {isDisabled ? '启用' : '禁用'}
         </button>
-        <button className="usage-action" onClick={() => onDrawer('disableRecords')}>日志</button>
+        <button className="usage-action annotated-action" onClick={() => onDrawer('disableRecords')}>
+          日志
+          {annotationMode && <AnnotationDot id="04" />}
+        </button>
       </div>
+      {annotationMode && (
+        <div className="inline-annotation-note">
+          <AnnotationDot id="05" />
+          <span>禁用 / 启用按钮打开高风险操作弹窗，原因和说明必填。</span>
+        </div>
+      )}
       <p>{isDisabled && disableInfo ? disableInfo.reason : '允许绑定和使用核心能力'}</p>
     </div>
   );
 }
 
-function UsersPanel({ isDisabled }) {
+function UsersPanel({ isDisabled, annotationMode }) {
   return (
     <div className={cls('users-panel', isDisabled && 'disabled')}>
       {isDisabled && (
         <div className="diagnosis-note">
           <AlertTriangle size={16} />
           <span>设备已禁用，绑定用户暂不可使用实时预览、远程控制、配置下发和告警推送等核心能力；绑定关系与历史记录已保留。</span>
+          {annotationMode && <AnnotationDot id="02" />}
         </div>
       )}
       {boundUsers.map((user) => (
@@ -446,12 +795,13 @@ function UsersPanel({ isDisabled }) {
   );
 }
 
-function ServicesPanel() {
+function ServicesPanel({ annotationMode }) {
   return (
     <div className="services-panel">
       <div className="service-impact-note">
         <Cloud size={18} />
         <span>设备禁用期间禁止新增购买和手动续费；已有关联服务不自动退款、延期或转移，历史云录像仍可查看。</span>
+        {annotationMode && <AnnotationDot id="03" />}
       </div>
       <div className="service-grid">
         {services.map((service, index) => {
@@ -726,7 +1076,7 @@ function DisableRecords({ records }) {
   );
 }
 
-function DataModal({ type, isDisabled, disableInfo, onDisable, onRestore, onClose }) {
+function DataModal({ type, isDisabled, disableInfo, annotationMode, onDisable, onRestore, onClose }) {
   const title = {
     metadata: `设备元数据：${device.id}`,
     raw: '报警元数据',
@@ -770,16 +1120,23 @@ function DataModal({ type, isDisabled, disableInfo, onDisable, onRestore, onClos
         {type === 'raw' && <JsonBlock data={alarmLogs[0].raw} />}
         {type === 'resources' && <ResourceFiles />}
         {type === 'power' && <PowerChart />}
-        {type === 'disableDevice' && <DisableDeviceModal onCancel={onClose} onConfirm={onDisable} />}
+        {type === 'disableDevice' && (
+          <DisableDeviceModal annotationMode={annotationMode} onCancel={onClose} onConfirm={onDisable} />
+        )}
         {type === 'restoreDevice' && (
-          <RestoreDeviceModal disableInfo={disableInfo} onCancel={onClose} onConfirm={onRestore} />
+          <RestoreDeviceModal
+            annotationMode={annotationMode}
+            disableInfo={disableInfo}
+            onCancel={onClose}
+            onConfirm={onRestore}
+          />
         )}
       </section>
     </div>
   );
 }
 
-function DisableDeviceModal({ onCancel, onConfirm }) {
+function DisableDeviceModal({ annotationMode, onCancel, onConfirm }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [note, setNote] = useState('');
   const boundUser = boundUsers[0];
@@ -820,7 +1177,7 @@ function DisableDeviceModal({ onCancel, onConfirm }) {
         </section>
 
         <label className="form-field">
-          <span><b>*</b> 禁用原因</span>
+          <span><b>*</b> 禁用原因 {annotationMode && <AnnotationDot id="05" />}</span>
           <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
             <option value="">请选择禁用原因</option>
             {disableReasons.map((reason) => (
@@ -830,7 +1187,7 @@ function DisableDeviceModal({ onCancel, onConfirm }) {
         </label>
 
         <label className="form-field">
-          <span><b>*</b> 处理依据 / 备注</span>
+          <span><b>*</b> 处理依据 / 备注 {annotationMode && <AnnotationDot id="05" />}</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -848,7 +1205,7 @@ function DisableDeviceModal({ onCancel, onConfirm }) {
   );
 }
 
-function RestoreDeviceModal({ disableInfo, onCancel, onConfirm }) {
+function RestoreDeviceModal({ annotationMode, disableInfo, onCancel, onConfirm }) {
   const [selectedReason, setSelectedReason] = useState('');
   const [note, setNote] = useState('');
   const canSubmit = Boolean(selectedReason && note.trim());
@@ -863,7 +1220,7 @@ function RestoreDeviceModal({ disableInfo, onCancel, onConfirm }) {
         </div>
       )}
       <label className="form-field">
-        <span><b>*</b> 恢复原因</span>
+        <span><b>*</b> 恢复原因 {annotationMode && <AnnotationDot id="05" />}</span>
         <select value={selectedReason} onChange={(event) => setSelectedReason(event.target.value)}>
           <option value="">请选择恢复原因</option>
           {restoreReasons.map((reason) => (
@@ -872,7 +1229,7 @@ function RestoreDeviceModal({ disableInfo, onCancel, onConfirm }) {
         </select>
       </label>
       <label className="form-field">
-        <span><b>*</b> 恢复说明</span>
+        <span><b>*</b> 恢复说明 {annotationMode && <AnnotationDot id="05" />}</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
