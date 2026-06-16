@@ -173,6 +173,8 @@ const disableFlowSteps = [
 const disableScenarioCards = [
   {
     title: '售后纠纷 / 仅退款',
+    tone: 'refund',
+    summary: '限制退款后继续使用设备，重点核验订单、退款记录和设备归属。',
     trigger: '经销商提交设备与订单材料',
     check: '核验订单、退款记录、设备归属和绑定用户',
     action: '单设备禁用，App 端仅提示设备不可用',
@@ -180,6 +182,8 @@ const disableScenarioCards = [
   },
   {
     title: '被盗 / 遗失',
+    tone: 'lost',
+    summary: '保护设备与隐私安全，优先阻断新增绑定和核心实时能力。',
     trigger: '用户、经销商或客服反馈报失',
     check: '核验绑定账号、购买凭证、报警回执和最后在线信息',
     action: '限制核心能力并禁止新增绑定，保留历史记录用于取证',
@@ -187,6 +191,8 @@ const disableScenarioCards = [
   },
   {
     title: '渠道欠款 / 项目回款纠纷',
+    tone: 'payment',
+    summary: '避免把渠道回款纠纷直接转嫁给无过错终端用户。',
     trigger: '上级经销商或供应方提供欠款和设备清单',
     check: '区分未绑定、已绑定、归属不匹配和有关联服务设备',
     action: '第一阶段仅支持明确单设备处理，不做批量执行',
@@ -194,6 +200,8 @@ const disableScenarioCards = [
   },
   {
     title: '平台风控',
+    tone: 'risk',
+    summary: '基于异常绑定、违规使用或平台风险证据进行受控处置。',
     trigger: '风控系统或人工排查发现异常设备',
     check: '核验风险证据、异常日志、绑定关系和误伤风险',
     action: '风控或超管执行禁用，客服同步对外口径',
@@ -218,6 +226,49 @@ const channelMessages = [
   ['客服后台', '查看具体原因、服务影响和操作记录，用于对外解释。'],
   ['超管 / 风控后台', '查看全部信息，可执行禁用、恢复和审计追溯。'],
 ];
+
+const briefingStats = [
+  ['本期定位', '高风险单设备操作'],
+  ['核心动作', '禁用 / 恢复启用'],
+  ['审计要求', '原因、说明、操作者、时间'],
+];
+
+const decisionHighlights = [
+  ['冻结而非解绑', '禁用设备冻结核心使用能力，保留绑定关系、历史记录和审计线索。'],
+  ['人工处置服务', '禁用不自动触发退款、延期、补偿、权益转移或第三方续费关闭。'],
+  ['分层展示口径', '终端用户不暴露内部纠纷原因，客服和风控后台保留完整信息。'],
+];
+
+const roleBoundaryCards = [
+  ['经销商 / 渠道客户', '可发起申请、查看相关设备状态；不直接执行禁用或恢复。'],
+  ['终端用户', '可反馈被盗、误禁用或申诉；App 不开放直接禁用入口。'],
+  ['平台客服 / 运营', '可查看记录、补充材料和对外解释；最终执行能力受权限控制。'],
+  ['超管 / 风控', '可执行禁用、恢复、驳回和审计追溯，高风险操作二次确认。'],
+];
+
+const disableTypeRows = [
+  ['正式禁用', '仅退款、确认被盗、明确渠道欠款单设备处理', '第一阶段支持'],
+  ['临时禁用', '被盗初报、证据不完整但风险较高', '后续迭代'],
+  ['批量禁用', '渠道欠款、批次风险设备、批量售后纠纷', '后续独立设计'],
+];
+
+const impactItems = [
+  '保留已绑定用户关系，不自动解绑。',
+  '禁止设备被新增绑定到其他账号。',
+  '实时预览、远程控制、配置下发、报警推送等能力停止或受限。',
+  '增值服务订单不自动取消、退款、延期或转移。',
+  '历史云录像允许继续查看，禁用期间不允许新增购买或手动续费。',
+  '恢复启用后，仍在有效期内的增值服务随设备恢复可用。',
+];
+
+const auditItems = [
+  '操作类型、设备 ID、操作前状态、操作后状态。',
+  '禁用原因、原因说明、发起人、审批人、操作人。',
+  '操作时间、操作 IP、关联订单号 / 工单号 / 证明材料。',
+  '来源批次号、增值服务快照、影响范围确认。',
+];
+
+const stateFlow = ['运行中', '禁用申请中', '已禁用', '恢复申请中', '运行中'];
 
 const detailAnnotationItems = [
   {
@@ -481,13 +532,46 @@ function DisableRequirementPage() {
             禁用设备不是解绑设备，而是冻结设备核心使用能力。第一阶段聚焦后台单设备禁用与恢复闭环，
             保留绑定关系、历史记录和审计线索，不自动处理退款、延期、补偿或解绑。
           </p>
+          <div className="briefing-stat-row">
+            {briefingStats.map(([label, value]) => (
+              <div className="briefing-stat" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="requirement-status-card">
-          <span>第一阶段范围</span>
+          <span>在线需求简报</span>
           <strong>单设备正式禁用 / 恢复</strong>
-          <p>不含申请流、审批流、批量执行和自动售后处理。</p>
+          <div className="briefing-mini-flow" aria-hidden="true">
+            <span>申请</span>
+            <i />
+            <span>核验</span>
+            <i />
+            <span>执行</span>
+          </div>
         </div>
       </div>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
+            <h2>核心结论</h2>
+            <p>把禁用从普通状态按钮升级为带边界、权限、证据和审计的高风险操作。</p>
+          </div>
+        </div>
+        <div className="highlight-grid">
+          {decisionHighlights.map(([title, desc], index) => (
+            <article className="highlight-card" key={title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{title}</strong>
+              <p>{desc}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="requirement-section">
         <div className="requirement-section-head">
@@ -497,9 +581,9 @@ function DisableRequirementPage() {
             <p>从业务诉求触发，到平台核验、设备能力冻结、各端展示，再到后续恢复启用。</p>
           </div>
         </div>
-        <div className="flow-board">
+        <div className="flow-diagram">
           {disableFlowSteps.map((step, index) => (
-            <article className="flow-step" key={step.title}>
+            <article className="flow-step" key={step.title} style={{ '--step-index': index }}>
               <div className="flow-index">{String(index + 1).padStart(2, '0')}</div>
               <div>
                 <strong>{step.title}</strong>
@@ -515,14 +599,35 @@ function DisableRequirementPage() {
         <div className="requirement-section-head">
           <span />
           <div>
+            <h2>用户与权限边界</h2>
+            <p>禁用权不直接下放给普通经销商和终端用户，执行能力集中在高权限后台。</p>
+          </div>
+        </div>
+        <div className="role-boundary-grid">
+          {roleBoundaryCards.map(([role, desc]) => (
+            <article className="role-boundary-card" key={role}>
+              <UserRound size={18} />
+              <strong>{role}</strong>
+              <p>{desc}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
             <h2>典型场景链路</h2>
             <p>四类禁用场景共用单设备禁用能力，但核验重点和对外口径不同。</p>
           </div>
         </div>
         <div className="scenario-grid">
           {disableScenarioCards.map((scenario) => (
-            <article className="scenario-card" key={scenario.title}>
+            <article className={cls('scenario-card', scenario.tone)} key={scenario.title}>
+              <ScenarioIllustration tone={scenario.tone} />
               <h3>{scenario.title}</h3>
+              <p className="scenario-summary">{scenario.summary}</p>
               <dl>
                 <div>
                   <dt>触发</dt>
@@ -543,6 +648,96 @@ function DisableRequirementPage() {
               </dl>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
+            <h2>禁用类型与阶段规划</h2>
+            <p>第一阶段只做单设备正式禁用和恢复，临时禁用与批量禁用作为独立迭代。</p>
+          </div>
+        </div>
+        <div className="type-table" role="table" aria-label="禁用类型建议">
+          <div role="row">
+            <span role="columnheader">禁用类型</span>
+            <span role="columnheader">适用场景</span>
+            <span role="columnheader">阶段建议</span>
+          </div>
+          {disableTypeRows.map(([type, scene, phase]) => (
+            <div role="row" key={type}>
+              <strong role="cell">{type}</strong>
+              <span role="cell">{scene}</span>
+              <b role="cell">{phase}</b>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="requirement-section">
+        <div className="requirement-section-head">
+          <span />
+          <div>
+            <h2>影响范围与增值服务处理</h2>
+            <p>禁用动作只改变设备使用能力，不自动处理订单、退款、延期或补偿。</p>
+          </div>
+        </div>
+        <div className="impact-briefing">
+          <div className="impact-illustration" aria-hidden="true">
+            <div className="device-tower">
+              <span />
+              <i />
+            </div>
+            <div className="impact-rings">
+              <span>绑定</span>
+              <span>实时</span>
+              <span>服务</span>
+              <span>审计</span>
+            </div>
+          </div>
+          <ul>
+            {impactItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="requirement-split">
+        <div className="requirement-section compact">
+          <div className="requirement-section-head">
+            <span />
+            <div>
+              <h2>审计日志</h2>
+              <p>每次禁用或恢复都必须留下可追溯证据。</p>
+            </div>
+          </div>
+          <div className="audit-list">
+            {auditItems.map((item, index) => (
+              <div key={item}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <p>{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="requirement-section compact">
+          <div className="requirement-section-head">
+            <span />
+            <div>
+              <h2>状态流转</h2>
+              <p>第一阶段可以先落地最小闭环，后续扩展申请中状态。</p>
+            </div>
+          </div>
+          <div className="state-flow">
+            {stateFlow.map((state, index) => (
+              <React.Fragment key={`${state}-${index}`}>
+                <span>{state}</span>
+                {index < stateFlow.length - 1 && <i aria-hidden="true" />}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -583,7 +778,58 @@ function DisableRequirementPage() {
           </div>
         </div>
       </section>
+
     </section>
+  );
+}
+
+function ScenarioIllustration({ tone }) {
+  const visual = {
+    refund: (
+      <>
+        <rect x="24" y="40" width="58" height="70" rx="10" />
+        <path d="M38 58h30M38 74h22M38 90h18" />
+        <circle cx="112" cy="70" r="24" />
+        <path d="M104 70h18M112 60v20" />
+        <path d="M80 86c18 0 24 18 42 18" />
+      </>
+    ),
+    lost: (
+      <>
+        <rect x="36" y="38" width="44" height="76" rx="12" />
+        <path d="M48 56h20M48 90h20" />
+        <path d="M104 54l22 22-22 22-22-22z" />
+        <path d="M104 68v18M104 94v2" />
+        <path d="M28 124c24-14 82-14 106 0" />
+      </>
+    ),
+    payment: (
+      <>
+        <rect x="24" y="46" width="48" height="50" rx="8" />
+        <rect x="92" y="46" width="48" height="50" rx="8" />
+        <path d="M72 70h20" />
+        <path d="M86 64l7 6-7 6" />
+        <path d="M36 112h92" />
+        <path d="M46 112v-10M118 112v-10" />
+        <circle cx="82" cy="112" r="10" />
+      </>
+    ),
+    risk: (
+      <>
+        <path d="M82 34l44 18v30c0 28-18 48-44 58-26-10-44-30-44-58V52z" />
+        <path d="M82 58v36M82 106v3" />
+        <path d="M54 82h56" />
+        <circle cx="82" cy="82" r="30" />
+      </>
+    ),
+  };
+
+  return (
+    <div className="scenario-illustration" aria-hidden="true">
+      <svg viewBox="0 0 164 148" role="img">
+        <g>{visual[tone]}</g>
+      </svg>
+    </div>
   );
 }
 
