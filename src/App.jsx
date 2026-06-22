@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CircleHelp,
   Cloud,
   Cpu,
   Database,
@@ -42,6 +41,7 @@ import {
   alarmLogs,
   boundUsers,
   device,
+  deviceSamples,
   loginLogs,
   mapRanking,
   p2pTimeline,
@@ -58,13 +58,6 @@ const ReactECharts = lazy(() => import('echarts-for-react'));
 const MAIN_TABS = ['添加该设备的用户', '增值服务', '日志记录', '设备状态', '物联网卡'];
 const ITERATION_TABS = ['基础信息', '绑定用户', '设备状态', '增值服务', '日志记录', '物联网卡', '设备履历'];
 const ITERATION_LOG_TABS = ['登录日志', '重置记录', '报警日志', '低功耗日志', '操作日志'];
-const ITERATION_VIEW_STATES = [
-  { key: 'normal', label: '正常' },
-  { key: 'loading', label: 'Loading' },
-  { key: 'empty', label: 'Empty' },
-  { key: 'error', label: 'Error' },
-  { key: 'forbidden', label: 'Forbidden' },
-];
 
 const serviceIcons = [
   Activity,
@@ -352,93 +345,6 @@ const detailAnnotationItems = [
   },
 ];
 
-const iterationBasicGroups = [
-  {
-    title: '身份信息',
-    items: [
-      ['设备ID', device.id],
-      ['SN / 序列号', '暂无数据'],
-      ['UUID', '暂无数据'],
-      ['IMEI', device.imei],
-      ['ICCID', simCards[0]?.number || '暂无数据'],
-      ['MAC', '暂无数据'],
-    ],
-  },
-  {
-    title: '产品与能力',
-    items: [
-      ['产品线', 'IPC'],
-      ['设备型号', device.model],
-      ['机型型号', 'BG66DR-V2'],
-      ['连接类型', device.connectType],
-      ['网络类型', device.usesWifi ? 'Wi-Fi' : '4G'],
-      ['电量类型', '电池供电'],
-      ['是否低功耗', '是'],
-      ['是否支持TF卡', device.usesTfCard ? '是' : '否'],
-      ['当前固件版本', device.firmware],
-    ],
-  },
-  {
-    title: '生产信息',
-    items: [
-      ['生产工厂', device.factory],
-      ['生产时间', device.productionTime],
-      ['生产批次', '暂未接入'],
-    ],
-  },
-  {
-    title: '激活与归属',
-    items: [
-      ['激活状态', device.activated ? '已激活' : '未激活'],
-      ['激活时间', device.activationTime],
-      ['归属组织', device.organization],
-      ['经销商', '中性'],
-      ['服务大区', device.region],
-      ['所在地', device.location],
-    ],
-  },
-  {
-    title: '可用与限制状态',
-    items: [
-      ['设备可用状态', device.disabled ? '禁用' : '正常'],
-      ['MQTT / TCP 拉黑状态', '未拉黑'],
-      ['影子拉黑状态', '未拉黑'],
-      ['移动推送受限', device.mobilePushPermission],
-      ['最近状态变更', defaultDisableRecords[0]?.time || '暂无记录'],
-    ],
-  },
-];
-
-const iterationStatusGroups = [
-  {
-    title: '在线与连接',
-    items: [
-      ['P2P状态', device.p2p.status],
-      ['最后登录时间', device.p2p.lastLogin],
-      ['低功耗状态', device.p2p.lowPowerStatus],
-      ['最后一次心跳时间', device.p2p.lastWakeTime],
-    ],
-  },
-  {
-    title: '能力状态',
-    items: [
-      ['实时预览', device.disabled ? '受限' : '可用'],
-      ['远程控制', device.disabled ? '受限' : '可用'],
-      ['配置下发', device.disabled ? '受限' : '可用'],
-      ['告警推送', device.disabled ? '受限' : '可用'],
-    ],
-  },
-  {
-    title: '限制状态',
-    items: [
-      ['设备使用状态', device.disabled ? '禁用' : '正常'],
-      ['新增绑定', device.disabled ? '禁止' : '允许'],
-      ['服务购买', device.disabled ? '暂不可用' : '允许'],
-      ['历史记录查看', '保留'],
-    ],
-  },
-];
-
 const iterationOperationLogs = [
   {
     time: '2026-06-13 15:06:32',
@@ -466,46 +372,48 @@ const iterationOperationLogs = [
   },
 ];
 
-const iterationLifecycleTracks = [
-  {
-    title: '资产生命周期',
-    desc: '关注设备作为公司资产或商品的流转，当前阶段只呈现已接入节点，未接入节点保留占位。',
-    current: '销售后使用中',
-    nodes: [
-      ['生产', '完成', device.productionTime],
-      ['质检', '暂未接入', '--'],
-      ['入库', '暂未接入', '--'],
-      ['出库', '暂未接入', '--'],
-      ['销售', '推断', '已激活前'],
-      ['维修 / 翻新 / 报废', '暂未接入', '--'],
-    ],
-  },
-  {
-    title: '使用生命周期',
-    desc: '关注设备是否真正被客户使用，是运维和客服判断问题归因的主线。',
-    current: '已绑定 · 当前休眠',
-    nodes: [
-      ['未激活', '完成', '--'],
-      ['已激活', '完成', device.activationTime],
-      ['已绑定', '完成', boundUsers[0]?.addedAt || '--'],
-      ['运行中', '历史发生', '2026-06-11 15:16:50'],
-      ['离线 / 休眠', '当前', device.p2p.lastWakeTime],
-      ['停用 / 解绑 / 退役', '未发生', '--'],
-    ],
-  },
-  {
-    title: '安全生命周期',
-    desc: '关注联网、配置、告警、故障与远程排查线索，当前不承诺自动诊断结论。',
-    current: '有告警 · 需结合日志判断',
-    nodes: [
-      ['出厂固件', '已记录', device.firmware],
-      ['首次联网', '已发生', device.activationTime],
-      ['配置下发', '暂未接入', '--'],
-      ['告警', '有记录', alarmLogs[0]?.beijing || '--'],
-      ['故障 / 诊断 / 修复', '暂未接入', '--'],
-    ],
-  },
-];
+function getIterationLifecycleTracks(deviceInfo) {
+  return [
+    {
+      title: '资产生命周期',
+      desc: '关注设备作为公司资产或商品的流转，当前阶段只呈现已接入节点，未接入节点保留占位。',
+      current: '销售后使用中',
+      nodes: [
+        ['生产', '完成', deviceInfo.productionTime],
+        ['质检', '暂未接入', '--'],
+        ['入库', '暂未接入', '--'],
+        ['出库', '暂未接入', '--'],
+        ['销售', deviceInfo.activated ? '推断' : '未发生', deviceInfo.activated ? '已激活前' : '--'],
+        ['维修 / 翻新 / 报废', '暂未接入', '--'],
+      ],
+    },
+    {
+      title: '使用生命周期',
+      desc: '关注设备是否真正被客户使用，是运维和客服判断问题归因的主线。',
+      current: deviceInfo.activated ? `已绑定 · ${deviceInfo.p2p.lowPowerStatus}` : '未激活',
+      nodes: [
+        ['未激活', deviceInfo.activated ? '完成' : '当前', '--'],
+        ['已激活', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activationTime],
+        ['已绑定', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activated ? boundUsers[0]?.addedAt || '--' : '--'],
+        ['运行中', deviceInfo.p2p.status === '在线' ? '当前' : '历史发生', deviceInfo.p2p.lastLogin],
+        ['离线 / 休眠', deviceInfo.p2p.status === '在线' ? '未发生' : '当前', deviceInfo.p2p.lastWakeTime],
+        ['停用 / 解绑 / 退役', deviceInfo.disabled ? '当前' : '未发生', '--'],
+      ],
+    },
+    {
+      title: '安全生命周期',
+      desc: '关注联网、配置、告警、故障与远程排查线索，当前不承诺自动诊断结论。',
+      current: deviceInfo.activated ? '有告警 · 需结合日志判断' : '未接入',
+      nodes: [
+        ['出厂固件', '已记录', deviceInfo.firmware],
+        ['首次联网', deviceInfo.activated ? '已发生' : '未发生', deviceInfo.activationTime],
+        ['配置下发', '暂未接入', '--'],
+        ['告警', deviceInfo.activated ? '有记录' : '暂无', deviceInfo.activated ? alarmLogs[0]?.beijing || '--' : '--'],
+        ['故障 / 诊断 / 修复', '暂未接入', '--'],
+      ],
+    },
+  ];
+}
 
 const iterationLifecycleEvents = [
   ['2024-04-23 20:09:00', '生产', '设备生产完成，工厂信息已记录。'],
@@ -517,100 +425,323 @@ const iterationLifecycleEvents = [
   ['2026-06-13 15:06:32', '恢复', '复核后恢复设备使用状态。'],
 ];
 
-const iterationLifecycleFlow = [
-  ['生产', '完成', device.productionTime, 'done'],
-  ['激活', '完成', device.activationTime, 'done'],
-  ['绑定', '完成', boundUsers[0]?.addedAt || '--', 'done'],
-  ['运行 / 休眠', '当前', device.p2p.lowPowerStatus, 'current'],
-  ['告警', '有记录', alarmLogs[0]?.beijing || '--', 'warn'],
-  ['禁用 / 恢复', '已发生', defaultDisableRecords[0]?.time || '--', 'done'],
-];
+function getIterationBasicGroups(deviceInfo) {
+  return [
+    {
+      title: '身份信息',
+      items: [
+        ['设备ID', deviceInfo.id],
+        ['设备型号', deviceInfo.model],
+        ['机型型号', deviceInfo.modelCode],
+        ['产品线', deviceInfo.productLine],
+        ['SN / 序列号', '暂无数据'],
+        ['UUID', '暂无数据'],
+        ['IMEI', deviceInfo.imei],
+        ['ICCID', simCards[0]?.number || '暂无数据'],
+        ['MAC', '暂无数据'],
+      ],
+    },
+    {
+      title: '产品与能力',
+      items: [
+        ['连接类型', deviceInfo.connectType],
+        ['网络类型', deviceInfo.usesWifi ? 'Wi-Fi' : '4G'],
+        ['电量类型', deviceInfo.connectType.includes('低功耗') ? '电池供电' : '市电供电'],
+        ['是否低功耗', deviceInfo.connectType.includes('低功耗') ? '是' : '否'],
+        ['是否支持TF卡', deviceInfo.usesTfCard ? '是' : '否'],
+        ['当前固件版本', deviceInfo.firmware],
+      ],
+    },
+    {
+      title: '生产信息',
+      items: [
+        ['生产工厂', deviceInfo.factory],
+        ['生产时间', deviceInfo.productionTime],
+        ['生产批次', '暂未接入'],
+      ],
+    },
+    {
+      title: '激活与归属',
+      items: [
+        ['激活状态', deviceInfo.activated ? '已激活' : '未激活'],
+        ['激活时间', deviceInfo.activationTime],
+        ['归属组织', deviceInfo.organization],
+        ['经销商', '中性'],
+        ['服务大区', deviceInfo.region],
+        ['所在地', deviceInfo.location],
+      ],
+    },
+    {
+      title: '可用与限制状态',
+      items: [
+        ['设备可用状态', deviceInfo.disabled ? '禁用' : '正常'],
+        ['MQTT / TCP 拉黑状态', '未拉黑'],
+        ['影子拉黑状态', '未拉黑'],
+        ['移动推送受限', deviceInfo.mobilePushPermission],
+        ['最近状态变更', deviceInfo.disabled ? defaultDisableRecords[0]?.time || '暂无记录' : '暂无记录'],
+      ],
+    },
+  ];
+}
 
-const diagnosisScenarios = [
-  {
-    title: '设备离线 / 无法实时预览',
-    status: '需关注',
-    links: ['设备状态', '低功耗日志', '物联网卡'],
-    checks: [
-      ['最近心跳', device.p2p.lastWakeTime, '需结合低功耗休眠判断'],
-      ['P2P状态', device.p2p.status, '信息不足'],
-      ['低功耗状态', device.p2p.lowPowerStatus, '可能影响实时唤醒'],
-    ],
-    next: '建议先查看设备状态与低功耗日志，再判断是否需要转研发排查。',
-  },
-  {
-    title: '用户看不到设备 / 无法使用',
-    status: '正常',
-    links: ['绑定用户', '操作日志', '基础信息'],
-    checks: [
-      ['绑定用户', `${boundUsers.length} 个`, '已有主账号绑定'],
-      ['设备可用状态', device.disabled ? '禁用' : '正常', device.disabled ? '可能影响使用' : '未发现限制'],
-      ['新增绑定', device.disabled ? '禁止' : '允许', '根据可用状态判断'],
-    ],
-    next: '建议查看绑定用户与操作日志，确认是否存在解绑、转移或禁用记录。',
-  },
-  {
-    title: '云存储无录像 / 有报警无文件',
-    status: '信息不足',
-    links: ['增值服务', '报警日志', '资源文件'],
-    checks: [
-      ['告警云存', '有效中 · 历史录像可查看', '需结合云存系统'],
-      ['最近报警', alarmLogs[0]?.beijing || '--', '有报警记录'],
-      ['资源文件', '仅图片', '可能无视频文件'],
-    ],
-    next: '建议查看增值服务状态和报警日志，必要时到云存系统继续核验。',
-  },
-  {
-    title: '4G 设备不上线 / 上传异常',
-    status: '需关注',
-    links: ['物联网卡', '登录日志', '服务大区'],
-    checks: [
-      ['连接类型', device.connectType, '4G低功耗设备'],
-      ['物联网卡', `${simCards.length} 张插卡记录`, '需确认当前卡'],
-      ['服务大区', device.region, '需确认卡与区域匹配'],
-    ],
-    next: '建议查看物联网卡记录、登录IP和最近心跳，判断是否为卡、区域或网络问题。',
-  },
-  {
-    title: '设备被禁用 / 使用受限',
-    status: device.disabled ? '需关注' : '正常',
-    links: ['基础信息', '绑定用户', '增值服务', '操作日志'],
-    checks: [
-      ['设备使用状态', device.disabled ? '禁用' : '正常', '影响核心能力'],
-      ['服务影响', '不自动退款 / 延期 / 转移', '需客服解释'],
-      ['操作记录', `${iterationOperationLogs.length} 条`, '可追溯'],
-    ],
-    next: '建议查看基础信息的可用状态、绑定用户提示、增值服务提示和操作日志。',
-  },
-];
+function getIterationStatusGroups(deviceInfo) {
+  return [
+    {
+      title: '在线与连接',
+      items: [
+        ['P2P状态', deviceInfo.p2p.status],
+        ['最后登录时间', deviceInfo.p2p.lastLogin],
+        ['低功耗状态', deviceInfo.p2p.lowPowerStatus],
+        ['最后一次心跳时间', deviceInfo.p2p.lastWakeTime],
+      ],
+    },
+    {
+      title: '能力状态',
+      items: [
+        ['实时预览', deviceInfo.disabled ? '受限' : '可用'],
+        ['远程控制', deviceInfo.disabled ? '受限' : '可用'],
+        ['配置下发', deviceInfo.disabled ? '受限' : '可用'],
+        ['告警推送', deviceInfo.disabled ? '受限' : '可用'],
+      ],
+    },
+    {
+      title: '限制状态',
+      items: [
+        ['设备使用状态', deviceInfo.disabled ? '禁用' : '正常'],
+        ['新增绑定', deviceInfo.disabled ? '禁止' : '允许'],
+        ['服务购买', deviceInfo.disabled ? '暂不可用' : '允许'],
+        ['历史记录查看', '保留'],
+      ],
+    },
+  ];
+}
 
-const iterationTopStatuses = [
-  ['激活', device.activated ? '已激活' : '未激活', device.activated ? 'normal' : 'muted'],
-  ['绑定', boundUsers.length ? '已绑定' : '未绑定', boundUsers.length ? 'normal' : 'muted'],
-  ['运行', device.p2p.lowPowerStatus, 'warn'],
-  ['可用', device.disabled ? '禁用' : '正常', device.disabled ? 'danger' : 'normal'],
-];
+function getIterationTopStatuses(deviceInfo) {
+  const isBound = deviceInfo.activated && boundUsers.length > 0;
+  const runTone = deviceInfo.p2p.lowPowerStatus === '在线' ? 'normal' : deviceInfo.p2p.lowPowerStatus === '未运行' ? 'muted' : 'warn';
 
-const iterationInsightItems = [
-  ['设备可用状态', device.disabled ? '设备禁用，用户核心能力受限' : '设备当前可用', device.disabled ? 'danger' : 'normal'],
-  ['连接状态', 'P2P 获取失败，需结合低功耗休眠判断', 'warn'],
-  ['录像线索', '最近告警仅图片，云录像需结合服务侧确认', 'unknown'],
-];
+  return [
+    {
+      key: 'availability',
+      label: '使用限制',
+      value: deviceInfo.disabled ? '已禁用' : '正常使用',
+      tone: deviceInfo.disabled ? 'danger' : 'normal',
+      desc: deviceInfo.disabled ? '实时预览/远控受限' : '核心能力可用',
+    },
+    {
+      key: 'activation',
+      label: '设备生命周期',
+      value: deviceInfo.activated ? '已激活' : '未激活',
+      tone: deviceInfo.activated ? 'normal' : 'muted',
+      desc: deviceInfo.activated ? `激活 ${deviceInfo.activationTime}` : '暂无用户侧数据',
+    },
+    {
+      key: 'binding',
+      label: '用户绑定',
+      value: isBound ? '已绑定' : '未绑定',
+      tone: isBound ? 'normal' : 'muted',
+      desc: isBound ? `${boundUsers.length} 个用户` : '暂无绑定关系',
+    },
+    {
+      key: 'runtime',
+      label: '联网运行',
+      value: deviceInfo.p2p.lowPowerStatus,
+      tone: runTone,
+      desc: deviceInfo.p2p.status === '在线' ? 'P2P 在线' : `P2P ${deviceInfo.p2p.status}`,
+    },
+  ];
+}
 
-const iterationHeroMetaItems = [
-  ['设备型号', device.model],
-  ['当前固件', device.firmware],
-  ['服务大区', device.region],
-];
+function getIterationOverviewCards(deviceInfo) {
+  const p2pTone = deviceInfo.p2p.status === '在线' ? 'normal' : deviceInfo.p2p.status === '未接入' ? 'muted' : 'danger';
+  const runTone = deviceInfo.p2p.lowPowerStatus === '在线' ? 'normal' : deviceInfo.p2p.lowPowerStatus === '休眠' ? 'warn' : 'muted';
 
-function getIterationModuleMeta(tab) {
+  return [
+    {
+      key: 'lifecycle',
+      label: '设备生命周期',
+      value: deviceInfo.activated ? '已激活' : '未激活',
+      desc: `激活时间：${deviceInfo.activationTime}`,
+      tone: deviceInfo.activated ? 'normal' : 'muted',
+      icon: CheckCircle2,
+    },
+    {
+      key: 'runtime',
+      label: '运行状态',
+      value: deviceInfo.p2p.lowPowerStatus,
+      desc: `最近心跳：${deviceInfo.p2p.lastWakeTime}`,
+      tone: runTone,
+      icon: Activity,
+    },
+    {
+      key: 'p2p',
+      label: 'P2P 状态',
+      value: deviceInfo.p2p.status === '在线' ? '正常' : deviceInfo.p2p.status === '获取失败' ? '异常' : deviceInfo.p2p.status,
+      desc: `最近在线：${deviceInfo.p2p.lastWakeTime}`,
+      tone: p2pTone,
+      icon: ShieldCheck,
+    },
+    {
+      key: 'mqtt',
+      label: 'MQTT 状态',
+      value: deviceInfo.disabled ? '正常' : '正常',
+      desc: '延迟：32ms',
+      tone: 'normal',
+      icon: RadioTower,
+    },
+  ];
+}
+
+function getIterationQuickFacts(deviceInfo) {
+  return [
+    { icon: FileClock, label: '最近心跳', value: deviceInfo.p2p.lastWakeTime },
+    { icon: History, label: '最近上线', value: deviceInfo.p2p.lastLogin },
+    { icon: Gauge, label: '当前运行', value: deviceInfo.p2p.lowPowerStatus },
+    { icon: MapPin, label: '位置', value: deviceInfo.location },
+  ];
+}
+
+function getDeviceIdentitySummary(deviceInfo) {
+  const productTypeMap = {
+    IPC: 'IPC 摄像机',
+    BK: 'BK 电池设备',
+    NVR: 'NVR 录像机',
+    车载: '车载设备',
+  };
+  const powerType = deviceInfo.connectType.includes('低功耗') ? '低功耗' : '长电';
+  const networkType = deviceInfo.connectType.includes('4G')
+    ? '4G'
+    : deviceInfo.connectType.includes('以太网')
+      ? '有线网络'
+      : deviceInfo.usesWifi
+        ? 'Wi-Fi'
+        : '4G';
+
+  return {
+    productType: productTypeMap[deviceInfo.productLine] || `${deviceInfo.productLine || '通用'} 设备`,
+    powerType,
+    networkType,
+    firmware: deviceInfo.firmware,
+  };
+}
+
+function getIterationHeroMetaItems(deviceInfo) {
+  return [
+    ['机型', deviceInfo.modelCode],
+    ['产线', deviceInfo.productLine],
+    ['当前固件', deviceInfo.firmware],
+    ['服务大区', deviceInfo.region],
+  ];
+}
+
+function getDeviceOnlineSnapshot(deviceInfo) {
+  const invalidValues = new Set(['暂无数据', '获取失败', '--', '', null, undefined]);
+  const hasLastLogin = !invalidValues.has(deviceInfo.p2p?.lastLogin);
+  const hasLastWakeTime = !invalidValues.has(deviceInfo.p2p?.lastWakeTime);
+  const isOnline = deviceInfo.p2p?.status === '在线';
+  const isNotActivated = !deviceInfo.activated;
+  const refreshText = isOnline ? '在线状态约 1 分钟刷新' : '页面刷新 / 切换设备时更新';
+
+  if (isNotActivated) {
+    return {
+      tone: 'muted',
+      title: '暂无在线记录',
+      items: [
+        ['最近在线', '未激活'],
+        ['数据更新', refreshText],
+      ],
+    };
+  }
+
+  if (isOnline) {
+    return {
+      tone: 'online',
+      title: '实时在线',
+      items: [
+        ['最近上线', hasLastLogin ? deviceInfo.p2p.lastLogin : '暂无记录'],
+        ['状态更新', hasLastWakeTime ? deviceInfo.p2p.lastWakeTime : '暂无记录'],
+        ['刷新频率', refreshText],
+      ],
+    };
+  }
+
+  return {
+    tone: deviceInfo.p2p?.lowPowerStatus === '休眠' ? 'sleep' : 'offline',
+    title: deviceInfo.p2p?.lowPowerStatus === '休眠' ? '最近唤醒' : '最近在线',
+    items: [
+      ['最近在线', hasLastLogin ? deviceInfo.p2p.lastLogin : hasLastWakeTime ? deviceInfo.p2p.lastWakeTime : '暂无记录'],
+      ['最后心跳', hasLastWakeTime ? deviceInfo.p2p.lastWakeTime : '暂无记录'],
+      ['数据更新', refreshText],
+    ],
+  };
+}
+
+const productLineVisuals = {
+  IPC: {
+    label: 'IPC 默认图',
+    className: 'ipc',
+  },
+  BK: {
+    label: 'BK 默认图',
+    className: 'bk',
+  },
+  NVR: {
+    label: 'NVR 默认图',
+    className: 'nvr',
+  },
+  车载: {
+    label: '车载默认图',
+    className: 'vehicle',
+  },
+};
+
+function getDeviceImage(deviceInfo) {
+  const lineVisual = productLineVisuals[deviceInfo.productLine] || {
+    label: '通用设备图',
+    className: 'generic',
+  };
+
+  if (deviceInfo.imageUrl) {
+    return {
+      type: 'image',
+      src: deviceInfo.imageUrl,
+      label: deviceInfo.modelCode,
+      source: deviceInfo.imageSource || '产品资料库',
+      className: lineVisual.className,
+    };
+  }
+
+  return {
+    type: 'fallback',
+    label: lineVisual.label,
+    source: deviceInfo.imageSource || '产线默认图',
+    className: lineVisual.className,
+  };
+}
+
+function getIterationModuleMeta(tab, deviceInfo = device) {
+  const activeServiceCount = 1;
+  const totalLogCount = loginLogs.length + resetLogs.length + alarmLogs.length + p2pTimeline.length + iterationOperationLogs.length;
+  const boundUserSummary = deviceInfo.activated && boundUsers.length
+    ? `${boundUsers.length} 个用户 · ${boundUsers[0]?.role || '已绑定'}`
+    : deviceInfo.activated
+      ? '已激活 · 未绑定'
+      : '未激活 · 无绑定';
+  const simSummary = simCards.length ? `${simCards.length} 张卡 · ${simCards[0]?.type || '插卡记录'}` : '无插卡记录';
+  const lifecycleSummary = deviceInfo.activated ? `已激活 · ${deviceInfo.p2p.lowPowerStatus}` : '未激活 · 未运行';
+
   const meta = {
     基础信息: {
       icon: Info,
       eyebrow: 'Identity',
       title: '基础信息',
-      desc: '汇总设备身份、产品能力、生产归属和可用限制，是客服核对设备对象的第一屏。',
-      metric: '5 组字段',
+      metric: `身份 / 归属 / ${deviceInfo.disabled ? '已禁用' : '正常使用'}`,
+      summary: '核对设备身份、归属和使用限制字段。',
+      points: [
+        { label: '档案', value: '身份完整', tone: 'normal' },
+        { label: '归属', value: deviceInfo.region, tone: 'neutral' },
+        { label: '限制', value: deviceInfo.disabled ? '已禁用' : '正常使用', tone: deviceInfo.disabled ? 'danger' : 'normal' },
+      ],
       tag: '主档案',
       status: '完整',
       statusTone: 'normal',
@@ -620,30 +751,45 @@ function getIterationModuleMeta(tab) {
       icon: UserRound,
       eyebrow: 'Binding',
       title: '绑定用户',
-      desc: '确认当前设备绑定关系、主账号和用户侧影响，禁用状态下优先检查这一模块。',
-      metric: `${boundUsers.length} 个用户`,
+      metric: boundUserSummary,
+      summary: '查看绑定关系、主账号和用户侧影响。',
+      points: [
+        { label: '关系', value: deviceInfo.activated && boundUsers.length ? `${boundUsers.length} 个用户` : '暂无绑定', tone: deviceInfo.activated && boundUsers.length ? 'normal' : 'muted' },
+        { label: '主账号', value: deviceInfo.activated && boundUsers.length ? boundUsers[0]?.userId || '--' : '未产生', tone: deviceInfo.activated && boundUsers.length ? 'neutral' : 'muted' },
+        { label: '影响', value: deviceInfo.disabled ? '能力受限' : '关系正常', tone: deviceInfo.disabled ? 'warn' : 'normal' },
+      ],
       tag: '关系',
-      status: boundUsers.length ? '已绑定' : '未绑定',
-      statusTone: boundUsers.length ? 'normal' : 'muted',
+      status: deviceInfo.activated && boundUsers.length ? '已绑定' : '未绑定',
+      statusTone: deviceInfo.activated && boundUsers.length ? 'normal' : 'muted',
       tone: 'people',
     },
     设备状态: {
       icon: Activity,
       eyebrow: 'Runtime',
       title: '设备状态',
-      desc: '查看 P2P、低功耗、核心能力和限制状态，帮助判断离线与使用受限原因。',
-      metric: device.p2p.lowPowerStatus,
+      metric: `${deviceInfo.p2p.status} · ${deviceInfo.p2p.lowPowerStatus}`,
+      summary: '判断 P2P、低功耗、心跳和能力可用性。',
+      points: [
+        { label: 'P2P', value: deviceInfo.p2p.status, tone: deviceInfo.p2p.status === '在线' ? 'normal' : 'warn' },
+        { label: '运行', value: deviceInfo.p2p.lowPowerStatus, tone: deviceInfo.p2p.lowPowerStatus === '在线' ? 'normal' : deviceInfo.p2p.lowPowerStatus === '未运行' ? 'muted' : 'warn' },
+        { label: '心跳', value: deviceInfo.p2p.lastWakeTime, tone: deviceInfo.p2p.lastWakeTime === '暂无数据' ? 'muted' : 'neutral' },
+      ],
       tag: '运行',
-      status: '需关注',
-      statusTone: 'warn',
+      status: deviceInfo.p2p.status === '在线' ? '在线' : '需关注',
+      statusTone: deviceInfo.p2p.status === '在线' ? 'normal' : 'warn',
       tone: 'runtime',
     },
     增值服务: {
       icon: Cloud,
       eyebrow: 'Service',
       title: '增值服务',
-      desc: '展示云存、识别等服务开通情况和禁用期间服务处理边界。',
-      metric: '1 项有效',
+      metric: `${activeServiceCount} 项有效 · ${deviceInfo.disabled ? '购买受限' : '服务正常'}`,
+      summary: '查看已开通服务和禁用期间的处理边界。',
+      points: [
+        { label: '已开通', value: `${activeServiceCount} 项`, tone: 'normal' },
+        { label: '未开通', value: `${services.length - activeServiceCount} 项`, tone: 'muted' },
+        { label: '处理', value: deviceInfo.disabled ? '购买续费受限' : '服务正常', tone: deviceInfo.disabled ? 'warn' : 'normal' },
+      ],
       tag: '服务',
       status: '部分有效',
       statusTone: 'normal',
@@ -653,8 +799,13 @@ function getIterationModuleMeta(tab) {
       icon: History,
       eyebrow: 'Audit',
       title: '日志记录',
-      desc: '按类型查看登录、重置、报警、低功耗和操作日志，为排查提供时间证据。',
-      metric: `${loginLogs.length + resetLogs.length + alarmLogs.length + p2pTimeline.length + iterationOperationLogs.length} 条线索`,
+      metric: `${totalLogCount} 条线索 · 近 30 天`,
+      summary: '用时间证据确认登录、告警和操作变化。',
+      points: [
+        { label: '线索', value: `${totalLogCount} 条`, tone: 'normal' },
+        { label: '最近', value: iterationOperationLogs[0]?.time || '--', tone: 'neutral' },
+        { label: '类型', value: `${ITERATION_LOG_TABS.length} 类日志`, tone: 'neutral' },
+      ],
       tag: '证据',
       status: '可追溯',
       statusTone: 'normal',
@@ -664,8 +815,13 @@ function getIterationModuleMeta(tab) {
       icon: RadioTower,
       eyebrow: 'SIM',
       title: '物联网卡',
-      desc: '展示当前设备插卡记录和卡类型，卡侧套餐、实名和停复机不在本阶段展开。',
-      metric: `${simCards.length} 张卡`,
+      metric: simSummary,
+      summary: '核对 4G 设备插卡记录和卡类型。',
+      points: [
+        { label: '插卡', value: simCards.length ? `${simCards.length} 张` : '无记录', tone: simCards.length ? 'normal' : 'muted' },
+        { label: '类型', value: simCards[0]?.type || '--', tone: simCards.length ? 'neutral' : 'muted' },
+        { label: '联网', value: deviceInfo.connectType.includes('4G') ? '4G 设备' : '非 4G', tone: deviceInfo.connectType.includes('4G') ? 'warn' : 'neutral' },
+      ],
       tag: '网络',
       status: '需核验',
       statusTone: 'warn',
@@ -675,8 +831,13 @@ function getIterationModuleMeta(tab) {
       icon: Layers,
       eyebrow: 'Lifecycle',
       title: '设备履历',
-      desc: '串联生产、激活、绑定、运行、告警和禁用恢复，形成设备全链路判断。',
-      metric: `${iterationLifecycleEvents.length} 个事件`,
+      metric: lifecycleSummary,
+      summary: '串联生产、激活、绑定、运行和禁用恢复记录。',
+      points: [
+        { label: '阶段', value: deviceInfo.activated ? '已激活' : '未激活', tone: deviceInfo.activated ? 'normal' : 'muted' },
+        { label: '当前', value: deviceInfo.p2p.lowPowerStatus, tone: deviceInfo.p2p.lowPowerStatus === '在线' ? 'normal' : 'warn' },
+        { label: '事件', value: deviceInfo.activated ? `${iterationLifecycleEvents.length} 条` : '2 条', tone: 'neutral' },
+      ],
       tag: '链路',
       status: '已串联',
       statusTone: 'normal',
@@ -700,7 +861,8 @@ function App() {
   const [annotationMode, setAnnotationMode] = useState(true);
   const [iterationTab, setIterationTab] = useState(ITERATION_TABS[0]);
   const [iterationLogTab, setIterationLogTab] = useState(ITERATION_LOG_TABS[0]);
-  const [diagnosisOpen, setDiagnosisOpen] = useState(false);
+  const [selectedIterationDeviceId, setSelectedIterationDeviceId] = useState(deviceSamples[0]?.id || device.id);
+  const currentIterationDevice = deviceSamples.find((item) => item.id === selectedIterationDeviceId) || deviceSamples[0] || device;
 
   const goDetail = () => {
     setView('detail');
@@ -731,20 +893,28 @@ function App() {
           )}
           {view === 'map' && <MapView />}
           {view === 'disableRequirement' && <DisableRequirementPage />}
+          {view === 'deviceManagement' && (
+            <DeviceManagementPage
+              selectedDeviceId={selectedIterationDeviceId}
+              onOpenDetail={(deviceId) => {
+                setSelectedIterationDeviceId(deviceId);
+                setView('detailIterationScope');
+              }}
+            />
+          )}
           {view === 'detailIterationScope' && (
             <DetailIterationScopePage
+              deviceInfo={currentIterationDevice}
               activeTab={iterationTab}
               setActiveTab={setIterationTab}
               logTab={iterationLogTab}
               setLogTab={setIterationLogTab}
-              onOpenDiagnosis={() => setDiagnosisOpen(true)}
             />
           )}
         </main>
       </div>
 
       {drawer && <SideDrawer type={drawer} records={disableRecords} onClose={() => setDrawer(null)} />}
-      {diagnosisOpen && <AuxDiagnosisDrawer onClose={() => setDiagnosisOpen(false)} />}
       {modal && (
         <DataModal
           type={modal}
@@ -833,6 +1003,13 @@ function Sidebar({ view, onNavigate }) {
           设备查询
         </button>
         <button
+          className={cls('side-item', view === 'deviceManagement' && 'active')}
+          onClick={() => onNavigate('deviceManagement')}
+        >
+          <Database size={16} />
+          设备管理
+        </button>
+        <button
           className={cls('side-item', view === 'detailIterationScope' && 'active')}
           onClick={() => onNavigate('detailIterationScope')}
         >
@@ -883,6 +1060,57 @@ function SearchHome({ query, setQuery, onSubmit }) {
           <span>Enter 快速查询</span>
         </div>
       </div>
+    </section>
+  );
+}
+
+function DeviceManagementPage({ selectedDeviceId, onOpenDetail }) {
+  return (
+    <section className="iteration-page device-management-page">
+      <div className="iteration-topline">
+        <div>
+          <span className="iteration-kicker">设备管理</span>
+          <h1>设备列表</h1>
+        </div>
+        <span className="iteration-stage">{deviceSamples.length} 台设备</span>
+      </div>
+
+      <section className="iteration-device-list" aria-label="设备列表">
+        <div className="iteration-device-list-head">
+          <div>
+            <span>设备列表</span>
+            <strong>按状态查阅不同详情</strong>
+          </div>
+          <small>点击查看进入新版详情页</small>
+        </div>
+        <div className="iteration-device-table" role="table" aria-label="设备列表">
+          <div className="iteration-device-row iteration-device-row-head" role="row">
+            <span>设备</span>
+            <span>状态场景</span>
+            <span>产线 / 机型</span>
+            <span>运行态</span>
+            <span>可用态</span>
+            <span>操作</span>
+          </div>
+          {deviceSamples.map((item) => (
+            <div
+              key={item.id}
+              role="row"
+              className={cls('iteration-device-row', `tone-${item.statusTone}`, selectedDeviceId === item.id && 'active')}
+            >
+              <span className="device-row-main">
+                <strong>{item.id}</strong>
+                <small>{item.scenarioDesc}</small>
+              </span>
+              <span>{item.scenario}</span>
+              <span>{item.productLine} / {item.modelCode}</span>
+              <span>{item.p2p.lowPowerStatus}</span>
+              <b>{item.disabled ? '禁用' : item.activated ? '正常' : '未激活'}</b>
+              <button type="button" onClick={() => onOpenDetail(item.id)}>查看详情</button>
+            </div>
+          ))}
+        </div>
+      </section>
     </section>
   );
 }
@@ -1589,11 +1817,11 @@ function SimPanel() {
   );
 }
 
-function DetailIterationScopePage({ activeTab, setActiveTab, logTab, setLogTab, onOpenDiagnosis }) {
-  const [viewState, setViewState] = useState('normal');
+function DetailIterationScopePage({ deviceInfo, activeTab, setActiveTab, logTab, setLogTab }) {
   const activeTabIndex = ITERATION_TABS.indexOf(activeTab);
   const panelId = `iteration-panel-${activeTabIndex >= 0 ? activeTabIndex : 0}`;
-  const activeMeta = getIterationModuleMeta(activeTab);
+  const activeMeta = getIterationModuleMeta(activeTab, deviceInfo);
+  const recentOperations = iterationOperationLogs.slice(0, 3);
 
   const handleTabKeyDown = (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -1601,212 +1829,184 @@ function DetailIterationScopePage({ activeTab, setActiveTab, logTab, setLogTab, 
     const currentIndex = Math.max(ITERATION_TABS.indexOf(activeTab), 0);
     const nextIndex = getKeyboardIndex(event.key, currentIndex, ITERATION_TABS.length);
     setActiveTab(ITERATION_TABS[nextIndex]);
-    requestAnimationFrame(() => document.getElementById(`iteration-tab-${nextIndex}`)?.focus());
+    requestAnimationFrame(() => document.getElementById(`iteration-tab-${nextIndex}`)?.focus({ preventScroll: true }));
   };
 
   return (
     <section className="iteration-page">
-      <div className="iteration-topline">
-        <div>
-          <span className="iteration-kicker">设备详情新版原型</span>
-          <h1>【202606】详情模块迭代阶段范围</h1>
+      <section className="iteration-console">
+        <div className="iteration-console-bar">
+          <div className="iteration-breadcrumb">
+            <ChevronLeft size={16} />
+            <span>设备中心</span>
+            <span>/</span>
+            <span>设备管理</span>
+            <span>/</span>
+            <strong>设备详情</strong>
+          </div>
+          <div className="iteration-console-actions">
+            <button type="button" aria-label="刷新">
+              <RefreshCw size={15} />
+              <span>刷新</span>
+            </button>
+            <span className="iteration-data-updated">数据更新时间：{deviceInfo.p2p.lastWakeTime}</span>
+          </div>
         </div>
-        <span className="iteration-stage">面向运维 / 客服售后</span>
-      </div>
 
-      <IterationSummary onOpenDiagnosis={onOpenDiagnosis} />
-      <IterationRiskStrip activeTab={activeTab} onOpenDiagnosis={onOpenDiagnosis} />
-      <IterationStateSwitcher value={viewState} onChange={setViewState} />
-      <IterationModuleCards activeTab={activeTab} setActiveTab={setActiveTab} />
+        <IterationDeviceHero deviceInfo={deviceInfo} />
+        <IterationRiskStrip deviceInfo={deviceInfo} />
+        <IterationQuickFacts deviceInfo={deviceInfo} />
 
-      <section className="iteration-workbench">
-        <div className="iteration-workbench-main">
-          <section className="tab-card iteration-tab-card">
-            <div className="tabs iteration-tabs" role="tablist" aria-label="详情模块信息分类" onKeyDown={handleTabKeyDown}>
-              {ITERATION_TABS.map((tab, index) => (
-                <button
-                  key={tab}
-                  id={`iteration-tab-${index}`}
-                  role="tab"
-                  type="button"
-                  aria-selected={activeTab === tab}
-                  aria-controls={`iteration-panel-${index}`}
-                  tabIndex={activeTab === tab ? 0 : -1}
-                  className={cls(activeTab === tab && 'active')}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <div
-              id={panelId}
-              className="tab-content iteration-tab-content"
-              role="tabpanel"
-              aria-labelledby={`iteration-tab-${activeTabIndex >= 0 ? activeTabIndex : 0}`}
-            >
-              <IterationModuleShell meta={activeMeta}>
-                {viewState === 'normal' ? (
-                  <>
-                    {activeTab === '基础信息' && <IterationBasicInfo />}
-                    {activeTab === '绑定用户' && <IterationBoundUsers />}
-                    {activeTab === '设备状态' && <IterationDeviceStatus />}
-                    {activeTab === '增值服务' && <IterationServices />}
-                    {activeTab === '日志记录' && <IterationLogs logTab={logTab} setLogTab={setLogTab} />}
-                    {activeTab === '物联网卡' && <IterationSim />}
-                    {activeTab === '设备履历' && <IterationLifecycle />}
-                  </>
-                ) : (
-                  <IterationPageState type={viewState} onRetry={() => setViewState('normal')} />
-                )}
-              </IterationModuleShell>
-            </div>
-          </section>
-        </div>
-        <IterationAuxRail activeTab={activeTab} onOpenDiagnosis={onOpenDiagnosis} />
+        <section className="tab-card iteration-tab-card">
+          <div className="tabs iteration-tabs" role="tablist" aria-label="详情模块信息分类" onKeyDown={handleTabKeyDown}>
+            {ITERATION_TABS.map((tab, index) => (
+              <button
+                key={tab}
+                id={`iteration-tab-${index}`}
+                role="tab"
+                type="button"
+                aria-selected={activeTab === tab}
+                aria-controls={`iteration-panel-${index}`}
+                tabIndex={activeTab === tab ? 0 : -1}
+                className={cls(activeTab === tab && 'active')}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div
+            id={panelId}
+            className="tab-content iteration-tab-content"
+            role="tabpanel"
+            aria-labelledby={`iteration-tab-${activeTabIndex >= 0 ? activeTabIndex : 0}`}
+          >
+            <IterationModuleShell meta={activeMeta}>
+              {activeTab === '基础信息' && <IterationBasicInfo deviceInfo={deviceInfo} />}
+              {activeTab === '绑定用户' && <IterationBoundUsers deviceInfo={deviceInfo} />}
+              {activeTab === '设备状态' && <IterationDeviceStatus deviceInfo={deviceInfo} />}
+              {activeTab === '增值服务' && <IterationServices deviceInfo={deviceInfo} />}
+              {activeTab === '日志记录' && <IterationLogs deviceInfo={deviceInfo} logTab={logTab} setLogTab={setLogTab} />}
+              {activeTab === '物联网卡' && <IterationSim />}
+              {activeTab === '设备履历' && <IterationLifecycle deviceInfo={deviceInfo} />}
+            </IterationModuleShell>
+          </div>
+        </section>
+
+        <section className="iteration-recent-strip" aria-label="最近操作">
+          <div className="iteration-recent-head">
+            <span>最近操作</span>
+            <strong>{recentOperations.length} 条</strong>
+          </div>
+          <div className="iteration-recent-list">
+            {recentOperations.map((log) => (
+              <article key={`${log.time}-${log.type}`}>
+                <time>{log.time}</time>
+                <strong>{log.type}</strong>
+                <span>{log.result}</span>
+              </article>
+            ))}
+          </div>
+        </section>
       </section>
     </section>
   );
 }
 
-function IterationRiskStrip({ activeTab, onOpenDiagnosis }) {
-  const activeMeta = getIterationModuleMeta(activeTab);
-
+function IterationDeviceHero({ deviceInfo }) {
   return (
-    <section className="iteration-risk-strip" aria-label="当前设备风险提示">
-      <div className="iteration-risk-icon">
-        <AlertTriangle size={17} />
-      </div>
-      <div>
-        <strong>当前存在排查风险：低功耗休眠、P2P 状态未知、最近告警仅图片。</strong>
-        <span>正在查看「{activeMeta.title}」，建议结合设备状态、日志记录和物联网卡一起判断，不要只按单一字段下结论。</span>
-      </div>
-      <button type="button" onClick={onOpenDiagnosis}>
-        查看诊断
-      </button>
+    <section className="iteration-device-hero" aria-label="设备顶部总览">
+      <IterationSummary deviceInfo={deviceInfo} />
+      <IterationOverviewCards deviceInfo={deviceInfo} />
     </section>
   );
 }
 
-function IterationModuleCards({ activeTab, setActiveTab }) {
+function IterationOverviewCards({ deviceInfo }) {
   return (
-    <section className="iteration-module-cards" aria-label="详情模块导航">
-      {ITERATION_TABS.map((tab) => {
-        const meta = getIterationModuleMeta(tab);
-        const Icon = meta.icon;
+    <section className="iteration-overview-cards" aria-label="设备状态总览">
+      {getIterationOverviewCards(deviceInfo).map((card) => {
+        const CardIcon = card.icon;
 
         return (
-          <button
-            key={tab}
-            type="button"
-            className={cls('iteration-module-card', `module-${meta.tone}`, activeTab === tab && 'active')}
-            aria-current={activeTab === tab ? 'page' : undefined}
-            onClick={() => setActiveTab(tab)}
-          >
-            <span className="iteration-module-card-icon">
-              <Icon size={17} />
-            </span>
-            <span className="iteration-module-card-main">
-              <span className="iteration-module-card-title">{meta.title}</span>
-              <span className="iteration-module-card-desc">{meta.metric}</span>
-            </span>
-            <span className="iteration-module-card-tags">
-              <span>{meta.tag}</span>
-              <span className={cls('iteration-module-card-status', `tone-${meta.statusTone}`)}>{meta.status}</span>
-            </span>
-          </button>
+          <article className={cls('iteration-overview-card', `tone-${card.tone}`)} key={card.key}>
+            <div className="iteration-overview-card-head">
+              <span>
+                <CardIcon size={15} />
+                {card.label}
+              </span>
+              {card.extra && <em>{card.extra}</em>}
+            </div>
+            <strong>{card.value}</strong>
+            <small>{card.desc}</small>
+          </article>
         );
       })}
     </section>
   );
 }
 
-function IterationAuxRail({ activeTab, onOpenDiagnosis }) {
-  const activeMeta = getIterationModuleMeta(activeTab);
-  const recentOperations = iterationOperationLogs.slice(0, 3);
-  const recommendedChecks = {
-    基础信息: ['核对设备 ID / IMEI / ICCID 是否一致', '确认服务大区和生产归属', '查看可用与限制状态字段'],
-    绑定用户: ['确认主账号与绑定时间', '检查禁用状态对用户侧的提示', '结合操作日志判断是否发生解绑'],
-    设备状态: ['先看低功耗状态和最近心跳', '再看 P2P 状态与能力限制', '必要时打开辅助诊断'],
-    增值服务: ['确认有效服务和到期时间', '核对禁用期间的服务处理边界', '云录像问题需联动日志记录'],
-    日志记录: ['优先看操作日志和低功耗日志', '按时间线对齐报警、登录、重置事件', '导出前确认权限范围'],
-    物联网卡: ['核验当前插卡记录', '确认服务大区与网络类型', '卡侧套餐和实名不在本阶段展开'],
-    设备履历: ['从生产、激活、绑定到禁用恢复顺序查看', '关注当前节点和未接入节点', '把履历作为判断线索而非自动结论'],
-  }[activeTab] || [];
+function IterationQuickFacts({ deviceInfo }) {
+  return (
+    <section className="iteration-quick-facts" aria-label="设备快捷指标">
+      {getIterationQuickFacts(deviceInfo).map(({ icon: FactIcon, label, value }) => (
+        <div key={label}>
+          <span>
+            <FactIcon size={17} />
+          </span>
+          <div>
+            <small>{label}</small>
+            <strong>{value}</strong>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function IterationRiskStrip({ deviceInfo }) {
+  const RiskIcon = deviceInfo.statusTone === 'normal' ? CheckCircle2 : deviceInfo.statusTone === 'muted' ? Info : AlertTriangle;
+
+  if (deviceInfo.statusTone === 'normal') {
+    return null;
+  }
 
   return (
-    <aside className="iteration-aux-rail" aria-label="辅助判断">
-      <section className="iteration-aux-card current">
-        <div className="iteration-aux-head">
-          <span>当前模块</span>
-          <strong>{activeMeta.title}</strong>
-        </div>
-        <p>{activeMeta.desc}</p>
-        <div className="iteration-aux-meta">
-          <span>{activeMeta.metric}</span>
-          <span className={cls('iteration-module-card-status', `tone-${activeMeta.statusTone}`)}>{activeMeta.status}</span>
-        </div>
-      </section>
-
-      <section className="iteration-aux-card risk">
-        <div className="iteration-aux-head">
-          <span>风险关注</span>
-          <strong>3 项</strong>
-        </div>
-        <ul>
-          {iterationInsightItems.map(([label, value, tone]) => (
-            <li key={label} className={`tone-${tone}`}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </li>
-          ))}
-        </ul>
-        <button type="button" onClick={onOpenDiagnosis}>
-          打开辅助诊断
-        </button>
-      </section>
-
-      <section className="iteration-aux-card checks">
-        <div className="iteration-aux-head">
-          <span>推荐排查</span>
-          <strong>{recommendedChecks.length} 步</strong>
-        </div>
-        <ol>
-          {recommendedChecks.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="iteration-aux-card operations">
-        <div className="iteration-aux-head">
-          <span>最近操作</span>
-          <strong>{recentOperations.length} 条</strong>
-        </div>
-        <div className="iteration-aux-timeline">
-          {recentOperations.map((log) => (
-            <article key={`${log.time}-${log.type}`}>
-              <span>{log.time}</span>
-              <strong>{log.type}</strong>
-              <p>{log.result}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    </aside>
+    <section className={cls('iteration-risk-strip', `tone-${deviceInfo.statusTone || 'warn'}`)} aria-label="当前设备风险提示">
+      <div className="iteration-risk-icon">
+        <RiskIcon size={17} />
+      </div>
+      <div>
+        <strong>{deviceInfo.statusTone === 'normal' ? '当前状态' : '告警提示'}：{deviceInfo.riskSummary}</strong>
+      </div>
+      <button type="button">查看告警详情</button>
+    </section>
   );
 }
 
 function IterationModuleShell({ meta, children }) {
+  const ModuleIcon = meta.icon || Info;
+
   return (
     <section className={cls('iteration-module-shell', `module-${meta.tone}`)}>
       <header className="iteration-module-head">
-        <div>
-          <span>{meta.eyebrow}</span>
-          <h2>{meta.title}</h2>
-          <p>{meta.desc}</p>
+        <div className="iteration-module-titlebar">
+          <span className="iteration-module-icon" aria-hidden="true">
+            <ModuleIcon size={14} strokeWidth={2.1} />
+          </span>
+          <div>
+            <h2>{meta.title}</h2>
+            {meta.summary && <p>{meta.summary}</p>}
+          </div>
         </div>
-        <strong>{meta.metric}</strong>
+        <div className="iteration-module-points" aria-label={`${meta.title}核心摘要`}>
+          {(meta.points || [{ label: meta.eyebrow, value: meta.metric, tone: 'neutral' }]).map((point) => (
+            <span className={cls('iteration-module-point', `tone-${point.tone || 'neutral'}`)} key={`${point.label}-${point.value}`}>
+              <small>{point.label}</small>
+              <strong>{point.value}</strong>
+            </span>
+          ))}
+        </div>
       </header>
       <div className="iteration-module-body">{children}</div>
     </section>
@@ -1820,138 +2020,63 @@ function getKeyboardIndex(key, currentIndex, itemCount) {
   return (currentIndex - 1 + itemCount) % itemCount;
 }
 
-function IterationStateSwitcher({ value, onChange }) {
-  return (
-    <section className="iteration-state-toolbar" aria-label="页面状态预览">
-      <div>
-        <strong>页面状态</strong>
-        <span>用于验证 Loading、Empty、Error、Forbidden 的展示和操作路径</span>
-      </div>
-      <div className="iteration-state-segments" role="group" aria-label="切换页面状态">
-        {ITERATION_VIEW_STATES.map((state) => (
-          <button
-            key={state.key}
-            type="button"
-            className={cls(value === state.key && 'active')}
-            aria-pressed={value === state.key}
-            onClick={() => onChange(state.key)}
-          >
-            {state.label}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function IterationPageState({ type, onRetry }) {
-  if (type === 'loading') {
-    return (
-      <div className="iteration-loading-state" role="status" aria-live="polite" aria-label="详情模块加载中">
-        <div className="loading-strip" />
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div className="loading-panel" key={index}>
-            <span />
-            <b />
-            <i />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  const stateCopy = {
-    empty: {
-      icon: FileClock,
-      title: '暂无可展示数据',
-      desc: '当前设备在该模块下没有匹配记录，可切换其他分类或调整日志筛选条件。',
-      action: '查看基础信息',
-    },
-    error: {
-      icon: AlertTriangle,
-      title: '数据加载失败',
-      desc: '设备详情数据暂时无法获取，请重试。若多次失败，建议记录设备 ID 并联系研发排查。',
-      action: '重新加载',
-    },
-    forbidden: {
-      icon: LockKeyhole,
-      title: '暂无访问权限',
-      desc: '当前账号无权查看该设备详情模块。页面不会展示设备敏感字段或内部处理原因。',
-      action: '返回正常预览',
-    },
-  }[type];
-  const Icon = stateCopy.icon;
-
-  return (
-    <div className={cls('iteration-exception-state', `state-${type}`)} role={type === 'error' ? 'alert' : 'status'}>
-      <Icon size={32} />
-      <strong>{stateCopy.title}</strong>
-      <p>{stateCopy.desc}</p>
-      <button type="button" onClick={onRetry}>{stateCopy.action}</button>
-    </div>
-  );
-}
-
-function IterationSummary({ onOpenDiagnosis }) {
-  const primaryInsight = iterationInsightItems[0];
-  const secondaryInsights = iterationInsightItems.slice(1);
-  const summaryTags = [
-    ...iterationTopStatuses.map(([label, value, tone]) => ({ label, value, tone, type: 'status' })),
-    ...secondaryInsights.map(([label, value, tone]) => ({ label, value, tone, type: 'evidence' })),
-    { label: '推荐查看', value: '设备状态 / 绑定用户 / 增值服务 / 日志记录', tone: 'muted', type: 'route' },
-  ];
+function IterationSummary({ deviceInfo }) {
+  const identitySummary = getDeviceIdentitySummary(deviceInfo);
 
   return (
     <section className="iteration-summary">
       <div className="iteration-summary-hero">
         <div className="iteration-identity-block">
-          <div className="iteration-device-mark">
-            <Camera size={26} />
-          </div>
-          <div>
-            <span className="overview-label">设备ID</span>
-            <h2>{device.id}</h2>
+          <DeviceVisual deviceInfo={deviceInfo} />
+          <div className="iteration-identity-main">
+            <div className="iteration-identity-title">
+              <span className="overview-label">设备ID</span>
+              <h2>{deviceInfo.id}</h2>
+            </div>
+            <div className="iteration-primary-meta" aria-label="设备主身份">
+              <span className={`network-${identitySummary.networkType}`}>{identitySummary.networkType}</span>
+              <span className={`power-${identitySummary.powerType}`}>{identitySummary.powerType}</span>
+              <span className={`line-${deviceInfo.productLine}`}>{identitySummary.productType}</span>
+            </div>
             <div className="iteration-meta-row">
-              {iterationHeroMetaItems.map(([label, value]) => (
-                <span key={label}>{label}：{value}</span>
-              ))}
+              <span>型号：<strong>{deviceInfo.modelCode}</strong></span>
+              <span>产品线：<strong>{deviceInfo.productLine}</strong></span>
+              <span>固件版本：<strong>{identitySummary.firmware}</strong></span>
+              <span>IMEI：<strong>{deviceInfo.imei}</strong></span>
+              <span>ICCID：<strong>{simCards[0]?.number || '--'}</strong></span>
+              <span>设备地区：<strong>{deviceInfo.region}</strong></span>
+              <span>SN：<strong>{simCards[0]?.number || '--'}</strong></span>
             </div>
           </div>
         </div>
-
-        <div className={cls('iteration-judgement-card', `tone-${primaryInsight[2]}`)}>
-          <span>当前判断</span>
-          <strong>{device.disabled ? '设备可用受限' : '设备可正常使用'}</strong>
-          <p>{primaryInsight[1]}</p>
-        </div>
-
-        <div className="iteration-action-stack">
-          <button className="iteration-diagnosis-button" onClick={onOpenDiagnosis}>
-            <CircleHelp size={16} />
-            辅助诊断
-          </button>
-          <div className="iteration-heartbeat-mini">
-            <span>最近心跳</span>
-            <strong>{device.p2p.lastWakeTime}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="iteration-summary-tags" aria-label="设备关键状态与排查线索">
-        {summaryTags.map(({ label, value, tone, type }) => (
-          <div className={cls('iteration-summary-tag', `tone-${tone}`, `type-${type}`)} key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
       </div>
     </section>
   );
 }
 
-function IterationBasicInfo() {
-  const priorityGroups = iterationBasicGroups.slice(0, 2);
-  const secondaryGroups = iterationBasicGroups.slice(2);
+function DeviceVisual({ deviceInfo }) {
+  const visual = getDeviceImage(deviceInfo);
+
+  return (
+    <figure className={cls('device-visual', `line-${visual.className}`)}>
+      <div className="device-visual-frame">
+        {visual.type === 'image' ? (
+          <img src={visual.src} alt={`${deviceInfo.modelCode} 设备图片`} />
+        ) : (
+          <div className="device-visual-fallback" aria-label={`${deviceInfo.productLine} 产线默认图`}>
+            <Camera size={34} />
+            <span>{deviceInfo.productLine}</span>
+          </div>
+        )}
+      </div>
+    </figure>
+  );
+}
+
+function IterationBasicInfo({ deviceInfo }) {
+  const groups = getIterationBasicGroups(deviceInfo);
+  const priorityGroups = groups.slice(0, 2);
+  const secondaryGroups = groups.slice(2);
 
   return (
     <div className="iteration-section-stack iteration-basic-layout">
@@ -1969,17 +2094,17 @@ function IterationBasicInfo() {
   );
 }
 
-function IterationBoundUsers() {
+function IterationBoundUsers({ deviceInfo }) {
   return (
     <div className="iteration-section-stack">
-      {device.disabled && (
+      {deviceInfo.disabled && (
         <div className="iteration-inline-note warning">
           <AlertTriangle size={16} />
           <span>设备当前处于禁用状态，绑定关系保留，但实时预览、远程控制、配置下发和告警推送等核心能力受限。</span>
         </div>
       )}
       <div className="iteration-user-grid">
-        {boundUsers.map((user) => (
+        {(deviceInfo.activated ? boundUsers : []).map((user) => (
           <article className="iteration-user-card" key={user.id}>
             <span className="user-avatar">{user.avatar}</span>
             <div>
@@ -2004,51 +2129,56 @@ function IterationBoundUsers() {
             </div>
           </article>
         ))}
+        {!deviceInfo.activated && (
+          <div className="iteration-empty-brief">设备未激活，暂无绑定用户。</div>
+        )}
       </div>
     </div>
   );
 }
 
-function IterationDeviceStatus() {
+function IterationDeviceStatus({ deviceInfo }) {
+  const statusGroups = getIterationStatusGroups(deviceInfo);
+
   return (
     <div className="iteration-section-stack iteration-runtime-layout">
       <div className="iteration-status-overview">
         <div>
           <span>P2P UID</span>
-          <strong>{device.p2p.uid}</strong>
+          <strong>{deviceInfo.p2p.uid}</strong>
         </div>
         <div>
           <span>当前运行态</span>
-          <strong>{device.p2p.lowPowerStatus}</strong>
+          <strong>{deviceInfo.p2p.lowPowerStatus}</strong>
         </div>
         <div>
           <span>最近心跳</span>
-          <strong>{device.p2p.lastWakeTime}</strong>
+          <strong>{deviceInfo.p2p.lastWakeTime}</strong>
         </div>
       </div>
-      {iterationStatusGroups.map((group) => (
+      {statusGroups.map((group) => (
         <IterationFieldPanel key={group.title} title={group.title} items={group.items} compact />
       ))}
       <div className="iteration-inline-note">
         <WifiOff size={16} />
-        <span>低功耗设备出现 P2P 获取失败时，优先结合最近心跳、休眠状态、物联网卡记录和服务大区判断。</span>
+        <span>{deviceInfo.p2p.status === '在线' ? '设备在线，仍可结合心跳和日志确认最近运行情况。' : 'P2P 状态异常，需结合低功耗、心跳和网络记录判断。'}</span>
       </div>
     </div>
   );
 }
 
-function IterationServices() {
+function IterationServices({ deviceInfo }) {
   const activeServices = services.map((service, index) => ({
     ...service,
     status: index === 1 ? '有效中 · 历史录像可查看' : '未开通',
-  }));
+  })).filter((service) => service.status !== '未开通');
 
   return (
     <div className="iteration-section-stack iteration-service-layout">
-      {device.disabled && (
+      {deviceInfo.disabled && (
         <div className="iteration-inline-note">
           <Cloud size={16} />
-          <span>设备禁用期间，新增购买和手动续费不可用；已有服务不自动退款、延期或转移。</span>
+          <span>禁用期间不可新增购买或续费；已有订单不自动退款、延期或转移。</span>
         </div>
       )}
       <div className="iteration-service-summary">
@@ -2062,14 +2192,15 @@ function IterationServices() {
         </div>
         <div>
           <span>服务影响</span>
-          <strong>{device.disabled ? '使用受限' : '正常'}</strong>
+          <strong>{deviceInfo.disabled ? '使用受限' : '正常'}</strong>
         </div>
       </div>
       <div className="iteration-service-grid">
-        {activeServices.slice(0, 8).map((service, index) => {
-          const Icon = serviceIcons[index % serviceIcons.length];
+        {activeServices.map((service) => {
+          const originalIndex = services.findIndex((item) => item.id === service.id);
+          const Icon = serviceIcons[originalIndex % serviceIcons.length];
           return (
-            <article className={cls('iteration-service-card', index === 1 && 'active')} key={service.id}>
+            <article className="iteration-service-card active" key={service.id}>
               <Icon size={22} />
               <div>
                 <strong>{service.name}</strong>
@@ -2083,11 +2214,11 @@ function IterationServices() {
   );
 }
 
-function IterationLogs({ logTab, setLogTab }) {
+function IterationLogs({ deviceInfo, logTab, setLogTab }) {
   const activeLogIndex = ITERATION_LOG_TABS.indexOf(logTab);
   const logRowsByTab = {
     登录日志: loginLogs.map((log) => [log.time, log.status, log.ip, log.version]),
-    重置记录: resetLogs.map((log) => [log.time, device.id]),
+    重置记录: resetLogs.map((log) => [log.time, deviceInfo.id]),
     报警日志: alarmLogs.slice(0, 8).map((log) => [log.beijing, log.action, log.battery, '只有图片']),
     低功耗日志: p2pTimeline.map((log) => [log.time, log.type, log.userPid]),
     操作日志: iterationOperationLogs.map((log) => [
@@ -2115,7 +2246,7 @@ function IterationLogs({ logTab, setLogTab }) {
     const currentIndex = Math.max(ITERATION_LOG_TABS.indexOf(logTab), 0);
     const nextIndex = getKeyboardIndex(event.key, currentIndex, ITERATION_LOG_TABS.length);
     setLogTab(ITERATION_LOG_TABS[nextIndex]);
-    requestAnimationFrame(() => document.getElementById(`iteration-log-tab-${nextIndex}`)?.focus());
+    requestAnimationFrame(() => document.getElementById(`iteration-log-tab-${nextIndex}`)?.focus({ preventScroll: true }));
   };
 
   return (
@@ -2177,7 +2308,7 @@ function IterationSim() {
     <div className="iteration-section-stack">
       <div className="iteration-inline-note">
         <RadioTower size={16} />
-        <span>当前阶段展示设备插卡记录和卡类型，不在设备中心内展开套餐、流量、实名、停复机等卡侧详情。</span>
+        <span>仅展示插卡记录和卡类型。</span>
       </div>
       <DataTable
         columns={['卡号', '插卡位置', '卡类型']}
@@ -2187,13 +2318,33 @@ function IterationSim() {
   );
 }
 
-function IterationLifecycle() {
+function IterationLifecycle({ deviceInfo }) {
+  const lifecycleFlow = [
+    ['生产', '完成', deviceInfo.productionTime, 'done'],
+    ['激活', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activationTime, deviceInfo.activated ? 'done' : 'muted'],
+    ['绑定', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activated ? boundUsers[0]?.addedAt || '--' : '--', deviceInfo.activated ? 'done' : 'muted'],
+    ['运行 / 休眠', '当前', deviceInfo.p2p.lowPowerStatus, deviceInfo.p2p.status === '在线' ? 'done' : 'current'],
+    ['告警', deviceInfo.activated ? '有记录' : '暂无', deviceInfo.activated ? alarmLogs[0]?.beijing || '--' : '--', deviceInfo.activated ? 'warn' : 'muted'],
+    ['禁用 / 恢复', deviceInfo.disabled ? '已发生' : '未发生', deviceInfo.disabled ? defaultDisableRecords[0]?.time || '--' : '--', deviceInfo.disabled ? 'done' : 'muted'],
+  ];
+
+  const lifecycleEvents = deviceInfo.activated
+    ? iterationLifecycleEvents.map(([time, type, desc]) => {
+      if (type === '生产') return [deviceInfo.productionTime, type, desc];
+      if (type === '激活') return [deviceInfo.activationTime, type, desc];
+      return [time, type, desc];
+    })
+    : [
+      [deviceInfo.productionTime, '生产', '设备生产完成，工厂信息已记录。'],
+      ['--', '激活', '设备尚未激活。'],
+    ];
+
   return (
     <div className="iteration-lifecycle">
       <section className="iteration-lifecycle-current">
         <div>
           <span>当前综合阶段</span>
-          <strong>已激活 · 已绑定 · 当前休眠</strong>
+          <strong>{deviceInfo.activated ? `已激活 · ${deviceInfo.p2p.lowPowerStatus}` : '未激活'}</strong>
         </div>
         <div>
           <span>主要判断依据</span>
@@ -2202,7 +2353,7 @@ function IterationLifecycle() {
       </section>
 
       <section className="iteration-lifecycle-flow" aria-label="设备生命周期节点">
-        {iterationLifecycleFlow.map(([name, status, time, tone], index) => (
+        {lifecycleFlow.map(([name, status, time, tone], index) => (
           <div className={cls('iteration-flow-step', `tone-${tone}`)} key={name}>
             <div className="iteration-flow-dot">{index + 1}</div>
             <div>
@@ -2215,7 +2366,7 @@ function IterationLifecycle() {
       </section>
 
       <div className="iteration-track-grid">
-        {iterationLifecycleTracks.map((track) => (
+        {getIterationLifecycleTracks(deviceInfo).map((track) => (
           <article className="iteration-track" key={track.title}>
             <div className="iteration-track-head">
               <div>
@@ -2242,7 +2393,7 @@ function IterationLifecycle() {
           <span />
           关键事件时间线
         </div>
-        {iterationLifecycleEvents.map(([time, type, desc]) => (
+        {lifecycleEvents.map(([time, type, desc]) => (
           <article key={`${time}-${type}`}>
             <time>{time}</time>
             <strong>{type}</strong>
@@ -2256,17 +2407,18 @@ function IterationLifecycle() {
 
 function IterationFieldPanel({ title, items, compact = false, previewCount = 6 }) {
   const [expanded, setExpanded] = useState(compact);
-  const visibleItems = compact || expanded ? items : items.slice(0, previewCount);
-  const hiddenCount = Math.max(items.length - visibleItems.length, 0);
+  const meaningfulItems = items.filter(([, value]) => !['暂无数据', '暂未接入', '--'].includes(String(value)));
+  const visibleItems = compact || expanded ? meaningfulItems : meaningfulItems.slice(0, previewCount);
+  const hiddenCount = Math.max(meaningfulItems.length - visibleItems.length, 0);
   const contentId = `iteration-field-${title}`;
 
   return (
     <section className="iteration-field-panel">
       <div className="iteration-panel-heading">
         <span>{title}</span>
-        {!compact && items.length > previewCount && (
+        {!compact && meaningfulItems.length > previewCount && (
           <button type="button" aria-expanded={expanded} aria-controls={contentId} onClick={() => setExpanded((open) => !open)}>
-            {expanded ? '收起低频字段' : `更多信息 (${items.length - previewCount})`}
+            {expanded ? '收起低频字段' : `更多信息 (${meaningfulItems.length - previewCount})`}
           </button>
         )}
       </div>
@@ -2287,67 +2439,6 @@ function IterationFieldPanel({ title, items, compact = false, previewCount = 6 }
         )}
       </div>
     </section>
-  );
-}
-
-function AuxDiagnosisDrawer({ onClose }) {
-  return (
-    <div className="drawer-layer">
-      <button className="drawer-scrim" onClick={onClose} aria-label="关闭抽屉" />
-      <aside className="drawer aux-diagnosis-drawer">
-        <div className="drawer-head">
-          <div>
-            <h2>辅助诊断</h2>
-            <p>基于已接入字段给出排查线索，不直接替代人工判断。</p>
-          </div>
-          <button onClick={onClose} aria-label="关闭">
-            <X size={22} />
-          </button>
-        </div>
-
-        <div className="aux-diagnosis-summary">
-          <div>
-            <span>当前重点</span>
-            <strong>禁用状态 + 低功耗休眠 + P2P 获取失败</strong>
-          </div>
-          <div>
-            <span>建议路径</span>
-            <strong>先查设备状态，再查绑定/服务影响，最后看日志证据</strong>
-          </div>
-        </div>
-
-        <div className="aux-diagnosis-list">
-          {diagnosisScenarios.map((scenario) => (
-            <article className="aux-diagnosis-card" key={scenario.title}>
-              <div className="aux-diagnosis-head">
-                <strong>{scenario.title}</strong>
-                <span className={cls('diagnosis-status', scenario.status === '需关注' && 'warn', scenario.status === '信息不足' && 'unknown')}>
-                  {scenario.status}
-                </span>
-              </div>
-              <div className="aux-check-list">
-                {scenario.checks.map(([label, value, result]) => (
-                  <div key={`${scenario.title}-${label}`}>
-                    <span>{label}</span>
-                    <strong>{value}</strong>
-                    <small>{result}</small>
-                  </div>
-                ))}
-              </div>
-              <div className="aux-next-row">
-                <span>建议查看</span>
-                <div>
-                  {scenario.links.map((link) => (
-                    <b key={`${scenario.title}-${link}`}>{link}</b>
-                  ))}
-                </div>
-              </div>
-              <p className="aux-next-tip">{scenario.next}</p>
-            </article>
-          ))}
-        </div>
-      </aside>
-    </div>
   );
 }
 
