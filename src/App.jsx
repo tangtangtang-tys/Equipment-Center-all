@@ -49,7 +49,6 @@ import {
   alarmLogs,
   boundUsers,
   device,
-  deviceSamples,
   loginLogs,
   mapRanking,
   p2pTimeline,
@@ -66,6 +65,16 @@ const ReactECharts = lazy(() => import('echarts-for-react'));
 const MAIN_TABS = ['添加该设备的用户', '增值服务', '日志记录', '设备状态', '物联网卡'];
 const ITERATION_TABS = ['基础信息', '设备状态', '用户管理', '增值服务', '日志记录', '物联网卡', '设备履历'];
 const ITERATION_LOG_TABS = ['登录日志', '重置记录', '报警日志', '低功耗日志', '操作日志'];
+
+const deviceSamples = [
+  {
+    ...device,
+    scenario: device.disabled ? '禁用休眠' : '设备详情',
+    scenarioDesc: device.disabled ? '售后纠纷禁用，低功耗休眠，P2P 获取失败' : '当前设备详情',
+    riskSummary: device.disabled ? '低功耗休眠、P2P 状态未知、最近告警仅图片。' : '当前在线，核心能力可用。',
+    statusTone: device.disabled ? 'danger' : 'normal',
+  },
+];
 
 const serviceIcons = [
   Activity,
@@ -562,41 +571,51 @@ function getIterationTopStatuses(deviceInfo) {
 }
 
 function getIterationOverviewCards(deviceInfo) {
-  const p2pTone = deviceInfo.p2p.status === '在线' ? 'normal' : deviceInfo.p2p.status === '未接入' ? 'muted' : 'danger';
-  const runTone = deviceInfo.p2p.lowPowerStatus === '在线' ? 'normal' : deviceInfo.p2p.lowPowerStatus === '休眠' ? 'warn' : 'muted';
+  const activationTone = deviceInfo.activated ? 'normal' : 'muted';
+  const deviceState = deviceInfo.p2p.lowPowerStatus || deviceInfo.p2p.status || '未知';
+  const deviceStateTone = deviceState === '在线' ? 'normal' : deviceState === '休眠' ? 'warn' : deviceState === '未运行' ? 'muted' : 'danger';
+  const mqttBlacklisted = Boolean(deviceInfo.mqttBlacklisted);
+  const shadowBlacklisted = Boolean(deviceInfo.shadowBlacklisted);
+  const blacklistTone = mqttBlacklisted || shadowBlacklisted ? 'danger' : 'normal';
+  const blacklistValue = mqttBlacklisted && shadowBlacklisted ? '已拉黑' : mqttBlacklisted || shadowBlacklisted ? '部分拉黑' : '正常';
+  const hasFirmwareUpgrade = Boolean(deviceInfo.latestVersion && deviceInfo.firmware && deviceInfo.latestVersion !== deviceInfo.firmware);
+  const firmwareTone = hasFirmwareUpgrade ? 'warn' : 'normal';
 
   return [
     {
-      key: 'lifecycle',
-      label: '设备生命周期',
+      key: 'activation',
+      label: '设备激活',
       value: deviceInfo.activated ? '已激活' : '未激活',
-      desc: `激活时间：${deviceInfo.activationTime}`,
-      tone: deviceInfo.activated ? 'normal' : 'muted',
+      desc: deviceInfo.activated ? `激活时间：${deviceInfo.activationTime}` : '暂无激活时间',
+      tone: activationTone,
       icon: CheckCircle2,
     },
     {
-      key: 'runtime',
-      label: '运行状态',
-      value: deviceInfo.p2p.lowPowerStatus,
-      desc: `最近心跳：${deviceInfo.p2p.lastWakeTime}`,
-      tone: runTone,
+      key: 'device-state',
+      label: '设备状态',
+      value: deviceState,
+      desc: `最后心跳：${deviceInfo.p2p.lastWakeTime || '暂无记录'}`,
+      tone: deviceStateTone,
       icon: Activity,
     },
     {
-      key: 'p2p',
-      label: 'P2P 状态',
-      value: deviceInfo.p2p.status === '在线' ? '正常' : deviceInfo.p2p.status === '获取失败' ? '异常' : deviceInfo.p2p.status,
-      desc: `最近在线：${deviceInfo.p2p.lastWakeTime}`,
-      tone: p2pTone,
-      icon: ShieldCheck,
+      key: 'blacklist',
+      label: '设备拉黑',
+      value: blacklistValue,
+      desc: `MQTT拉黑：${mqttBlacklisted ? '是' : '否'} · 影子拉黑：${shadowBlacklisted ? '是' : '否'}`,
+      tone: blacklistTone,
+      icon: Ban,
     },
     {
-      key: 'mqtt',
-      label: 'MQTT 状态',
-      value: deviceInfo.disabled ? '正常' : '正常',
-      desc: '延迟：32ms',
-      tone: 'normal',
-      icon: RadioTower,
+      key: 'firmware',
+      label: '固件版本',
+      value: deviceInfo.firmware,
+      desc: hasFirmwareUpgrade
+        ? `最新版本：${deviceInfo.latestVersion} · 建议升级`
+        : '已是最新版本',
+      extra: hasFirmwareUpgrade ? '可升级' : undefined,
+      tone: firmwareTone,
+      icon: Cpu,
     },
   ];
 }
@@ -611,12 +630,6 @@ function getIterationQuickFacts(deviceInfo) {
 }
 
 function getDeviceIdentitySummary(deviceInfo) {
-  const productTypeMap = {
-    IPC: 'IPC 摄像机',
-    BK: 'BK 电池设备',
-    NVR: 'NVR 录像机',
-    车载: '车载设备',
-  };
   const powerType = deviceInfo.connectType.includes('低功耗') ? '低功耗' : '长电';
   const networkType = deviceInfo.connectType.includes('4G')
     ? '4G'
@@ -627,10 +640,10 @@ function getDeviceIdentitySummary(deviceInfo) {
         : '4G';
 
   return {
-    productType: productTypeMap[deviceInfo.productLine] || `${deviceInfo.productLine || '通用'} 设备`,
+    businessLine: deviceInfo.productLine || '暂无数据',
     powerType,
     networkType,
-    firmware: deviceInfo.firmware,
+    iccid: simCards[0]?.number || '暂无数据',
   };
 }
 
@@ -2021,19 +2034,18 @@ function IterationSummary({ deviceInfo }) {
           <DeviceVisual deviceInfo={deviceInfo} />
           <div className="iteration-identity-main">
             <div className="iteration-identity-title">
-              <span className="overview-label">设备ID</span>
               <h2>{deviceInfo.id}</h2>
             </div>
             <div className="iteration-primary-meta" aria-label="设备主身份">
+              <span className={`line-${deviceInfo.productLine}`}>{identitySummary.businessLine}</span>
               <span className={`network-${identitySummary.networkType}`}>{identitySummary.networkType}</span>
               <span className={`power-${identitySummary.powerType}`}>{identitySummary.powerType}</span>
-              <span className={`line-${deviceInfo.productLine}`}>{identitySummary.productType}</span>
             </div>
             <div className="iteration-meta-row">
               <span>机型型号：<strong>{deviceInfo.modelCode}</strong></span>
-              <span>固件版本：<strong>{identitySummary.firmware}</strong></span>
-              <span>IMEI：<strong>{deviceInfo.imei}</strong></span>
-              <span>服务大区：<strong>{deviceInfo.region}</strong></span>
+              <span>产品型号：<strong>{deviceInfo.model}</strong></span>
+              <span>ICCID：<strong>{identitySummary.iccid}</strong></span>
+              <span>设备所在地：<strong>{deviceInfo.location}</strong></span>
             </div>
           </div>
         </div>
@@ -2177,7 +2189,7 @@ function IterationBoundUsers({ deviceInfo }) {
     userId: boundUsers[0]?.userId || '18533644',
     name: '张伟',
     phone: '138 **** 5678',
-    maskedId: '183.****.5678',
+    pushStatus: boundUsers[0]?.push || '关闭',
     role: '主账号',
     location: '中国 · 广东 · 深圳',
     city: '深圳市',
@@ -2260,10 +2272,11 @@ function IterationBoundUsers({ deviceInfo }) {
                 <div className="iteration-owner-title">
                   <strong>{primaryUser.name}（{primaryUser.role}）</strong>
                   <span className="owner-tag blue">主账号</span>
-                  <span className="owner-tag green">{primaryUser.status}</span>
                 </div>
                 <dl className="iteration-owner-fields">
+                  <div><dt>用户ID</dt><dd>{primaryUser.userId}</dd></div>
                   <div><dt>手机号</dt><dd>{primaryUser.phone}<Eye size={14} /></dd></div>
+                  <div><dt>推送状态</dt><dd>{primaryUser.pushStatus}</dd></div>
                   <div><dt>所属地区</dt><dd>{primaryUser.location}</dd></div>
                   <div><dt>绑定时间</dt><dd>{primaryUser.bindTime}</dd></div>
                   <div><dt>最后登录</dt><dd>{primaryUser.lastLogin}</dd></div>
@@ -2278,9 +2291,7 @@ function IterationBoundUsers({ deviceInfo }) {
                   <b>{primaryUser.device}</b>
                   <small>{primaryUser.os}</small>
                 </div>
-                <em>{primaryUser.maskedId}</em>
                 <i>{primaryUser.city}</i>
-                <mark>当前设备</mark>
               </article>
             </div>
             <button className="iteration-user-text-link" type="button">查看主账号详情 <ChevronRight size={15} /></button>
@@ -2289,46 +2300,67 @@ function IterationBoundUsers({ deviceInfo }) {
           <section className="iteration-user-design-card iteration-user-relation-card">
             <header>
               <h3>用户关系图</h3>
-              <div className="iteration-relation-legend">
-                <span className="solid">绑定</span>
-                <span className="dashed">分享</span>
-                <span className="dotted">权限</span>
-              </div>
             </header>
-            <div className="iteration-relation-canvas">
-              <svg viewBox="0 0 1000 330" preserveAspectRatio="none" aria-hidden="true">
+            <div className="iteration-relation-canvas relation-horizontal-view">
+              <svg viewBox="0 0 780 220" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
-                  <marker id="relationArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
-                    <path d="M0,0 L8,4 L0,8 Z" fill="#8ea2bd" />
-                  </marker>
+                  <filter id="relationDotGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="1.2" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
                 </defs>
-                <path className="bind" d="M500 70 L500 150" markerEnd="url(#relationArrow)" />
-                <path className="share" d="M500 218 L220 284" markerEnd="url(#relationArrow)" />
-                <path className="share" d="M500 218 L500 288" markerEnd="url(#relationArrow)" />
-                <path className="share" d="M500 218 L780 284" markerEnd="url(#relationArrow)" />
+                <path className="bind horizontal-device-owner" d="M154 96 L278 96" />
+                <path className="share horizontal-owner-shared top" d="M414 96 C472 96 482 44 548 44" />
+                <path className="share horizontal-owner-shared bottom" d="M414 96 C472 96 482 146 548 146" />
+                <circle cx="154" cy="96" r="3.2" />
+                <circle cx="278" cy="96" r="3.2" />
+                <circle cx="414" cy="96" r="3.2" />
+                <circle cx="548" cy="44" r="3.2" />
+                <circle cx="548" cy="146" r="3.2" />
               </svg>
-              <span className="relation-label bind-label">绑定</span>
-              <span className="relation-label left-label">分享 / 权限</span>
-              <span className="relation-label center-label">分享 / 权限</span>
-              <span className="relation-label right-label">分享 / 权限</span>
-
-              <article className="relation-node device-node">
-                <span className="relation-device-icon"><Camera size={23} /></span>
-                <div><strong>{deviceCode}</strong><em>在线</em></div>
+              <article className="relation-horizontal-device">
+                <span>
+                  <img src={deviceInfo.imageUrl} alt="" />
+                </span>
+                <small>设备</small>
+                <strong>{deviceCode}</strong>
               </article>
-              <article className="relation-node owner-node">
-                <span className="relation-avatar-mini"><i /></span>
-                <strong>{primaryUser.name}（主账号）</strong>
-                <Crown size={17} />
+              <article className="relation-horizontal-owner">
+                <span className="relation-owner-portrait" aria-hidden="true">
+                  <i className="hair" />
+                  <i className="face" />
+                  <i className="ear left" />
+                  <i className="ear right" />
+                  <i className="eye left" />
+                  <i className="eye right" />
+                  <i className="nose" />
+                  <i className="mouth" />
+                  <i className="shirt" />
+                </span>
+                <small>主账号</small>
+                <strong>{primaryUser.name}</strong>
               </article>
-              {[0, 1, 2].map((item) => (
-                <article className={cls('relation-node empty-node', `empty-${item}`)} key={item}>
-                  <span><UserRound size={28} /></span>
-                  <strong>暂无共享用户</strong>
-                </article>
-              ))}
+              <section className="relation-horizontal-shared" aria-label="共享用户">
+                {['李想', '陈一凡'].map((name, index) => (
+                  <article className="relation-shared-user" key={name}>
+                    <span className={cls('relation-shared-avatar', index === 1 && 'female')} aria-hidden="true">
+                      <i className="hair" />
+                      <i className="face" />
+                      <i className="eye left" />
+                      <i className="eye right" />
+                      <i className="shirt" />
+                    </span>
+                    <div>
+                      <small>共享用户</small>
+                      <strong>{name}</strong>
+                    </div>
+                  </article>
+                ))}
+              </section>
             </div>
-            <button className="iteration-user-text-link" type="button">查看全部用户关系 <ChevronRight size={15} /></button>
           </section>
         </div>
 
@@ -2601,48 +2633,259 @@ function IterationStatusSection({ index, title, desc, items, compact = false }) 
 }
 
 function IterationServices({ deviceInfo }) {
-  const activeServices = services.map((service, index) => ({
+  const serviceStats = [
+    { label: '已开通服务', value: '3', desc: '总计 3 项', tone: 'green', icon: ShieldCheck },
+    { label: '未开通服务', value: '6', desc: '可选 6 项', tone: 'blue', icon: ShieldCheck },
+    { label: '即将到期', value: '1', desc: '7 天内到期', tone: 'orange', icon: Settings },
+    { label: '服务影响', value: deviceInfo.disabled ? '2' : '0', desc: deviceInfo.disabled ? '存在影响' : '暂无影响', tone: 'red', icon: History },
+  ];
+  const openedServices = [
+    {
+      name: '云存储',
+      icon: Cloud,
+      capacity: '30 GB',
+      usage: '18.6 GB / 30 GB (62%)',
+      usageValue: 62,
+      autoRenew: '已开启',
+      actions: ['详情', '用量', '续费'],
+    },
+    {
+      name: '告警云存',
+      icon: Cloud,
+      capacity: '10 GB',
+      usage: '2.1 GB / 10 GB (21%)',
+      usageValue: 21,
+      autoRenew: '已开启',
+      actions: ['详情', '用量', '续费'],
+    },
+    {
+      name: '设备追踪',
+      icon: MapPin,
+      capacity: '200 次/月',
+      usage: '128 次（本月）',
+      usageValue: 64,
+      autoRenew: '已关闭',
+      actions: ['详情', '设置', '续费'],
+    },
+  ];
+  const unopenedServices = services.slice(0, 6).map((service, index) => ({
     ...service,
-    status: index === 1 ? '有效中 · 历史录像可查看' : '未开通',
-  })).filter((service) => service.status !== '未开通');
+    icon: serviceIcons[index % serviceIcons.length],
+    desc: [
+      '优化远程访问稳定性，降低延迟，提升视频响应速度。',
+      '加速固件下载与分发，缩短升级时长，降低升级失败率。',
+      '优化 P2P 连接质量，提升视频流畅度与连接成功率。',
+      '支持人形/车辆/区域入侵等事件识别与推送。',
+      '端到端数据加密传输，提升数据安全性与合规性。',
+      '支持多设备联动规则与场景自动化配置。',
+    ][index],
+    price: ['¥12.00 / 月', '¥6.00 / 月', '¥10.00 / 月', '¥18.00 / 月', '¥8.00 / 月', '¥15.00 / 月'][index],
+  }));
+  const quickActions = [
+    [Cloud, '续费管理'],
+    [SquareStack, '服务购买'],
+    [Database, '用量查询'],
+    [Settings, '服务设置'],
+  ];
+  const recentActions = [
+    ['2024-06-13 14:20', '续费关闭：设备追踪', 'admin'],
+    ['2024-06-11 17:52', '自动续费：云存储', '系统'],
+    ['2024-05-20 00:00', '开通服务：云存储 等 3 项', '系统'],
+  ];
+  const diagnostics = [
+    ['服务健康度', '良好', 'good'],
+    ['云存储空间', '62%', 'normal'],
+    ['网络连通性', '异常', 'bad'],
+    ['P2P 连接', '异常', 'bad'],
+    ['MQTT 连接', '正常', 'good'],
+  ];
+  const serviceRecords = [
+    ['2024-05-20 00:00:00', '云存储', '开通', '成功', '系统'],
+    ['2024-05-20 00:00:00', '告警云存', '开通', '成功', '系统'],
+    ['2024-05-20 00:00:00', '设备追踪', '开通', '成功', '系统'],
+    ['2024-06-11 17:52:41', '云存储', '自动续费', '成功', '系统'],
+    ['2024-06-13 14:20:11', '设备追踪', '自动续费关闭', '成功', 'admin'],
+  ];
+  const orderRecords = [
+    ['2024052000001234', '2024-05-20', '云存储', '36.00', '已支付', '年付'],
+    ['2024052000001235', '2024-05-20', '告警云存', '24.00', '已支付', '年付'],
+    ['2024052000001236', '2024-05-20', '设备追踪', '20.00', '已支付', '年付'],
+    ['2024061100002345', '2024-06-11', '云存储', '36.00', '已支付', '续费'],
+  ];
 
   return (
-    <div className="iteration-section-stack iteration-service-layout">
-      {deviceInfo.disabled && (
-        <div className="iteration-inline-note">
-          <Cloud size={16} />
-          <span>禁用期间不可新增购买或续费；已有订单不自动退款、延期或转移。</span>
+    <div className="iteration-service-replica">
+      <main className="iteration-service-main">
+        {deviceInfo.disabled && (
+          <div className="iteration-service-alert">
+            <Cloud size={16} />
+            <span>禁用期间不可新增购买或续费；已有订单不自动退款、延期或转移。</span>
+          </div>
+        )}
+
+        <section className="service-replica-panel service-stat-panel">
+          <ServicePanelHead title="服务总览统计" meta="刷新时间：2024-06-20 17:15:43" />
+          <div className="service-stat-grid">
+            {serviceStats.map((item) => {
+              const StatIcon = item.icon;
+              return (
+                <article className={cls('service-stat-card', `tone-${item.tone}`)} key={item.label}>
+                  <span><StatIcon size={26} /></span>
+                  <div>
+                    <small>{item.label}</small>
+                    <strong>{item.value}</strong>
+                    <em>{item.desc}</em>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="service-replica-panel">
+          <ServicePanelHead title="已开通服务（3）" />
+          <div className="opened-service-grid">
+            {openedServices.map((service) => {
+              const OpenIcon = service.icon;
+              return (
+                <article className="opened-service-card" key={service.name}>
+                  <header>
+                    <span><OpenIcon size={22} /></span>
+                    <strong>{service.name}</strong>
+                    <em>正常</em>
+                  </header>
+                  <dl>
+                    <div><dt>生效时间</dt><dd>2024-05-20 00:00:00</dd></div>
+                    <div><dt>到期时间</dt><dd>2025-06-20 23:59:59</dd></div>
+                    <div><dt>{service.name === '设备追踪' ? '定位额度' : '存储容量'}</dt><dd>{service.capacity}</dd></div>
+                    <div className="usage-row">
+                      <dt>{service.name === '设备追踪' ? '剩余额度' : '使用进度'}</dt>
+                      <dd>
+                        <span className="service-progress"><i style={{ width: `${service.usageValue}%` }} /></span>
+                        <b>{service.usage}</b>
+                      </dd>
+                    </div>
+                    <div><dt>自动续费</dt><dd className={service.autoRenew === '已开启' ? 'is-on' : undefined}>{service.autoRenew}</dd></div>
+                  </dl>
+                  <footer>
+                    {service.actions.map((action) => <button type="button" key={action}>{action}</button>)}
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="service-replica-panel">
+          <ServicePanelHead title="未开通服务（6）" />
+          <div className="unopened-service-grid">
+            {unopenedServices.map((service) => {
+              const ServiceIcon = service.icon;
+              return (
+                <article className="unopened-service-card" key={service.id}>
+                  <header><ServiceIcon size={18} /><strong>{service.name}</strong></header>
+                  <p>{service.desc}</p>
+                  <footer><strong>{service.price}</strong><button type="button">开通</button></footer>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="service-replica-split">
+          <section className="service-replica-panel expiry-panel">
+            <ServicePanelHead title="即将到期服务提醒" />
+            <div className="expiry-row">
+              <span><History size={17} /></span>
+              <strong>设备追踪</strong>
+              <small>到期时间</small>
+              <time>2025-06-20 23:59:59</time>
+              <em>剩余 <b>7 天</b></em>
+              <button type="button">立即续费</button>
+            </div>
+          </section>
+
+          <section className="service-replica-panel impact-panel">
+            <ServicePanelHead title="服务影响说明" />
+            <div className="impact-list">
+              <p><AlertTriangle size={16} />云存储空间不足将导致录像无法持续存储，建议及时扩容或清理空间。<button type="button">查看详情</button></p>
+              <p><AlertTriangle size={16} />P2P 异常可能导致实时预览卡顿或连接失败，建议检查网络状态或开启 P2P 加速。<button type="button">查看详情</button></p>
+            </div>
+          </section>
         </div>
-      )}
-      <div className="iteration-service-summary">
-        <div>
-          <span>已开通</span>
-          <strong>1</strong>
+
+        <div className="service-replica-split tables">
+          <section className="service-replica-panel service-table-panel">
+            <ServicePanelHead title="服务记录" />
+            <ServiceReplicaTable columns={['变更时间', '服务名称', '动作', '状态', '操作人']} rows={serviceRecords} />
+            <button className="service-more-link" type="button">查看更多记录 <ChevronRight size={14} /></button>
+          </section>
+          <section className="service-replica-panel service-table-panel">
+            <ServicePanelHead title="订单记录" />
+            <ServiceReplicaTable columns={['订单号', '购买时间', '服务名称', '金额(元)', '支付状态', '备注']} rows={orderRecords} />
+            <button className="service-more-link" type="button">查看更多订单 <ChevronRight size={14} /></button>
+          </section>
         </div>
-        <div>
-          <span>未开通</span>
-          <strong>{services.length - 1}</strong>
-        </div>
-        <div>
-          <span>服务影响</span>
-          <strong>{deviceInfo.disabled ? '使用受限' : '正常'}</strong>
-        </div>
+      </main>
+
+      <aside className="iteration-service-sidebar">
+        <section className="service-side-card">
+          <h3>快捷操作</h3>
+          <div className="service-quick-list">
+            {quickActions.map(([ActionIcon, label]) => <button type="button" key={label}><ActionIcon size={17} /><span>{label}</span></button>)}
+          </div>
+        </section>
+        <section className="service-side-card">
+          <h3>最近操作</h3>
+          <div className="service-recent-list">
+            {recentActions.map(([time, action, operator]) => (
+              <article key={`${time}-${action}`}>
+                <i />
+                <time>{time}</time>
+                <strong>{action}</strong>
+                <span>{operator}</span>
+              </article>
+            ))}
+          </div>
+          <button className="service-more-link side" type="button">查看更多 <ChevronRight size={14} /></button>
+        </section>
+        <section className="service-side-card">
+          <h3>实时诊断</h3>
+          <div className="service-diagnostic-list">
+            {diagnostics.map(([label, value, tone]) => (
+              <p className={`tone-${tone}`} key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </p>
+            ))}
+          </div>
+          <button className="service-more-link side" type="button">立即诊断 <ChevronRight size={14} /></button>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function ServicePanelHead({ title, meta }) {
+  return (
+    <header className="service-panel-head">
+      <h3>{title}</h3>
+      {meta && <span>{meta}</span>}
+    </header>
+  );
+}
+
+function ServiceReplicaTable({ columns, rows }) {
+  return (
+    <div className="service-replica-table" role="table">
+      <div className="service-replica-table-row head" role="row">
+        {columns.map((column) => <span role="columnheader" key={column}>{column}</span>)}
       </div>
-      <div className="iteration-service-grid">
-        {activeServices.map((service) => {
-          const originalIndex = services.findIndex((item) => item.id === service.id);
-          const Icon = serviceIcons[originalIndex % serviceIcons.length];
-          return (
-            <article className="iteration-service-card active" key={service.id}>
-              <Icon size={22} />
-              <div>
-                <strong>{service.name}</strong>
-                <span>{service.status}</span>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      {rows.map((row) => (
+        <div className="service-replica-table-row" role="row" key={row.join('-')}>
+          {row.map((cell, index) => <span role="cell" key={`${cell}-${index}`}>{cell}</span>)}
+        </div>
+      ))}
     </div>
   );
 }
