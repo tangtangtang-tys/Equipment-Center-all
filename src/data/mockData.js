@@ -88,8 +88,8 @@ export const loginLogs = [
 ].map(([time, status, ip, version]) => ({ time, status, ip, version }));
 
 export const resetLogs = [
-  { time: '2026-06-11 15:15:03' },
-  { time: '2026-05-28 16:18:55' },
+  { time: '2026-06-11 15:15:03', ip: '39.144.15.112' },
+  { time: '2026-05-28 16:18:55', ip: '221.178.127.248' },
 ];
 
 export const alarmLogs = Array.from({ length: 10 }).map((_, index) => {

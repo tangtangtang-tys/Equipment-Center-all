@@ -33,6 +33,7 @@ import {
   RadioTower,
   RefreshCw,
   Search,
+  Send,
   Share2,
   Settings,
   ShieldCheck,
@@ -42,6 +43,7 @@ import {
   UserCheck,
   UsersRound,
   UserX,
+  Volume2,
   WifiOff,
   X,
 } from 'lucide-react';
@@ -64,7 +66,7 @@ const ReactECharts = lazy(() => import('echarts-for-react'));
 
 const MAIN_TABS = ['添加该设备的用户', '增值服务', '日志记录', '设备状态', '物联网卡'];
 const ITERATION_TABS = ['基础信息', '设备状态', '用户管理', '增值服务', '日志记录', '物联网卡', '设备履历'];
-const ITERATION_LOG_TABS = ['登录日志', '重置记录', '报警日志', '低功耗日志', '操作日志'];
+const ITERATION_LOG_TABS = ['登录日志', '重置记录', '报警日志', '报警调试日志', '解绑转移日志'];
 
 const deviceSamples = [
   {
@@ -2026,6 +2028,9 @@ function getKeyboardIndex(key, currentIndex, itemCount) {
 
 function IterationSummary({ deviceInfo }) {
   const identitySummary = getDeviceIdentitySummary(deviceInfo);
+  const usageStatus = deviceInfo.disabled
+    ? { label: '禁用', tone: 'danger' }
+    : { label: '正常', tone: 'normal' };
 
   return (
     <section className="iteration-summary">
@@ -2035,6 +2040,9 @@ function IterationSummary({ deviceInfo }) {
           <div className="iteration-identity-main">
             <div className="iteration-identity-title">
               <h2>{deviceInfo.id}</h2>
+              <span className={cls('iteration-title-status-badge', `tone-${usageStatus.tone}`)}>
+                {usageStatus.label}
+              </span>
             </div>
             <div className="iteration-primary-meta" aria-label="设备主身份">
               <span className={`line-${deviceInfo.productLine}`}>{identitySummary.businessLine}</span>
@@ -2894,10 +2902,9 @@ function IterationLogs({ deviceInfo, logTab, setLogTab }) {
   const activeLogIndex = ITERATION_LOG_TABS.indexOf(logTab);
   const logRowsByTab = {
     登录日志: loginLogs.map((log) => [log.time, log.status, log.ip, log.version]),
-    重置记录: resetLogs.map((log) => [log.time, deviceInfo.id]),
+    重置记录: resetLogs.map((log) => [deviceInfo.id, log.ip, log.time]),
     报警日志: alarmLogs.slice(0, 8).map((log) => [log.beijing, log.action, log.battery, '只有图片']),
-    低功耗日志: p2pTimeline.map((log) => [log.time, log.type, log.userPid]),
-    操作日志: iterationOperationLogs.map((log) => [
+    解绑转移日志: iterationOperationLogs.map((log) => [
       log.time,
       log.type,
       log.operator,
@@ -2908,10 +2915,9 @@ function IterationLogs({ deviceInfo, logTab, setLogTab }) {
   };
   const logColumnsByTab = {
     登录日志: ['登录时间', '状态', '登录IP', '版本号'],
-    重置记录: ['重置时间', '设备ID'],
+    重置记录: ['设备ID', 'IP地址', '重置时间'],
     报警日志: ['北京时间', '设备动作', '电量', '资源情况'],
-    低功耗日志: ['时间', '操作类型', '用户PID'],
-    操作日志: ['操作时间', '操作类型', '操作人', '对象', '结果', '来源'],
+    解绑转移日志: ['操作时间', '操作类型', '操作人', '对象', '结果', '来源'],
   };
   const activeRows = logRowsByTab[logTab] || [];
   const activeColumns = logColumnsByTab[logTab] || [];
@@ -2927,27 +2933,6 @@ function IterationLogs({ deviceInfo, logTab, setLogTab }) {
 
   return (
     <div className="logs-panel iteration-logs-panel iteration-audit-layout">
-      <div className="iteration-log-toolbar">
-        <div>
-          <strong>{logTab}</strong>
-          <span>共 {activeRows.length} 条 · 时间倒序 · 近 30 天</span>
-        </div>
-        <div className="iteration-log-actions" aria-label="日志操作">
-          <button type="button">
-            <Filter size={14} />
-            全部状态
-          </button>
-          <button type="button">
-            <RefreshCw size={14} />
-            刷新
-          </button>
-          <button type="button">
-            <Download size={14} />
-            导出
-          </button>
-        </div>
-      </div>
-
       <div className="subtabs" role="tablist" aria-label="日志类型" onKeyDown={handleLogTabKeyDown}>
         {ITERATION_LOG_TABS.map((tab, index) => (
           <button
@@ -2967,15 +2952,736 @@ function IterationLogs({ deviceInfo, logTab, setLogTab }) {
       </div>
 
       <div id="iteration-log-panel" role="tabpanel" aria-labelledby={`iteration-log-tab-${Math.max(activeLogIndex, 0)}`}>
-        <DataTable
-          caption={`${logTab}列表`}
-          columns={activeColumns}
-          rows={activeRows}
-          emptyTitle="暂无日志记录"
-          emptyDescription="当前筛选条件下没有匹配日志，可切换日志类型或刷新后重试。"
-        />
+        {logTab === '登录日志' ? (
+          <IterationLoginLogReplica deviceInfo={deviceInfo} />
+        ) : logTab === '重置记录' ? (
+          <IterationResetLogReplica deviceInfo={deviceInfo} />
+        ) : logTab === '报警日志' ? (
+          <IterationAlarmLogReplica deviceInfo={deviceInfo} />
+        ) : logTab === '报警调试日志' ? (
+          <IterationAlarmDebugLogReplica deviceInfo={deviceInfo} />
+        ) : (
+          <>
+            <div className="iteration-log-toolbar">
+              <div>
+                <strong>{logTab}</strong>
+                <span>共 {activeRows.length} 条 · 时间倒序 · 近 30 天</span>
+              </div>
+              <div className="iteration-log-actions" aria-label="日志操作">
+                <button type="button">
+                  <Filter size={14} />
+                  全部状态
+                </button>
+                <button type="button">
+                  <RefreshCw size={14} />
+                  刷新
+                </button>
+                <button type="button">
+                  <Download size={14} />
+                  导出
+                </button>
+              </div>
+            </div>
+            <DataTable
+              caption={`${logTab}列表`}
+              columns={activeColumns}
+              rows={activeRows}
+              emptyTitle="暂无日志记录"
+              emptyDescription="当前筛选条件下没有匹配日志，可切换日志类型或刷新后重试。"
+            />
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function IterationLoginLogReplica({ deviceInfo }) {
+  const loginOverview = [
+    {
+      key: 'total',
+      icon: FileClock,
+      label: '登录日志总数',
+      value: '15,628',
+      unit: '条',
+      desc: '统计周期：全部',
+      tone: 'blue',
+    },
+    {
+      key: 'latest',
+      icon: History,
+      label: '最新登录时间',
+      value: '2026-06-23 13:32:24',
+      desc: '登录IP：39.144.15.112',
+      tone: 'green',
+    },
+    {
+      key: 'abnormal',
+      icon: ShieldCheck,
+      label: '异常登录次数',
+      value: '28',
+      unit: '次',
+      desc: '占比 0.18%',
+      tone: 'red',
+    },
+    {
+      key: 'timezone',
+      icon: RadioTower,
+      label: '时间时区',
+      value: '北京时间 UTC+08:00',
+      desc: '与设备上报时间一致',
+      tone: 'purple',
+    },
+  ];
+  const loginRows = [
+    ['2026-06-23 13:32:24', '39.144.15.112', '成功', '心跳上报', '设备主动上报'],
+    ['2026-06-23 00:44:33', '39.144.15.112', '成功', '心跳上报', '设备主动上报'],
+    ['2026-06-22 12:02:05', '39.144.15.112', '成功', '首登', '设备主动上报'],
+    ['2026-06-21 23:57:35', '39.144.15.112', '成功', '重连', '设备主动上报'],
+    ['2026-06-21 11:47:54', '39.144.15.112', '成功', '心跳上报', '设备主动上报'],
+    ['2026-06-20 22:56:42', '221.178.127.248', '失败', '心跳上报', '设备主动上报'],
+    ['2026-06-20 22:51:18', '39.144.15.112', '成功', '重连', '设备主动上报'],
+    ['2026-06-19 18:30:07', '39.144.15.112', '成功', '心跳上报', '设备主动上报'],
+  ].map(([time, ip, status, action, source]) => ({
+    deviceId: deviceInfo.id,
+    time,
+    ip,
+    status,
+    version: deviceInfo.firmware,
+    action,
+    source,
+  }));
+
+  return (
+    <section className="login-log-replica" aria-label="登录日志">
+      <div className="login-log-summary">
+        {loginOverview.map((item) => {
+          const SummaryIcon = item.icon;
+          return (
+            <article className={cls('login-log-card', `tone-${item.tone}`)} key={item.key}>
+              <span className="login-log-card-icon">
+                <SummaryIcon size={26} />
+              </span>
+              <div>
+                <small>{item.label}</small>
+                <strong>{item.value}{item.unit && <em>{item.unit}</em>}</strong>
+                <p>{item.desc}</p>
+              </div>
+            </article>
+          );
+        })}
+        <aside className="login-log-note">
+          <strong><Info size={15} />日志说明</strong>
+          <ul>
+            <li>登录日志记录设备与云平台的登录连接事件。</li>
+            <li>登录状态：成功、失败、超时、断开等。</li>
+            <li>心跳动作类型：心跳上报、首次登录、重连等。</li>
+            <li>时间统一按设备上报时区转换为北京时间展示。</li>
+          </ul>
+        </aside>
+      </div>
+
+      <section className="login-log-filters" aria-label="登录日志筛选">
+        <div className="login-filter-field wide">
+          <label>时间范围</label>
+          <button type="button">2026-06-16 00:00:00 <span>~</span> 2026-06-23 23:59:59 <FileClock size={14} /></button>
+        </div>
+        <div className="login-filter-field">
+          <label>日志类型</label>
+          <button type="button">登录日志 <ChevronRight size={14} /></button>
+        </div>
+        <div className="login-filter-field">
+          <label>登录状态</label>
+          <button type="button">全部状态 <ChevronRight size={14} /></button>
+        </div>
+        <div className="login-filter-field search">
+          <label>IP地址 / 版本号 / 设备ID</label>
+          <div>
+            <input aria-label="IP地址、版本号、设备ID关键词" placeholder="请输入关键词" />
+            <Search size={17} />
+          </div>
+        </div>
+        <div className="login-filter-actions">
+          <button type="button">重置</button>
+          <button type="button" className="primary">查询</button>
+          <button type="button"><Download size={14} />导出</button>
+          <button type="button" className="icon-only" aria-label="刷新"><RefreshCw size={17} /></button>
+        </div>
+        <p>已选择时间范围：2026-06-16 00:00:00 ~ 2026-06-23 23:59:59 <button type="button">清空条件</button></p>
+      </section>
+
+      <div className="login-log-table" role="table" aria-label="登录日志列表">
+        <div className="login-log-table-row head" role="row">
+          {['设备ID', '登录时间', '登录IP地址', '登录状态', '版本号', '心跳/动作类型', '来源', '操作'].map((column) => (
+            <span role="columnheader" key={column}>{column}</span>
+          ))}
+        </div>
+        {loginRows.map((row) => (
+          <div className="login-log-table-row" role="row" key={`${row.time}-${row.ip}`}>
+            <span role="cell">{row.deviceId}</span>
+            <span role="cell">{row.time}</span>
+            <span role="cell">{row.ip}</span>
+            <span role="cell"><i className={row.status === '成功' ? 'success' : 'failed'} />{row.status}</span>
+            <span role="cell">{row.version}</span>
+            <span role="cell">{row.action}</span>
+            <span role="cell">{row.source}</span>
+            <span role="cell" className="login-log-row-actions">
+              <button type="button">查看详情</button>
+              <button type="button">请求元数据</button>
+              <button type="button">结果元数据</button>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <footer className="login-log-pagination">
+        <strong>共 15,628 条</strong>
+        <div>
+          <button type="button">20条/页 <ChevronRight size={14} /></button>
+          <button type="button" className="ghost" aria-label="上一页"><ChevronLeft size={15} /></button>
+          <button type="button" className="active">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+          <span>...</span>
+          <button type="button">782</button>
+          <button type="button" aria-label="下一页"><ChevronRight size={15} /></button>
+          <label>前往 <input defaultValue="1" aria-label="跳转页码" /> 页</label>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
+function IterationResetLogReplica({ deviceInfo }) {
+  const resetRows = resetLogs.map((log) => ({
+    deviceId: deviceInfo.id,
+    ip: log.ip || '暂无记录',
+    time: log.time,
+  }));
+  const latestReset = resetRows[0];
+  const uniqueIpCount = new Set(resetRows.map((row) => row.ip).filter(Boolean)).size;
+  const resetOverview = [
+    {
+      key: 'count',
+      icon: RefreshCw,
+      label: '重置记录总数',
+      value: String(resetRows.length),
+      unit: '条',
+      desc: '统计周期：全部',
+      tone: 'blue',
+    },
+    {
+      key: 'latest',
+      icon: FileClock,
+      label: '最近重置时间',
+      value: latestReset?.time || '--',
+      desc: `设备ID：${deviceInfo.id}`,
+      tone: 'green',
+    },
+    {
+      key: 'ip',
+      icon: RadioTower,
+      label: '来源IP数量',
+      value: String(uniqueIpCount),
+      unit: '个',
+      desc: latestReset ? `最近IP：${latestReset.ip}` : '暂无来源IP',
+      tone: 'purple',
+    },
+  ];
+
+  return (
+    <section className="reset-log-replica" aria-label="重置记录">
+      <div className="reset-log-summary">
+        {resetOverview.map((item) => {
+          const SummaryIcon = item.icon;
+          return (
+            <article className={cls('reset-log-card', `tone-${item.tone}`)} key={item.key}>
+              <span className="reset-log-card-icon">
+                <SummaryIcon size={24} />
+              </span>
+              <div>
+                <small>{item.label}</small>
+                <strong>{item.value}{item.unit && <em>{item.unit}</em>}</strong>
+                <p>{item.desc}</p>
+              </div>
+            </article>
+          );
+        })}
+        <aside className="reset-log-note">
+          <strong><Info size={15} />字段说明</strong>
+          <ul>
+            <li>设备ID：发生重置动作的设备唯一标识。</li>
+            <li>IP地址：触发或上报重置记录时的来源 IP。</li>
+            <li>重置时间：统一按北京时间展示。</li>
+          </ul>
+        </aside>
+      </div>
+
+      <section className="reset-log-filters" aria-label="重置记录筛选">
+        <div className="reset-filter-field wide">
+          <label>时间范围</label>
+          <button type="button">2026-05-28 00:00:00 <span>~</span> 2026-06-11 23:59:59 <FileClock size={14} /></button>
+        </div>
+        <div className="reset-filter-field search">
+          <label>设备ID / IP地址</label>
+          <div>
+            <input aria-label="设备ID或IP地址关键词" placeholder="请输入关键词" />
+            <Search size={17} />
+          </div>
+        </div>
+        <div className="reset-filter-actions">
+          <button type="button">重置</button>
+          <button type="button" className="primary">查询</button>
+          <button type="button"><Download size={14} />导出</button>
+          <button type="button" className="icon-only" aria-label="刷新"><RefreshCw size={17} /></button>
+        </div>
+        <p>已选择时间范围：2026-05-28 00:00:00 ~ 2026-06-11 23:59:59 <button type="button">清空条件</button></p>
+      </section>
+
+      <div className="reset-log-table" role="table" aria-label="重置记录列表">
+        <div className="reset-log-table-row head" role="row">
+          {['设备ID', 'IP地址', '重置时间', '操作'].map((column) => (
+            <span role="columnheader" key={column}>{column}</span>
+          ))}
+        </div>
+        {resetRows.map((row) => (
+          <div className="reset-log-table-row" role="row" key={`${row.deviceId}-${row.time}`}>
+            <span role="cell"><b>{row.deviceId}</b></span>
+            <span role="cell"><i />{row.ip}</span>
+            <span role="cell">{row.time}</span>
+            <span role="cell" className="reset-log-row-actions">
+              <button type="button">查看详情</button>
+              <button type="button">复制设备ID</button>
+              <button type="button">复制IP</button>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <footer className="reset-log-pagination">
+        <strong>共 {resetRows.length} 条</strong>
+        <div>
+          <button type="button">20条/页 <ChevronRight size={14} /></button>
+          <button type="button" className="active">1</button>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
+function IterationAlarmLogReplica({ deviceInfo }) {
+  const alarmRows = [
+    ['2025-06-22 12:31:10', '2025-06-22 20:31:10', 'PIR人体侦测触发', 100, 2],
+    ['2025-06-22 12:12:45', '2025-06-22 20:12:45', '人体侦测被触发-只有图片', 96, 1],
+    ['2025-06-22 11:58:02', '2025-06-22 19:58:02', '人体侦测被触发-只有图片', 92, 1],
+    ['2025-06-22 11:43:18', '2025-06-22 19:43:18', 'PIR人体侦测触发', 88, 2],
+    ['2025-06-22 11:27:34', '2025-06-22 19:27:34', '人体侦测被触发-只有图片', 84, 1],
+    ['2025-06-22 11:12:09', '2025-06-22 19:12:09', 'PIR人体侦测触发', 80, 2],
+    ['2025-06-22 10:57:21', '2025-06-22 18:57:21', '人体侦测被触发-只有图片', 76, 1],
+    ['2025-06-22 10:41:10', '2025-06-22 18:41:10', 'PIR人体侦测触发', 72, 2],
+  ].map(([utc, beijing, action, battery, fileCount], index) => ({
+    id: `alarm-${index}`,
+    utc,
+    beijing,
+    action,
+    battery,
+    fileCount,
+  }));
+  const selectedAlarm = alarmRows[0];
+  const calendarDays = [
+    ['25', 'prev'], ['26', 'prev'], ['27', 'prev'], ['28', 'prev'], ['29', 'prev'], ['30', 'prev'], ['31', 'prev'],
+    ['01'], ['02'], ['03'], ['04'], ['05'], ['06'], ['07'],
+    ['08'], ['09'], ['10'], ['11'], ['12'], ['13'], ['14'],
+    ['15'], ['16', 'has'], ['17', 'has'], ['18', 'has'], ['19', 'has'], ['20', 'has'], ['21'],
+    ['22', 'active has'], ['23', 'has'], ['24', 'has'], ['25', 'has'], ['26', 'has'], ['27', 'has'], ['28'],
+    ['29'], ['30'], ['01', 'next'], ['02', 'next'], ['03', 'next'], ['04', 'next'], ['05', 'next'],
+  ];
+  const metadata = {
+    event: 'pir_trigger',
+    sensor: 'PIR',
+    sensitivity: 'high',
+    battery: 100,
+    temperature: 26.3,
+    humidity: 58,
+    device_id: deviceInfo.id,
+    sequence: 102348,
+    time_utc: '2025-06-22T12:31:10Z',
+  };
+  const detailRows = [
+    ['UTC时间', selectedAlarm.utc],
+    ['北京时间', selectedAlarm.beijing],
+    ['设备告警事件动作', selectedAlarm.action],
+    ['电量（%）', selectedAlarm.battery],
+  ];
+  const resourceFiles = [
+    ['IMG_20250622_123110.jpg', '256 KB', selectedAlarm.utc, 'image'],
+    ['IMG_20250622_123110.mp4', '1.25 MB', selectedAlarm.utc, 'video'],
+  ];
+
+  return (
+    <section className="alarm-log-replica" aria-label="报警日志">
+      <div className="alarm-log-tip">
+        <Info size={15} />
+        <div>
+          <strong>报警日志说明</strong>
+          <p>报警日志是设备产生告警事件时上报的记录，用于回溯设备告警情况、触发时间与相关附件（如图片、录像等），便于运维与业务排查。</p>
+        </div>
+      </div>
+
+      <div className="alarm-log-layout">
+        <aside className="alarm-calendar" aria-label="报警日期">
+          <strong>报警日期</strong>
+          <div className="alarm-calendar-card">
+            <div className="alarm-calendar-head">
+              <button type="button" aria-label="上个月"><ChevronLeft size={15} /></button>
+              <span>2025 年 6 月</span>
+              <button type="button" aria-label="下个月"><ChevronRight size={15} /></button>
+              <FileClock size={15} />
+            </div>
+            <div className="alarm-calendar-week">
+              {['日', '一', '二', '三', '四', '五', '六'].map((day) => <span key={day}>{day}</span>)}
+            </div>
+            <div className="alarm-calendar-grid">
+              {calendarDays.map(([day, state], index) => (
+                <button className={state || ''} type="button" key={`${day}-${index}`}>
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p><i />当日有报警日志</p>
+          <small>时区：UTC+08:00 北京时间</small>
+        </aside>
+
+        <section className="alarm-log-main">
+          <section className="alarm-log-filters" aria-label="报警日志筛选">
+            <label className="wide">
+              <span>时间范围</span>
+              <button type="button">2025-06-22 00:00:00 <em>~</em> 2025-06-22 23:59:59 <FileClock size={14} /></button>
+            </label>
+            <label>
+              <span>事件类型</span>
+              <button type="button">全部 <ChevronRight size={14} /></button>
+            </label>
+            <label>
+              <span>电量范围</span>
+              <button type="button">最小值 <em>~</em> 最大值 <b>%</b></button>
+            </label>
+            <label className="search">
+              <span aria-hidden="true">&nbsp;</span>
+              <div>
+                <input aria-label="事件动作或元数据内容关键词" placeholder="请输入事件动作/元数据内容关键词" />
+                <Search size={16} />
+              </div>
+            </label>
+            <button className="alarm-export" type="button">导出 <Download size={14} /></button>
+          </section>
+
+          <div className="alarm-log-table" role="table" aria-label="报警日志列表">
+            <div className="alarm-log-table-row head" role="row">
+              {['UTC时间', '北京时间', '设备告警事件动作', '电量（%）', '元数据信息', '资源文件'].map((column) => (
+                <span role="columnheader" key={column}>{column}</span>
+              ))}
+            </div>
+            {alarmRows.map((row, index) => (
+              <div className={cls('alarm-log-table-row', index === 0 && 'active')} role="row" key={row.id}>
+                <span role="cell">{row.utc}</span>
+                <span role="cell">{row.beijing}</span>
+                <span role="cell">{row.action}</span>
+                <span role="cell">{row.battery}</span>
+                <span role="cell"><button type="button">查看</button></span>
+                <span role="cell"><button type="button">查看({row.fileCount})</button></span>
+              </div>
+            ))}
+          </div>
+
+          <footer className="alarm-log-pagination">
+            <strong>共 128 条</strong>
+            <button type="button">10条/页 <ChevronRight size={14} /></button>
+            <button className="ghost" type="button" aria-label="上一页"><ChevronLeft size={14} /></button>
+            {[1, 2, 3, 4, 5].map((page) => (
+              <button className={page === 1 ? 'active' : ''} type="button" key={page}>{page}</button>
+            ))}
+            <span>...</span>
+            <button type="button">13</button>
+            <button type="button" aria-label="下一页"><ChevronRight size={14} /></button>
+            <label>前往 <input defaultValue="1" aria-label="跳转页码" /> 页</label>
+          </footer>
+        </section>
+
+        <aside className="alarm-detail-drawer" aria-label="报警日志详情">
+          <header>
+            <strong>报警日志详情</strong>
+            <button type="button" aria-label="关闭详情"><X size={17} /></button>
+          </header>
+          <h3><i />PIR人体侦测触发</h3>
+          <dl className="alarm-detail-list">
+            {detailRows.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <section className="alarm-detail-section">
+            <div className="alarm-detail-section-head">
+              <strong>元数据信息</strong>
+              <button type="button"><Share2 size={13} />复制</button>
+            </div>
+            <pre>{JSON.stringify(metadata, null, 2)}</pre>
+          </section>
+          <section className="alarm-detail-section">
+            <strong>资源文件（2）</strong>
+            <div className="alarm-resource-list">
+              {resourceFiles.map(([name, size, time, type]) => (
+                <article key={name}>
+                  <span className={cls('alarm-resource-thumb', type)}>
+                    {type === 'video' ? <ChevronRight size={22} /> : <Camera size={18} />}
+                  </span>
+                  <div>
+                    <b>{name}</b>
+                    <small>{size}</small>
+                  </div>
+                  <time>{time}</time>
+                  <button type="button" aria-label={`下载${name}`}><Download size={18} /></button>
+                </article>
+              ))}
+            </div>
+          </section>
+          <button className="alarm-detail-close" type="button">关闭</button>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function IterationAlarmDebugLogReplica({ deviceInfo }) {
+  const debugStats = [
+    {
+      key: 'attempts',
+      icon: Send,
+      label: '今日调试次数',
+      value: '38',
+      unit: '次',
+      desc: '昨日 26 次',
+      trend: '↑ 46.2%',
+      tone: 'blue',
+    },
+    {
+      key: 'success',
+      icon: CheckCircle2,
+      label: '推送成功率',
+      value: '92.1',
+      unit: '%',
+      desc: '成功 35 次 / 失败 3 次',
+      tone: 'green',
+    },
+    {
+      key: 'latest',
+      icon: History,
+      label: '最近调试时间',
+      value: '2026-06-23 12:43:55',
+      desc: '上海时间 UTC+08:00',
+      tone: 'purple',
+    },
+    {
+      key: 'status',
+      icon: BellRing,
+      label: '当前推送状态',
+      value: '推送中',
+      desc: '持续时长：02:43:55',
+      tone: 'orange',
+    },
+  ];
+  const regionTabs = ['大陆', '亚洲', '欧洲', '北美洲'];
+  const debugRows = [
+    ['2026-06-23 12:43:55', '大陆', '设备主站上报', '心跳上报', '成功', '126 ms', 'req_20260623124355_a1bc03', '周期性心跳'],
+    ['2026-06-23 12:40:21', '大陆', '短信通道', '设备报警推送', '失败', '2,312 ms', 'req_20260623124021_d4c6f6', 'SIM卡信号弱，发送失败'],
+    ['2026-06-23 12:32:07', '大陆', '短信通道', '位置报警推送', '成功', '342 ms', 'req_20260623123207_d9fa9b', '围栏越界报警'],
+    ['2026-06-23 12:18:33', '大陆', 'APP推送', '设备扬声器告警', '成功', '198 ms', 'req_20260623121833_f0b112', '扬声器告警测试'],
+    ['2026-06-23 11:55:10', '大陆', '短信通道', '低电量报警', '部分成功', '1,205 ms', 'req_20260623115510_m3ba05', '双卡轮换发送'],
+    ['2026-06-23 11:23:45', '大陆', '设备主站上报', '心跳上报', '成功', '83 ms', 'req_20260623112345_g7e7b7', '周期性心跳'],
+    ['2026-06-23 10:35:02', '大陆', '电话通道', '震动报警', '部分成功', '856 ms', 'req_20260623103502_a90a11', '无人接听'],
+    ['2026-06-23 09:42:18', '大陆', '邮件通道', '围栏越界告警', '成功', '412 ms', 'req_20260623094218_xa0fa4', '测试邮箱接收正常'],
+    ['2026-06-23 08:15:07', '大陆', 'APP推送', 'SOS报警测试', '成功', '265 ms', 'req_20260623081507_5fc9a7', '一键SOS测试'],
+    ['2026-06-23 07:55:30', '大陆', '设备主站上报', '心跳上报', '成功', '110 ms', 'req_20260623075530_bfl0b9d', '周期性心跳'],
+  ].map(([time, region, channel, action, result, latency, requestId, note]) => ({
+    time,
+    region,
+    channel,
+    action,
+    result,
+    latency,
+    requestId,
+    note,
+  }));
+  const channelStatuses = [
+    [Smartphone, '短信通道', '正常', 'normal'],
+    [BellRing, 'APP推送', '正常', 'normal'],
+    [Database, '设备主站', '正常', 'normal'],
+    [Share2, '邮件通道', '正常', 'normal'],
+    [RadioTower, '电话通道', '部分异常', 'warn'],
+    [Volume2, '扬声器通道', '正常', 'normal'],
+  ];
+  const resultSummary = [
+    ['成功', 7, '70%', 'success'],
+    ['部分成功', 2, '20%', 'partial'],
+    ['失败', 1, '10%', 'failed'],
+  ];
+
+  return (
+    <section className="alarm-debug-replica" aria-label="报警调试日志">
+      <div className="alarm-debug-stats">
+        {debugStats.map(({ icon: StatIcon, ...item }) => (
+          <article className={cls('alarm-debug-stat', `tone-${item.tone}`)} key={item.key}>
+            <span className="alarm-debug-stat-icon">
+              <StatIcon size={32} />
+            </span>
+            <div>
+              <small>{item.label}</small>
+              <strong>{item.value}<em>{item.unit}</em></strong>
+              <p>{item.desc} {item.trend && <b>{item.trend}</b>}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="alarm-debug-layout">
+        <section className="alarm-debug-main">
+          <div className="alarm-debug-toolbar">
+            <div className="alarm-debug-region-tabs" role="tablist" aria-label="报警调试区域">
+              {regionTabs.map((region, index) => (
+                <button className={index === 0 ? 'active' : ''} type="button" role="tab" aria-selected={index === 0} key={region}>
+                  {region}
+                </button>
+              ))}
+            </div>
+            <div className="alarm-debug-actions" aria-label="报警调试操作">
+              <button className="primary" type="button">发送调试数据</button>
+              <button className="primary" type="button">开启推送日志</button>
+              <button className="danger" type="button">停止推送</button>
+              <button type="button"><Settings size={14} />查看配置</button>
+              <button type="button"><Download size={14} />导出结果 <ChevronRight size={14} /></button>
+            </div>
+          </div>
+
+          <section className="alarm-debug-filters" aria-label="报警调试筛选">
+            <label>
+              <span>调试动作</span>
+              <button type="button">全部动作 <ChevronRight size={14} /></button>
+            </label>
+            <label>
+              <span>结果状态</span>
+              <button type="button">全部状态 <ChevronRight size={14} /></button>
+            </label>
+            <label>
+              <span>推送通道</span>
+              <button type="button">全部通道 <ChevronRight size={14} /></button>
+            </label>
+            <label className="wide">
+              <span>时间范围</span>
+              <button type="button">2026-06-23 00:00:00 <em>~</em> 2026-06-23 23:59:59 <FileClock size={14} /></button>
+            </label>
+            <label className="search">
+              <span>关键字</span>
+              <div>
+                <input aria-label="请求ID、备注、通道关键字" placeholder="请输入请求ID / 备注 / 通道" />
+                <Search size={15} />
+              </div>
+            </label>
+            <div className="alarm-debug-filter-actions">
+              <button type="button">重置</button>
+              <button className="primary" type="button">查询</button>
+            </div>
+          </section>
+
+          <div className="alarm-debug-table" role="table" aria-label="报警调试日志列表">
+            <div className="alarm-debug-table-row head" role="row">
+              {['触发时间', '区域', '推送通道', '动作', '结果', '响应耗时', '请求ID', '备注', '操作'].map((column) => (
+                <span role="columnheader" key={column}>{column}</span>
+              ))}
+            </div>
+            {debugRows.map((row) => (
+              <div className="alarm-debug-table-row" role="row" key={row.requestId}>
+                <span role="cell">{row.time}</span>
+                <span role="cell">{row.region}</span>
+                <span role="cell">{row.channel}</span>
+                <span role="cell">{row.action}</span>
+                <span role="cell" className={cls('alarm-debug-result', `status-${row.result}`)}>
+                  <i />{row.result}
+                </span>
+                <span role="cell">{row.latency}</span>
+                <span role="cell">{row.requestId}</span>
+                <span role="cell">{row.note}</span>
+                <span role="cell"><button type="button">查看详情</button></span>
+              </div>
+            ))}
+          </div>
+
+          <footer className="alarm-debug-pagination">
+            <strong>共 38 条</strong>
+            <div>
+              <button type="button">10条/页 <ChevronRight size={14} /></button>
+              <button className="ghost" type="button" aria-label="上一页"><ChevronLeft size={14} /></button>
+              {[1, 2, 3, 4].map((page) => (
+                <button className={page === 1 ? 'active' : ''} type="button" key={page}>{page}</button>
+              ))}
+              <button type="button" aria-label="下一页"><ChevronRight size={14} /></button>
+              <label>前往 <input defaultValue="1" aria-label="跳转页码" /> 页</label>
+            </div>
+          </footer>
+        </section>
+
+        <aside className="alarm-debug-sidebar" aria-label="报警调试诊断">
+          <section className="alarm-debug-note">
+            <strong>调试环境说明</strong>
+            <ul>
+              <li>此模块用于设备报警推送链路的调试与验证。</li>
+              <li>支持多通道并发测试，结果仅用于链路验证。</li>
+              <li>建议在非高峰时段进行大批量测试。</li>
+              <li>调试日志保留7天，逾期自动清理。</li>
+            </ul>
+          </section>
+
+          <section className="alarm-debug-channel-card">
+            <header>
+              <strong>通道状态</strong>
+              <button type="button">刷新</button>
+            </header>
+            <div>
+              {channelStatuses.map(([ChannelIcon, label, status, tone]) => (
+                <p className={`tone-${tone}`} key={label}>
+                  <span><ChannelIcon size={14} />{label}</span>
+                  <b>{status}</b>
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="alarm-debug-result-card">
+            <strong>最近测试结果（近 10 条）</strong>
+            <div className="alarm-debug-donut" aria-hidden="true">
+              <span />
+            </div>
+            <div className="alarm-debug-result-legend">
+              {resultSummary.map(([label, count, percent, tone]) => (
+                <p className={`tone-${tone}`} key={label}>
+                  <i />
+                  <span>{label}</span>
+                  <b>{count} ({percent})</b>
+                </p>
+              ))}
+            </div>
+          </section>
+
+          <section className="alarm-debug-risk">
+            <strong><AlertTriangle size={15} />风险提示</strong>
+            <p>短信通道存在部分失败，建议检查SIM卡信号与短信套餐余额。</p>
+            <button type="button">查看建议</button>
+          </section>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -2995,89 +3701,189 @@ function IterationSim() {
 }
 
 function IterationLifecycle({ deviceInfo }) {
-  const lifecycleFlow = [
-    ['生产', '完成', deviceInfo.productionTime, 'done'],
-    ['激活', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activationTime, deviceInfo.activated ? 'done' : 'muted'],
-    ['绑定', deviceInfo.activated ? '完成' : '未发生', deviceInfo.activated ? boundUsers[0]?.addedAt || '--' : '--', deviceInfo.activated ? 'done' : 'muted'],
-    ['运行 / 休眠', '当前', deviceInfo.p2p.lowPowerStatus, deviceInfo.p2p.status === '在线' ? 'done' : 'current'],
-    ['告警', deviceInfo.activated ? '有记录' : '暂无', deviceInfo.activated ? alarmLogs[0]?.beijing || '--' : '--', deviceInfo.activated ? 'warn' : 'muted'],
-    ['禁用 / 恢复', deviceInfo.disabled ? '已发生' : '未发生', deviceInfo.disabled ? defaultDisableRecords[0]?.time || '--' : '--', deviceInfo.disabled ? 'done' : 'muted'],
+  const currentStage = deviceInfo.activated ? `已激活 · ${deviceInfo.p2p.lowPowerStatus}` : '未激活';
+  const stageCards = [
+    ['阶段', deviceInfo.activated ? '已激活' : '未激活', deviceInfo.activated ? 'success' : 'muted', CheckCircle2],
+    ['当前', deviceInfo.p2p.lowPowerStatus || '未知', deviceInfo.p2p.lowPowerStatus === '休眠' ? 'warn' : 'success', Gauge],
+    ['事件', '7 条', 'neutral', FileClock],
+    ['最近变化', '2026-06-13 15:06:32', 'neutral', History],
+  ];
+  const phaseNodes = [
+    ['生产', '2024-04-23\n20:00:00', 'blue'],
+    ['激活', '2024-04-23\n20:09:00', 'green'],
+    ['绑定', '2024-04-26\n10:35:28', 'blue'],
+    ['运行/休眠', '2026-06-11\n17:52:49', 'orange'],
+    ['告警', '2026-06-13\n14:20:11', 'red'],
+    ['禁用/恢复', '2026-06-13\n15:06:32', 'purple'],
+  ];
+  const eventRows = [
+    ['2026-06-13 15:06:32', '恢复启用', '设备由禁用状态恢复为正常', '平台操作', '管理员', 'success'],
+    ['2026-06-13 14:20:11', '设备禁用', '设备由正常状态变更为禁用', '平台操作', '管理员', 'danger'],
+    ['2026-06-11 17:52:49', '进入休眠', '设备进入低功耗休眠状态', '设备上报', '系统', 'warn'],
+    ['2026-06-11 15:16:48', 'P2P 异常告警', '设备 P2P 链路异常，无法连接', '平台策略', '系统', 'blue'],
+    ['2024-04-26 10:35:28', '绑定主账号', '绑定主账号 18533644（王国胜）', '用户操作', '王国胜', 'blue'],
+    ['2024-04-23 20:09:00', '设备激活成功', '设备完成激活，开始接入平台', '平台操作', '系统', 'success'],
+    ['2024-04-23 20:00:00', '生产完成', '设备生产完成并通过质检', '生产系统', '自动化', 'blue'],
+  ];
+  const assetStages = [
+    ['生产', '已完成', deviceInfo.productionTime, 'success', Activity],
+    ['质检', '已通过', '2024-04-23 20:05:00', 'success', ShieldCheck],
+    ['入库', '已入库', '2024-04-23 21:00:00', 'success', Database],
+    ['出库', '已出库', '2024-04-24 09:20:00', 'muted', Layers],
+    ['销售', '已售出', '2024-04-24 10:00:00', 'blue', Smartphone],
+    ['维修/翻新/报废', '正常使用', '无维修记录', 'blue', Settings],
+  ];
+  const usageStages = [
+    ['未激活', '已完成', '2024-04-22 20:00:00', 'success', AlertTriangle],
+    ['已激活', '已完成', '2024-04-23 20:09:00', 'success', CheckCircle2],
+    ['已绑定', '已完成', '2024-04-26 10:35:28', 'blue', Smartphone],
+    ['运行中', '已完成', '2024-04-26 ~ 2026-06-11', 'success', Activity],
+    ['离线/休眠', '运行中', '2026-06-11 17:52:40', 'warn', Flame],
+    ['停用/解绑/退役', '未发生', '--', 'muted', Ban],
+  ];
+  const recentActions = [
+    ['恢复启用', '管理员', '15:06:32', 'purple'],
+    ['设备禁用', '管理员', '14:20:11', 'red'],
+    ['查看设备履历', '管理员', '12:18:04', 'blue'],
+    ['远程重启', '系统', '10:32:26', 'blue'],
+    ['查看设备日志', '王国胜', '09:11:06', 'green'],
+  ];
+  const diagnosis = [
+    ['信号强度', '-68 dBm', '优'],
+    ['CPU 使用率', '24 %', '优'],
+    ['内存使用率', '38 %', '优'],
+    ['在线时长', '128 天', '良'],
   ];
 
-  const lifecycleEvents = deviceInfo.activated
-    ? iterationLifecycleEvents.map(([time, type, desc]) => {
-      if (type === '生产') return [deviceInfo.productionTime, type, desc];
-      if (type === '激活') return [deviceInfo.activationTime, type, desc];
-      return [time, type, desc];
-    })
-    : [
-      [deviceInfo.productionTime, '生产', '设备生产完成，工厂信息已记录。'],
-      ['--', '激活', '设备尚未激活。'],
-    ];
-
   return (
-    <div className="iteration-lifecycle">
-      <section className="iteration-lifecycle-current">
-        <div>
-          <span>当前综合阶段</span>
-          <strong>{deviceInfo.activated ? `已激活 · ${deviceInfo.p2p.lowPowerStatus}` : '未激活'}</strong>
-        </div>
-        <div>
-          <span>主要判断依据</span>
-          <strong>激活时间、绑定记录、最近心跳、操作日志</strong>
-        </div>
-      </section>
-
-      <section className="iteration-lifecycle-flow" aria-label="设备生命周期节点">
-        {lifecycleFlow.map(([name, status, time, tone], index) => (
-          <div className={cls('iteration-flow-step', `tone-${tone}`)} key={name}>
-            <div className="iteration-flow-dot">{index + 1}</div>
-            <div>
-              <strong>{name}</strong>
-              <span>{status}</span>
-              <small>{time}</small>
-            </div>
+    <div className="lifecycle-replica">
+      <main className="lifecycle-replica-main">
+        <section className="lifecycle-replica-card lifecycle-overview-card">
+          <header className="lifecycle-section-title">
+            <span />
+            <strong>生命周期总览</strong>
+            <small>当前综合阶段</small>
+          </header>
+          <div className="lifecycle-stage-cards">
+            {stageCards.map(([label, value, tone, Icon]) => (
+              <article className={`tone-${tone}`} key={label}>
+                <span>{label}</span>
+                <strong><Icon size={16} />{value}</strong>
+              </article>
+            ))}
           </div>
-        ))}
-      </section>
+        </section>
 
-      <div className="iteration-track-grid">
-        {getIterationLifecycleTracks(deviceInfo).map((track) => (
-          <article className="iteration-track" key={track.title}>
-            <div className="iteration-track-head">
-              <div>
-                <h3>{track.title}</h3>
-                <p>{track.desc}</p>
-              </div>
-              <span>{track.current}</span>
-            </div>
-            <div className="iteration-track-nodes">
-              {track.nodes.map(([name, status, time]) => (
-                <div className={cls('iteration-track-node', status === '当前' && 'current')} key={`${track.title}-${name}`}>
-                  <b>{name}</b>
-                  <span>{status}</span>
-                  <small>{time}</small>
-                </div>
-              ))}
-            </div>
+        <section className="lifecycle-replica-card lifecycle-phase-card">
+          <header className="lifecycle-section-title">
+            <span />
+            <strong>生命周期阶段轨迹</strong>
+          </header>
+          <div className="lifecycle-phase-line">
+            {phaseNodes.map(([label, time, tone], index) => (
+              <article className={`tone-${tone}`} key={label}>
+                <b>{label}</b>
+                <i>{index + 1}</i>
+                <small>{time}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="lifecycle-replica-card lifecycle-event-card">
+          <header className="lifecycle-section-title">
+            <span />
+            <strong>关键事件时间线</strong>
+          </header>
+          <div className="lifecycle-event-list">
+            {eventRows.map(([time, type, desc, source, operator, tone]) => (
+              <article className={`tone-${tone}`} key={`${time}-${type}`}>
+                <time>{time}</time>
+                <strong>{type}</strong>
+                <p>{desc}</p>
+                <span>来源：{source}</span>
+                <span>操作人：{operator}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <LifecycleStageStrip title="资产生命周期" items={assetStages} />
+        <LifecycleStageStrip title="使用生命周期" items={usageStages} />
+
+        <section className="lifecycle-summary-banner">
+          <div>
+            <span>当前综合阶段：</span>
+            <strong>{currentStage}</strong>
+            <p>设备已完成激活与绑定，当前处于低功耗休眠状态，系统将按策略自动唤醒并保持在线可管理。</p>
+          </div>
+          <div className="lifecycle-cube" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
+        </section>
+      </main>
+
+      <aside className="lifecycle-replica-sidebar">
+        <section className="lifecycle-side-card">
+          <strong>快捷操作</strong>
+          {['追踪重点', '远程升级', '设备日志', '诊断工具'].map((action) => (
+            <button type="button" key={action}><RefreshCw size={14} />{action}</button>
+          ))}
+          <button type="button">更多操作 <ChevronRight size={14} /></button>
+        </section>
+
+        <section className="lifecycle-side-card">
+          <header>
+            <strong>最近操作</strong>
+            <button type="button">全部</button>
+          </header>
+          <div className="lifecycle-recent-actions">
+            {recentActions.map(([action, operator, time, tone]) => (
+              <article className={`tone-${tone}`} key={`${action}-${time}`}>
+                <span>{action}<small>{operator}</small></span>
+                <time>{time}</time>
+              </article>
+            ))}
+          </div>
+          <button className="text-link" type="button">查看更多</button>
+        </section>
+
+        <section className="lifecycle-side-card lifecycle-diagnosis-card">
+          <strong>实时诊断</strong>
+          <div className="lifecycle-sparkline" aria-hidden="true" />
+          {diagnosis.map(([label, value, level]) => (
+            <p key={label}>
+              <span>{label}</span>
+              <b>{value}</b>
+              <em>{level}</em>
+            </p>
+          ))}
+          <button className="text-link" type="button">查看更多</button>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function LifecycleStageStrip({ title, items }) {
+  return (
+    <section className="lifecycle-replica-card lifecycle-strip-card">
+      <header className="lifecycle-section-title">
+        <span />
+        <strong>{title}</strong>
+      </header>
+      <div className="lifecycle-strip-grid">
+        {items.map(([label, status, time, tone, Icon]) => (
+          <article className={`tone-${tone}`} key={`${title}-${label}`}>
+            <span><Icon size={14} />{label}</span>
+            <strong>{status}</strong>
+            <small>{time}</small>
           </article>
         ))}
       </div>
-
-      <section className="iteration-event-timeline">
-        <div className="section-heading">
-          <span />
-          关键事件时间线
-        </div>
-        {lifecycleEvents.map(([time, type, desc]) => (
-          <article key={`${time}-${type}`}>
-            <time>{time}</time>
-            <strong>{type}</strong>
-            <p>{desc}</p>
-          </article>
-        ))}
-      </section>
-    </div>
+    </section>
   );
 }
 
