@@ -46,6 +46,20 @@ import {
   Volume2,
   WifiOff,
   X,
+  Building2,
+  ClipboardList,
+  FileText,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  AlertCircle,
+  Clock,
+  Check,
+  Pause,
+  Play,
+  Ban as BanIcon,
+  RotateCcw,
 } from 'lucide-react';
 import {
   alarmLogs,
@@ -60,6 +74,7 @@ import {
   services,
   simCards,
 } from './data/mockData';
+import { dealers, testPermissions, testBindings, testOperationLogs } from './data/dealerMockData';
 import { cls, formatNumber } from './utils';
 
 const ReactECharts = lazy(() => import('echarts-for-react'));
@@ -887,6 +902,9 @@ function App() {
   const [iterationLogTab, setIterationLogTab] = useState(ITERATION_LOG_TABS[0]);
   const [selectedIterationDeviceId, setSelectedIterationDeviceId] = useState(deviceSamples[0]?.id || device.id);
   const currentIterationDevice = deviceSamples.find((item) => item.id === selectedIterationDeviceId) || deviceSamples[0] || device;
+  const [selectedDealerId, setSelectedDealerId] = useState(null);
+  const [dealerTab, setDealerTab] = useState('测试账号');
+  const [dealerModal, setDealerModal] = useState(null);
 
   const goDetail = () => {
     setView('detail');
@@ -935,6 +953,22 @@ function App() {
               setLogTab={setIterationLogTab}
             />
           )}
+          {view === 'dealerList' && (
+            <DealerListPage
+              onSelectDealer={(id) => { setSelectedDealerId(id); setView('dealerDetail'); setDealerTab('测试账号'); }}
+              onOpenAddModal={() => setDealerModal({ type: 'addAccount', dealerId: null })}
+            />
+          )}
+          {view === 'dealerDetail' && selectedDealerId && (
+            <DealerDetailPage
+              dealerId={selectedDealerId}
+              activeTab={dealerTab}
+              setActiveTab={setDealerTab}
+              onBack={() => setView('dealerList')}
+              onOpenModal={setDealerModal}
+            />
+          )}
+          {view === 'globalTestLogs' && <GlobalTestLogsPage />}
         </main>
       </div>
 
@@ -983,6 +1017,13 @@ function App() {
             setModal(null);
           }}
           onClose={() => setModal(null)}
+        />
+      )}
+      {dealerModal && (
+        <DealerModal
+          modal={dealerModal}
+          dealerId={selectedDealerId}
+          onClose={() => setDealerModal(null)}
         />
       )}
     </div>
@@ -1050,6 +1091,21 @@ function Sidebar({ view, onNavigate }) {
         >
           <FileClock size={16} />
           禁用需求说明
+        </button>
+        <div className="side-divider" />
+        <button
+          className={cls('side-item', (view === 'dealerList' || view === 'dealerDetail') && 'active')}
+          onClick={() => onNavigate('dealerList')}
+        >
+          <Building2 size={16} />
+          经销商列表
+        </button>
+        <button
+          className={cls('side-item', view === 'globalTestLogs' && 'active')}
+          onClick={() => onNavigate('globalTestLogs')}
+        >
+          <ClipboardList size={16} />
+          测试操作日志
         </button>
       </nav>
     </aside>
@@ -4415,5 +4471,792 @@ function InfoLine({ icon: Icon, label, value }) {
     </div>
   );
 }
+
+// ============================================================
+// 经销商测试管理模块
+// ============================================================
+
+const DEALER_TABS = ['测试账号', '测试设备', '操作日志'];
+
+const PERMISSION_STATUS_MAP = {
+  PENDING: { label: '审批中', tone: 'warning' },
+  APPROVED: { label: '待生效', tone: 'info' },
+  ACTIVE: { label: '生效中', tone: 'success' },
+  SUSPENDED: { label: '已暂停', tone: 'warning' },
+  EXPIRED: { label: '已过期', tone: 'muted' },
+  REVOKED: { label: '已撤销', tone: 'danger' },
+  REJECTED: { label: '已驳回', tone: 'danger' },
+};
+
+const BINDING_STATUS_MAP = {
+  ACTIVE: { label: '绑定中', tone: 'success' },
+  UNBOUND: { label: '已解绑', tone: 'muted' },
+  EXPIRED: { label: '已过期', tone: 'muted' },
+  REPLACED: { label: '已接管', tone: 'info' },
+  REVOKED: { label: '已撤销', tone: 'danger' },
+};
+
+const ORG_STATUS_MAP = {
+  active: { label: '有效', tone: 'success' },
+  suspended: { label: '停用', tone: 'warning' },
+  revoked: { label: '注销', tone: 'danger' },
+};
+
+const LOG_TYPES = ['测试绑定', '测试解绑', '设备控制', '账号登录', '权限变更', '权限审批', '真实接管', '越权操作', '兑换拦截', '权限到期'];
+
+function StatusBadge({ status, map }) {
+  const cfg = map[status] || { label: status, tone: 'muted' };
+  return <span className={cls('dealer-badge', `dealer-badge-${cfg.tone}`)}>{cfg.label}</span>;
+}
+
+function getDealerPermissions(orgId) {
+  return testPermissions.filter((p) => p.orgId === orgId);
+}
+
+function getDealerBindings(orgId) {
+  return testBindings.filter((b) => b.orgId === orgId);
+}
+
+function getDealerLogs(orgId) {
+  return testOperationLogs.filter((l) => l.orgId === orgId);
+}
+
+function DealerListPage({ onSelectDealer, onOpenAddModal }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [accountFilter, setAccountFilter] = useState('all');
+
+  const filtered = dealers.filter((d) => {
+    if (searchQuery && !d.name.includes(searchQuery) && !d.code.includes(searchQuery)) return false;
+    if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+    if (accountFilter === 'has') {
+      const perms = getDealerPermissions(d.id);
+      if (perms.length === 0) return false;
+    }
+    if (accountFilter === 'none') {
+      const perms = getDealerPermissions(d.id);
+      if (perms.length > 0) return false;
+    }
+    return true;
+  });
+
+  return (
+    <section className="iteration-page dealer-page">
+      <div className="iteration-topline">
+        <div>
+          <span className="iteration-kicker">经销商测试管理</span>
+          <h1>经销商列表</h1>
+        </div>
+        <span className="iteration-stage">共 {dealers.length} 家经销商</span>
+      </div>
+
+      <div className="dealer-filter-bar">
+        <input
+          className="dealer-search-input"
+          placeholder="搜索经销商名称或编码"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <select className="dealer-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="all">全部状态</option>
+          <option value="active">有效</option>
+          <option value="suspended">停用</option>
+          <option value="revoked">注销</option>
+        </select>
+        <select className="dealer-filter-select" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+          <option value="all">全部账号</option>
+          <option value="has">有测试账号</option>
+          <option value="none">无测试账号</option>
+        </select>
+        <button className="dealer-btn-primary" onClick={onOpenAddModal}>
+          <Plus size={15} />
+          新增测试账号
+        </button>
+      </div>
+
+      <div className="dealer-table-wrap">
+        <table className="dealer-table">
+          <thead>
+            <tr>
+              <th>经销商名称</th>
+              <th>编码</th>
+              <th>组织状态</th>
+              <th>测试账号</th>
+              <th>测试设备</th>
+              <th>待审批</th>
+              <th>最近测试</th>
+              <th>联系人</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((d) => {
+              const perms = getDealerPermissions(d.id);
+              const activePerms = perms.filter((p) => p.permissionStatus === 'ACTIVE');
+              const bindings = getDealerBindings(d.id);
+              const activeBindings = bindings.filter((b) => b.status === 'ACTIVE');
+              const pendingCount = perms.filter((p) => p.permissionStatus === 'PENDING').length;
+              const logs = getDealerLogs(d.id);
+              const latestLog = logs[0];
+
+              return (
+                <tr key={d.id} className="dealer-table-row" onClick={() => onSelectDealer(d.id)}>
+                  <td><strong>{d.name}</strong></td>
+                  <td>{d.code}</td>
+                  <td><StatusBadge status={d.status} map={ORG_STATUS_MAP} /></td>
+                  <td>{activePerms.length} / {perms.length}</td>
+                  <td>{activeBindings.length}</td>
+                  <td>
+                    {pendingCount > 0 ? (
+                      <span className="dealer-badge dealer-badge-danger">{pendingCount}</span>
+                    ) : (
+                      <span className="dealer-muted-num">0</span>
+                    )}
+                  </td>
+                  <td className="dealer-time">{latestLog ? latestLog.createdAt.slice(0, 10) : '—'}</td>
+                  <td>{d.contact}</td>
+                  <td>
+                    <button className="dealer-btn-link" onClick={(e) => { e.stopPropagation(); onSelectDealer(d.id); }}>
+                      查看详情
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function DealerDetailPage({ dealerId, activeTab, setActiveTab, onBack, onOpenModal }) {
+  const dealer = dealers.find((d) => d.id === dealerId);
+  if (!dealer) return null;
+
+  const perms = getDealerPermissions(dealerId);
+  const activePerms = perms.filter((p) => p.permissionStatus === 'ACTIVE');
+  const bindings = getDealerBindings(dealerId);
+  const activeBindings = bindings.filter((b) => b.status === 'ACTIVE');
+  const pendingCount = perms.filter((p) => p.permissionStatus === 'PENDING').length;
+
+  const handleTabKeyDown = (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = DEALER_TABS.indexOf(activeTab);
+    const len = DEALER_TABS.length;
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + len) % len;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % len;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = len - 1;
+    setActiveTab(DEALER_TABS[nextIndex]);
+  };
+
+  return (
+    <section className="iteration-page dealer-page">
+      <section className="iteration-console">
+        <div className="iteration-console-bar">
+          <div className="iteration-breadcrumb">
+            <button className="dealer-back-btn" onClick={onBack}>
+              <ChevronLeft size={16} />
+              <span>经销商列表</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="dealer-hero">
+          <div className="dealer-hero-main">
+            <div className="dealer-hero-title">
+              <h2>{dealer.name}</h2>
+              <StatusBadge status={dealer.status} map={ORG_STATUS_MAP} />
+            </div>
+            <div className="dealer-hero-meta">
+              <span>{dealer.code}</span>
+              <span className="dealer-meta-sep">·</span>
+              <span>联系人：{dealer.contact}</span>
+              <span className="dealer-meta-sep">·</span>
+              <span>创建于 {dealer.createdAt}</span>
+            </div>
+          </div>
+          <div className="dealer-hero-stats">
+            <div className="dealer-stat">
+              <strong>{activePerms.length}<small>/{perms.length}</small></strong>
+              <span>测试账号</span>
+            </div>
+            <div className="dealer-stat">
+              <strong>{activeBindings.length}</strong>
+              <span>测试设备</span>
+            </div>
+            <div className="dealer-stat">
+              <strong className={pendingCount > 0 ? 'dealer-stat-alert' : ''}>{pendingCount}</strong>
+              <span>待审批</span>
+            </div>
+          </div>
+        </div>
+
+        <section className="tab-card iteration-tab-card">
+          <div className="tabs iteration-tabs" role="tablist" aria-label="经销商详情分类" onKeyDown={handleTabKeyDown}>
+            {DEALER_TABS.map((tab, index) => (
+              <button
+                key={tab}
+                role="tab"
+                type="button"
+                aria-selected={activeTab === tab}
+                tabIndex={activeTab === tab ? 0 : -1}
+                className={cls(activeTab === tab && 'active')}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div className="tab-content iteration-tab-content" role="tabpanel">
+            {activeTab === '测试账号' && (
+              <DealerAccountsTab
+                dealer={dealer}
+                permissions={perms}
+                onOpenModal={onOpenModal}
+              />
+            )}
+            {activeTab === '测试设备' && (
+              <DealerDevicesTab dealerId={dealerId} bindings={bindings} />
+            )}
+            {activeTab === '操作日志' && (
+              <DealerLogsTab dealerId={dealerId} />
+            )}
+          </div>
+        </section>
+      </section>
+    </section>
+  );
+}
+
+function DealerAccountsTab({ dealer, permissions, onOpenModal }) {
+  const [expandedGroups, setExpandedGroups] = useState({ pending: true, active: true, suspended: true, terminal: true });
+
+  const toggleGroup = (key) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const pending = permissions.filter((p) => p.permissionStatus === 'PENDING');
+  const approved = permissions.filter((p) => p.permissionStatus === 'APPROVED');
+  const active = permissions.filter((p) => p.permissionStatus === 'ACTIVE');
+  const suspended = permissions.filter((p) => p.permissionStatus === 'SUSPENDED');
+  const terminal = permissions.filter((p) => ['EXPIRED', 'REVOKED', 'REJECTED'].includes(p.permissionStatus));
+
+  const groupDefs = [
+    { key: 'pending', label: '待审批', items: pending, tone: 'warning' },
+    { key: 'approved', label: '待生效', items: approved, tone: 'info' },
+    { key: 'active', label: '生效中', items: active, tone: 'success' },
+    { key: 'suspended', label: '已暂停', items: suspended, tone: 'warning' },
+    { key: 'terminal', label: '已终止', items: terminal, tone: 'muted' },
+  ].filter((g) => g.items.length > 0 || ['active', 'pending'].includes(g.key));
+
+  return (
+    <div className="dealer-accounts">
+      <div className="dealer-tab-toolbar">
+        <button className="dealer-btn-primary" onClick={() => onOpenModal({ type: 'addAccount', dealerId: dealer.id })}>
+          <Plus size={15} />
+          新增测试账号
+        </button>
+      </div>
+
+      {groupDefs.map((group) => (
+        <div key={group.key} className="dealer-group">
+          <button className="dealer-group-toggle" onClick={() => toggleGroup(group.key)}>
+            {expandedGroups[group.key] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className={cls('dealer-group-label', `dealer-group-${group.tone}`)}>{group.label}</span>
+            <span className="dealer-group-count">({group.items.length})</span>
+          </button>
+          {expandedGroups[group.key] && group.items.length > 0 && (
+            <div className="dealer-table-wrap">
+              <table className="dealer-table dealer-table-compact">
+                <thead>
+                  <tr>
+                    <th>测试账号</th>
+                    <th>用户ID</th>
+                    <th>联系方式</th>
+                    <th>有效期</th>
+                    <th>状态</th>
+                    <th>创建人</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.items.map((perm) => (
+                    <tr key={perm.id}>
+                      <td>
+                        <div className="dealer-account-cell">
+                          {perm.accountAnomaly && (
+                            <span className="dealer-anomaly-icon" title="用户中心账号异常，测试绑定将被拒绝">
+                              <AlertCircle size={14} />
+                            </span>
+                          )}
+                          <span>{perm.account}</span>
+                        </div>
+                      </td>
+                      <td className="dealer-mono">{perm.userId}</td>
+                      <td>{perm.phone}</td>
+                      <td className="dealer-time">{perm.effectiveTime} ~ {perm.expireTime}</td>
+                      <td>
+                        <StatusBadge status={perm.permissionStatus} map={PERMISSION_STATUS_MAP} />
+                        {perm.accountAnomaly && (
+                          <span className="dealer-anomaly-hint" title="关联用户账号已被冻结，测试绑定将被拒绝">⚠ 账号异常</span>
+                        )}
+                      </td>
+                      <td>{perm.createdBy}</td>
+                      <td className="dealer-actions">
+                        {perm.permissionStatus === 'PENDING' && (
+                          <a className="dealer-btn-link" href="#" onClick={(e) => e.preventDefault()}>
+                            <ExternalLink size={13} /> 查看钉钉审批
+                          </a>
+                        )}
+                        {perm.permissionStatus === 'APPROVED' && (
+                          <button className="dealer-btn-danger-sm" onClick={() => onOpenModal({ type: 'revoke', permission: perm })}>
+                            撤销
+                          </button>
+                        )}
+                        {perm.permissionStatus === 'ACTIVE' && (
+                          <>
+                            <button className="dealer-btn-link" onClick={() => onOpenModal({ type: 'extend', permission: perm })}>延期</button>
+                            <button className="dealer-btn-warning" onClick={() => onOpenModal({ type: 'suspend', permission: perm })}>暂停</button>
+                            <button className="dealer-btn-danger-sm" onClick={() => onOpenModal({ type: 'revoke', permission: perm })}>撤销</button>
+                          </>
+                        )}
+                        {perm.permissionStatus === 'SUSPENDED' && (
+                          <>
+                            <button
+                              className="dealer-btn-link"
+                              disabled={perm.suspendSource === 'org'}
+                              title={perm.suspendSource === 'org' ? '需先恢复组织' : ''}
+                              onClick={() => onOpenModal({ type: 'resume', permission: perm })}
+                            >
+                              恢复
+                            </button>
+                            <button className="dealer-btn-danger-sm" onClick={() => onOpenModal({ type: 'revoke', permission: perm })}>撤销</button>
+                          </>
+                        )}
+                        {['EXPIRED', 'REVOKED', 'REJECTED'].includes(perm.permissionStatus) && (
+                          <button className="dealer-btn-link" onClick={() => onOpenModal({ type: 'reapply', permission: perm, dealerId: dealer.id })}>
+                            <RotateCcw size={13} /> 重新申请
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {expandedGroups[group.key] && group.items.length === 0 && (
+            <div className="dealer-empty">暂无数据</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DealerDevicesTab({ dealerId, bindings }) {
+  const activeBindings = bindings.filter((b) => b.status === 'ACTIVE');
+  const endedBindings = bindings.filter((b) => b.status !== 'ACTIVE');
+
+  return (
+    <div className="dealer-devices">
+      <div className="dealer-section-head">
+        <span className="dealer-section-dot dealer-dot-success" />
+        <strong>测试中</strong>
+        <span className="dealer-section-count">({activeBindings.length})</span>
+      </div>
+      {activeBindings.length > 0 ? (
+        <div className="dealer-table-wrap">
+          <table className="dealer-table dealer-table-compact">
+            <thead>
+              <tr>
+                <th>设备ID</th>
+                <th>设备SN</th>
+                <th>绑定测试账号</th>
+                <th>绑定时间</th>
+                <th>在线状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeBindings.map((b) => (
+                <tr key={b.id}>
+                  <td className="dealer-mono">{b.deviceId}</td>
+                  <td className="dealer-mono">{b.deviceSn}</td>
+                  <td>{b.account}</td>
+                  <td className="dealer-time">{b.bindTime}</td>
+                  <td>
+                    <span className={cls('dealer-online-dot', b.online ? 'online' : 'offline')} />
+                    {b.online ? '在线' : '离线'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="dealer-empty">暂无测试中的设备</div>
+      )}
+
+      <div className="dealer-section-head" style={{ marginTop: 24 }}>
+        <span className="dealer-section-dot dealer-dot-muted" />
+        <strong>已结束</strong>
+        <span className="dealer-section-count">({endedBindings.length})</span>
+      </div>
+      {endedBindings.length > 0 ? (
+        <div className="dealer-table-wrap">
+          <table className="dealer-table dealer-table-compact">
+            <thead>
+              <tr>
+                <th>设备ID</th>
+                <th>设备SN</th>
+                <th>测试账号</th>
+                <th>绑定时间</th>
+                <th>结束时间</th>
+                <th>结束原因</th>
+                <th>当前激活状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {endedBindings.map((b) => (
+                <tr key={b.id}>
+                  <td className="dealer-mono">{b.deviceId}</td>
+                  <td className="dealer-mono">{b.deviceSn}</td>
+                  <td>{b.account}</td>
+                  <td className="dealer-time">{b.bindTime}</td>
+                  <td className="dealer-time">{b.takeoverTime || b.unbindTime || b.expireTime || '—'}</td>
+                  <td>
+                    <StatusBadge status={b.status} map={BINDING_STATUS_MAP} />
+                    {b.unbindReason && <span className="dealer-reason-hint">{b.unbindReason}</span>}
+                  </td>
+                  <td>
+                    <span className={cls('dealer-badge', b.deviceActivationStatus === 'ACTIVE' ? 'dealer-badge-success' : 'dealer-badge-muted')}>
+                      {b.deviceActivationStatus === 'ACTIVE' ? '已激活' : '未激活'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="dealer-empty">暂无已结束的设备</div>
+      )}
+    </div>
+  );
+}
+
+function LogTable({ logs, showOrg = false }) {
+  const [expandedId, setExpandedId] = useState(null);
+
+  return (
+    <div className="dealer-table-wrap">
+      <table className="dealer-table dealer-table-compact">
+        <thead>
+          <tr>
+            {showOrg && <th>经销商</th>}
+            <th>时间</th>
+            <th>测试账号</th>
+            <th>设备SN</th>
+            <th>操作类型</th>
+            <th>结果</th>
+            <th>激活抑制</th>
+            <th>云存</th>
+            <th>流量</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.map((log) => (
+            <React.Fragment key={log.id}>
+              <tr
+                className={cls('dealer-log-row', expandedId === log.id && 'expanded')}
+                onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+              >
+                {showOrg && <td>{log.orgName}</td>}
+                <td className="dealer-time">{log.createdAt.slice(5, 16)}</td>
+                <td>{log.account || '—'}</td>
+                <td className="dealer-mono">{log.deviceSn || '—'}</td>
+                <td>{log.operationType}</td>
+                <td>
+                  <span className={cls('dealer-badge', log.operationResult === '成功' ? 'dealer-badge-success' : 'dealer-badge-danger')}>
+                    {log.operationResult}
+                  </span>
+                </td>
+                <td>{log.activationSuppressed ? <Check size={14} className="dealer-check" /> : <span className="dealer-dash">—</span>}</td>
+                <td>{log.cloudSuppressed ? <Check size={14} className="dealer-check" /> : <span className="dealer-dash">—</span>}</td>
+                <td>{log.trafficSuppressed ? <Check size={14} className="dealer-check" /> : <span className="dealer-dash">—</span>}</td>
+              </tr>
+              {expandedId === log.id && (
+                <tr className="dealer-log-detail-row">
+                  <td colSpan={showOrg ? 9 : 8}>
+                    <div className="dealer-log-detail">
+                      <div className="dealer-log-detail-grid">
+                        <div><span>Trace ID</span><strong>{log.traceId}</strong></div>
+                        <div><span>用户ID</span><strong>{log.userId}</strong></div>
+                        <div><span>设备ID</span><strong>{log.deviceId || '—'}</strong></div>
+                        <div><span>权限ID</span><strong>{log.permissionId}</strong></div>
+                        {log.activationStatusBefore && (
+                          <div><span>激活状态变化</span><strong>{log.activationStatusBefore} → {log.activationStatusAfter}</strong></div>
+                        )}
+                        {log.failureReason && (
+                          <div className="dealer-log-fail"><span>失败原因</span><strong>{log.failureReason}</strong></div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DealerLogsTab({ dealerId }) {
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [resultFilter, setResultFilter] = useState('all');
+
+  const logs = getDealerLogs(dealerId).filter((l) => {
+    if (typeFilter !== 'all' && l.operationType !== typeFilter) return false;
+    if (resultFilter !== 'all' && l.operationResult !== resultFilter) return false;
+    return true;
+  });
+
+  return (
+    <div className="dealer-logs">
+      <div className="dealer-filter-bar dealer-filter-compact">
+        <select className="dealer-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <option value="all">全部操作类型</option>
+          {LOG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select className="dealer-filter-select" value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
+          <option value="all">全部结果</option>
+          <option value="成功">成功</option>
+          <option value="失败">失败</option>
+        </select>
+      </div>
+      {logs.length > 0 ? (
+        <LogTable logs={logs} />
+      ) : (
+        <div className="dealer-empty">暂无日志记录</div>
+      )}
+    </div>
+  );
+}
+
+function GlobalTestLogsPage() {
+  const [orgFilter, setOrgFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [resultFilter, setResultFilter] = useState('all');
+  const [searchText, setSearchText] = useState('');
+
+  const logs = testOperationLogs.filter((l) => {
+    if (orgFilter !== 'all' && l.orgId !== orgFilter) return false;
+    if (typeFilter !== 'all' && l.operationType !== typeFilter) return false;
+    if (resultFilter !== 'all' && l.operationResult !== resultFilter) return false;
+    if (searchText && !l.deviceSn?.includes(searchText) && !l.account?.includes(searchText) && !l.userId?.includes(searchText)) return false;
+    return true;
+  });
+
+  return (
+    <section className="iteration-page dealer-page">
+      <div className="iteration-topline">
+        <div>
+          <span className="iteration-kicker">经销商测试管理</span>
+          <h1>测试操作日志</h1>
+        </div>
+        <span className="iteration-stage">共 {logs.length} 条记录</span>
+      </div>
+
+      <div className="dealer-filter-bar">
+        <select className="dealer-filter-select" value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)}>
+          <option value="all">全部经销商</option>
+          {dealers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
+        <select className="dealer-filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <option value="all">全部操作类型</option>
+          {LOG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select className="dealer-filter-select" value={resultFilter} onChange={(e) => setResultFilter(e.target.value)}>
+          <option value="all">全部结果</option>
+          <option value="成功">成功</option>
+          <option value="失败">失败</option>
+        </select>
+        <input
+          className="dealer-search-input"
+          placeholder="设备SN / 测试账号 / 用户ID"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+      </div>
+
+      {logs.length > 0 ? (
+        <LogTable logs={logs} showOrg />
+      ) : (
+        <div className="dealer-empty">暂无匹配的日志记录</div>
+      )}
+    </section>
+  );
+}
+
+function DealerAddForm({ modal, dealerId }) {
+  const [accountSource, setAccountSource] = useState('existing');
+  const [formData, setFormData] = useState({
+    org: modal.dealerId || dealerId || '',
+    phone: modal.permission?.phone || '',
+    email: modal.permission?.email || '',
+    reason: '',
+    startDate: '2026-07-07',
+    endDate: '2026-08-06',
+    contact: '',
+    note: '',
+  });
+  const updateField = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+
+  return (
+    <div className="dealer-modal-body">
+      {modal.type === 'reapply' && (
+        <div className="dealer-modal-hint">
+          <RotateCcw size={14} />
+          <span>基于已终止权限重新申请，将创建新的权限记录</span>
+        </div>
+      )}
+      <div className="dealer-form-group">
+        <label>所属经销商 *</label>
+        <select className="dealer-form-input" value={formData.org} onChange={(e) => updateField('org', e.target.value)} disabled={!!modal.dealerId}>
+          <option value="">请选择经销商</option>
+          {dealers.filter((d) => d.status === 'active').map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
+      </div>
+      <div className="dealer-form-group">
+        <label>账号来源</label>
+        <div className="dealer-form-tabs">
+          <button className={cls(accountSource === 'existing' && 'active')} onClick={() => setAccountSource('existing')}>关联已有账号</button>
+          <button className={cls(accountSource === 'new' && 'active')} onClick={() => setAccountSource('new')}>新建账号</button>
+        </div>
+      </div>
+      {accountSource === 'existing' ? (
+        <div className="dealer-form-group">
+          <label>手机号 / 邮箱 *</label>
+          <div className="dealer-form-row">
+            <input className="dealer-form-input" placeholder="输入手机号或邮箱查询" value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} />
+            <button className="dealer-btn-secondary">查询</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="dealer-form-group"><label>手机号 *</label><input className="dealer-form-input" placeholder="输入手机号" value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} /></div>
+          <div className="dealer-form-group"><label>邮箱</label><input className="dealer-form-input" placeholder="输入邮箱" value={formData.email} onChange={(e) => updateField('email', e.target.value)} /></div>
+        </>
+      )}
+      <div className="dealer-form-group"><label>申请原因 *</label><input className="dealer-form-input" placeholder="说明抽检业务用途" value={formData.reason} onChange={(e) => updateField('reason', e.target.value)} /></div>
+      <div className="dealer-form-row-2col">
+        <div className="dealer-form-group"><label>生效时间 *</label><input className="dealer-form-input" type="date" value={formData.startDate} onChange={(e) => updateField('startDate', e.target.value)} /></div>
+        <div className="dealer-form-group"><label>失效时间 *</label><input className="dealer-form-input" type="date" value={formData.endDate} onChange={(e) => updateField('endDate', e.target.value)} /></div>
+      </div>
+      <div className="dealer-form-hint">默认 30 天，单次最长 90 天</div>
+      <div className="dealer-form-group"><label>联系人</label><input className="dealer-form-input" placeholder="经销商联系人（选填）" value={formData.contact} onChange={(e) => updateField('contact', e.target.value)} /></div>
+      <div className="dealer-form-group"><label>备注</label><input className="dealer-form-input" placeholder="补充说明（选填）" value={formData.note} onChange={(e) => updateField('note', e.target.value)} /></div>
+    </div>
+  );
+}
+
+function DealerExtendForm({ permission }) {
+  const [newEndDate, setNewEndDate] = useState(permission.expireTime);
+  const [reason, setReason] = useState('');
+  return (
+    <div className="dealer-modal-body">
+      <div className="dealer-modal-info"><span>当前有效期</span><strong>{permission.effectiveTime} 至 {permission.expireTime}</strong></div>
+      <div className="dealer-form-group"><label>新失效时间 *</label><input className="dealer-form-input" type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} /></div>
+      <div className="dealer-form-hint">最长不超过当前时间 +90 天</div>
+      <div className="dealer-form-group"><label>延期原因 *</label><input className="dealer-form-input" placeholder="说明延期原因" value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+    </div>
+  );
+}
+
+function DealerConfirmForm({ modal }) {
+  const perm = modal.permission;
+  const bindings = testBindings.filter((b) => b.permissionId === perm.id && b.status === 'ACTIVE');
+  const isSuspend = modal.type === 'suspend';
+  const isRevoke = modal.type === 'revoke';
+  const actionLabel = isSuspend ? '暂停' : isRevoke ? '撤销' : '恢复';
+  const [reason, setReason] = useState('');
+  return (
+    <div className="dealer-modal-body">
+      <div className="dealer-modal-confirm">
+        <p>即将{actionLabel}以下测试权限：</p>
+        <div className="dealer-modal-info-grid">
+          <div><span>账号</span><strong>{perm.account} ({perm.userId})</strong></div>
+          <div><span>经销商</span><strong>{dealers.find((d) => d.id === perm.orgId)?.name}</strong></div>
+        </div>
+      </div>
+      {(isSuspend || isRevoke) && bindings.length > 0 && (
+        <div className="dealer-modal-warning">
+          <AlertTriangle size={15} />
+          <span>{actionLabel}后该账号下 {bindings.length} 个测试绑定将自动{isSuspend ? '过期' : '撤销'}</span>
+        </div>
+      )}
+      {isRevoke && <div className="dealer-modal-danger-hint">撤销为永久操作，不可恢复。如需重新使用请走重新申请流程。</div>}
+      {(isSuspend || isRevoke) && (
+        <div className="dealer-form-group">
+          <label>{actionLabel}原因 *</label>
+          <input className="dealer-form-input" placeholder={`说明${actionLabel}原因`} value={reason} onChange={(e) => setReason(e.target.value)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DealerModal({ modal, dealerId, onClose }) {
+  if (!modal) return null;
+
+  const getModalTitle = () => {
+    switch (modal.type) {
+      case 'addAccount': return '新增测试账号';
+      case 'reapply': return '重新申请';
+      case 'extend': return '延期申请';
+      case 'suspend': return '暂停测试权限';
+      case 'resume': return '恢复测试权限';
+      case 'revoke': return '撤销测试权限';
+      default: return '';
+    }
+  };
+
+  const getSubmitLabel = () => {
+    if (['addAccount', 'reapply', 'extend'].includes(modal.type)) return '提交申请';
+    if (modal.type === 'suspend') return '确认暂停';
+    if (modal.type === 'resume') return '确认恢复';
+    if (modal.type === 'revoke') return '确认撤销';
+    return '确认';
+  };
+
+  const isApproval = ['addAccount', 'reapply', 'extend'].includes(modal.type);
+  const isDanger = modal.type === 'revoke';
+
+  return (
+    <div className="dealer-modal-overlay" onClick={onClose}>
+      <div className="dealer-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="dealer-modal-header">
+          <h3>{getModalTitle()}</h3>
+          <button className="dealer-modal-close" onClick={onClose}><X size={18} /></button>
+        </div>
+        {(modal.type === 'addAccount' || modal.type === 'reapply') && <DealerAddForm modal={modal} dealerId={dealerId} />}
+        {modal.type === 'extend' && <DealerExtendForm permission={modal.permission} />}
+        {['suspend', 'resume', 'revoke'].includes(modal.type) && <DealerConfirmForm modal={modal} />}
+        <div className="dealer-modal-footer">
+          <button className="dealer-btn-secondary" onClick={onClose}>取消</button>
+          <button className={cls('dealer-btn-primary', isDanger && 'dealer-btn-danger')} onClick={onClose}>
+            {getSubmitLabel()}
+            {isApproval && <span className="dealer-btn-hint">（将发起钉钉审批）</span>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default App;
