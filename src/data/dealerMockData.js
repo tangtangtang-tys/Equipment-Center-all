@@ -312,7 +312,7 @@ export const testPermissions = [
     suspendSource: null,
     suspendReason: null,
     revokeReason: null,
-    rejectReason: '经销商组织已注销，无法新增测试账号',
+    rejectReason: '经销商组织已注销，无法新增App测试账号',
   },
   // DL-1004 华北 - 额外的APPROVED(待生效)
   {
@@ -541,7 +541,7 @@ export const testBindings = [
   },
 ];
 
-// 操作日志
+// App测试操作日志
 export const testOperationLogs = [
   // DL-1001 华东
   {
@@ -643,7 +643,7 @@ export const testOperationLogs = [
     deviceId: 'DEV-20260004', deviceSn: 'SN-M0N1O2',
     operationType: '越权操作', operationResult: '失败',
     activationSuppressed: false, cloudSuppressed: false, trafficSuppressed: false,
-    failureReason: '测试账号不支持分享设备功能', activationStatusBefore: 'INACTIVE', activationStatusAfter: 'INACTIVE',
+    failureReason: 'App测试账号不支持分享设备功能', activationStatusBefore: 'INACTIVE', activationStatusAfter: 'INACTIVE',
     createdAt: '2026-07-03 15:20:00',
   },
   // DL-1002 华南 - 兑换码拦截
@@ -653,7 +653,7 @@ export const testOperationLogs = [
     deviceId: null, deviceSn: null,
     operationType: '兑换拦截', operationResult: '失败',
     activationSuppressed: false, cloudSuppressed: true, trafficSuppressed: false,
-    failureReason: '测试账号不能兑换正式云存权益', activationStatusBefore: null, activationStatusAfter: null,
+    failureReason: 'App测试账号不能兑换正式云存权益', activationStatusBefore: null, activationStatusAfter: null,
     createdAt: '2026-07-03 15:25:00',
   },
   // DL-1003 西部 - 组织停用级联
@@ -702,7 +702,7 @@ export const testOperationLogs = [
     deviceId: null, deviceSn: null,
     operationType: '权限审批', operationResult: '失败',
     activationSuppressed: false, cloudSuppressed: false, trafficSuppressed: false,
-    failureReason: '经销商组织已注销，无法新增测试账号', activationStatusBefore: null, activationStatusAfter: null,
+    failureReason: '经销商组织已注销，无法新增App测试账号', activationStatusBefore: null, activationStatusAfter: null,
     createdAt: '2026-07-01 10:00:00',
   },
   // DL-1001 华东 - 设备控制日志

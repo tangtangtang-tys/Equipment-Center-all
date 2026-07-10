@@ -75,6 +75,7 @@ import {
   simCards,
 } from './data/mockData';
 import { dealers, testPermissions, testBindings, testOperationLogs } from './data/dealerMockData';
+import DealerManagementDemo from './DealerManagementDemo.jsx';
 import { cls, formatNumber } from './utils';
 
 const ReactECharts = lazy(() => import('echarts-for-react'));
@@ -888,7 +889,7 @@ function getIterationModuleMeta(tab, deviceInfo = device) {
 }
 
 function App() {
-  const [view, setView] = useState('search');
+  const [view, setView] = useState('dealerList');
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState(MAIN_TABS[0]);
   const [logTab, setLogTab] = useState('登录日志');
@@ -901,14 +902,33 @@ function App() {
   const [iterationTab, setIterationTab] = useState(ITERATION_TABS[0]);
   const [iterationLogTab, setIterationLogTab] = useState(ITERATION_LOG_TABS[0]);
   const [selectedIterationDeviceId, setSelectedIterationDeviceId] = useState(deviceSamples[0]?.id || device.id);
-  const currentIterationDevice = deviceSamples.find((item) => item.id === selectedIterationDeviceId) || deviceSamples[0] || device;
+  const [selectedIterationRecord, setSelectedIterationRecord] = useState(null);
+  const baseIterationDevice = deviceSamples[0] || device;
+  const currentIterationDevice = deviceSamples.find((item) => item.id === selectedIterationDeviceId) || {
+    ...baseIterationDevice,
+    id: selectedIterationDeviceId,
+    model: selectedIterationRecord?.deviceModel || baseIterationDevice.model,
+    modelCode: selectedIterationRecord?.deviceModel || baseIterationDevice.modelCode,
+    productLine: selectedIterationRecord?.deviceType || baseIterationDevice.productLine,
+    scenario: '经销商测试设备',
+    scenarioDesc: selectedIterationRecord ? `来自设备测试记录：${selectedIterationRecord.accountName}` : '来自设备测试记录',
+    riskSummary: '该设备由经销商设备测试记录跳转进入，当前展示详情模块迭代信息。',
+    statusTone: 'normal',
+  };
   const [selectedDealerId, setSelectedDealerId] = useState(null);
-  const [dealerTab, setDealerTab] = useState('测试账号');
+  const [dealerTab, setDealerTab] = useState('App测试账号');
   const [dealerModal, setDealerModal] = useState(null);
 
   const goDetail = () => {
     setView('detail');
     setActiveTab(MAIN_TABS[0]);
+  };
+
+  const openIterationDeviceDetail = (deviceId, record = null) => {
+    setSelectedIterationDeviceId(deviceId);
+    setSelectedIterationRecord(record);
+    setIterationTab(ITERATION_TABS[0]);
+    setView('detailIterationScope');
   };
 
   return (
@@ -938,10 +958,7 @@ function App() {
           {view === 'deviceManagement' && (
             <DeviceManagementPage
               selectedDeviceId={selectedIterationDeviceId}
-              onOpenDetail={(deviceId) => {
-                setSelectedIterationDeviceId(deviceId);
-                setView('detailIterationScope');
-              }}
+              onOpenDetail={(deviceId) => openIterationDeviceDetail(deviceId)}
             />
           )}
           {view === 'detailIterationScope' && (
@@ -954,19 +971,7 @@ function App() {
             />
           )}
           {view === 'dealerList' && (
-            <DealerListPage
-              onSelectDealer={(id) => { setSelectedDealerId(id); setView('dealerDetail'); setDealerTab('测试账号'); }}
-              onOpenAddModal={() => setDealerModal({ type: 'addAccount', dealerId: null })}
-            />
-          )}
-          {view === 'dealerDetail' && selectedDealerId && (
-            <DealerDetailPage
-              dealerId={selectedDealerId}
-              activeTab={dealerTab}
-              setActiveTab={setDealerTab}
-              onBack={() => setView('dealerList')}
-              onOpenModal={setDealerModal}
-            />
+            <DealerManagementDemo onOpenDeviceDetail={openIterationDeviceDetail} />
           )}
           {view === 'globalTestLogs' && <GlobalTestLogsPage />}
         </main>
@@ -1099,13 +1104,6 @@ function Sidebar({ view, onNavigate }) {
         >
           <Building2 size={16} />
           经销商列表
-        </button>
-        <button
-          className={cls('side-item', view === 'globalTestLogs' && 'active')}
-          onClick={() => onNavigate('globalTestLogs')}
-        >
-          <ClipboardList size={16} />
-          测试操作日志
         </button>
       </nav>
     </aside>
@@ -4476,7 +4474,7 @@ function InfoLine({ icon: Icon, label, value }) {
 // 经销商测试管理模块
 // ============================================================
 
-const DEALER_TABS = ['测试账号', '测试设备', '操作日志'];
+const DEALER_TABS = ['App测试账号', '测试设备', 'App测试操作日志'];
 
 const PERMISSION_STATUS_MAP = {
   PENDING: { label: '审批中', tone: 'warning' },
@@ -4565,12 +4563,12 @@ function DealerListPage({ onSelectDealer, onOpenAddModal }) {
         </select>
         <select className="dealer-filter-select" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
           <option value="all">全部账号</option>
-          <option value="has">有测试账号</option>
-          <option value="none">无测试账号</option>
+          <option value="has">有App测试账号</option>
+          <option value="none">无App测试账号</option>
         </select>
         <button className="dealer-btn-primary" onClick={onOpenAddModal}>
           <Plus size={15} />
-          新增测试账号
+          新增App测试账号
         </button>
       </div>
 
@@ -4581,7 +4579,7 @@ function DealerListPage({ onSelectDealer, onOpenAddModal }) {
               <th>经销商名称</th>
               <th>编码</th>
               <th>组织状态</th>
-              <th>测试账号</th>
+              <th>App测试账号</th>
               <th>测试设备</th>
               <th>待审批</th>
               <th>最近测试</th>
@@ -4682,7 +4680,7 @@ function DealerDetailPage({ dealerId, activeTab, setActiveTab, onBack, onOpenMod
           <div className="dealer-hero-stats">
             <div className="dealer-stat">
               <strong>{activePerms.length}<small>/{perms.length}</small></strong>
-              <span>测试账号</span>
+              <span>App测试账号</span>
             </div>
             <div className="dealer-stat">
               <strong>{activeBindings.length}</strong>
@@ -4712,7 +4710,7 @@ function DealerDetailPage({ dealerId, activeTab, setActiveTab, onBack, onOpenMod
             ))}
           </div>
           <div className="tab-content iteration-tab-content" role="tabpanel">
-            {activeTab === '测试账号' && (
+            {activeTab === 'App测试账号' && (
               <DealerAccountsTab
                 dealer={dealer}
                 permissions={perms}
@@ -4722,7 +4720,7 @@ function DealerDetailPage({ dealerId, activeTab, setActiveTab, onBack, onOpenMod
             {activeTab === '测试设备' && (
               <DealerDevicesTab dealerId={dealerId} bindings={bindings} />
             )}
-            {activeTab === '操作日志' && (
+            {activeTab === 'App测试操作日志' && (
               <DealerLogsTab dealerId={dealerId} />
             )}
           </div>
@@ -4756,7 +4754,7 @@ function DealerAccountsTab({ dealer, permissions, onOpenModal }) {
       <div className="dealer-tab-toolbar">
         <button className="dealer-btn-primary" onClick={() => onOpenModal({ type: 'addAccount', dealerId: dealer.id })}>
           <Plus size={15} />
-          新增测试账号
+          新增App测试账号
         </button>
       </div>
 
@@ -4772,7 +4770,7 @@ function DealerAccountsTab({ dealer, permissions, onOpenModal }) {
               <table className="dealer-table dealer-table-compact">
                 <thead>
                   <tr>
-                    <th>测试账号</th>
+                    <th>App测试账号</th>
                     <th>用户ID</th>
                     <th>联系方式</th>
                     <th>有效期</th>
@@ -4874,7 +4872,7 @@ function DealerDevicesTab({ dealerId, bindings }) {
               <tr>
                 <th>设备ID</th>
                 <th>设备SN</th>
-                <th>绑定测试账号</th>
+                <th>绑定App测试账号</th>
                 <th>绑定时间</th>
                 <th>在线状态</th>
               </tr>
@@ -4911,7 +4909,7 @@ function DealerDevicesTab({ dealerId, bindings }) {
               <tr>
                 <th>设备ID</th>
                 <th>设备SN</th>
-                <th>测试账号</th>
+                <th>App测试账号</th>
                 <th>绑定时间</th>
                 <th>结束时间</th>
                 <th>结束原因</th>
@@ -4957,7 +4955,7 @@ function LogTable({ logs, showOrg = false }) {
           <tr>
             {showOrg && <th>经销商</th>}
             <th>时间</th>
-            <th>测试账号</th>
+            <th>App测试账号</th>
             <th>设备SN</th>
             <th>操作类型</th>
             <th>结果</th>
@@ -5066,7 +5064,7 @@ function GlobalTestLogsPage() {
       <div className="iteration-topline">
         <div>
           <span className="iteration-kicker">经销商测试管理</span>
-          <h1>测试操作日志</h1>
+          <h1>App测试操作日志</h1>
         </div>
         <span className="iteration-stage">共 {logs.length} 条记录</span>
       </div>
@@ -5087,7 +5085,7 @@ function GlobalTestLogsPage() {
         </select>
         <input
           className="dealer-search-input"
-          placeholder="设备SN / 测试账号 / 用户ID"
+          placeholder="设备SN / App测试账号 / 用户ID"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -5215,7 +5213,7 @@ function DealerModal({ modal, dealerId, onClose }) {
 
   const getModalTitle = () => {
     switch (modal.type) {
-      case 'addAccount': return '新增测试账号';
+      case 'addAccount': return '新增App测试账号';
       case 'reapply': return '重新申请';
       case 'extend': return '延期申请';
       case 'suspend': return '暂停测试权限';

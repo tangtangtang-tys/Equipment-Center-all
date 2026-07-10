@@ -142,7 +142,34 @@
       }
 
       .toolbar.dealer-toolbar {
-        grid-template-columns: 1fr 150px 170px auto auto auto;
+        grid-template-columns: 1fr auto auto auto;
+      }
+
+      .toolbar.binding-toolbar {
+        grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) minmax(300px, 1.2fr);
+      }
+
+      .date-range {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .date-range span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .toolbar-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .toolbar-field > span {
+        color: #475467;
+        font-size: 12px;
+        font-weight: 700;
       }
 
       .metrics {
@@ -264,10 +291,95 @@
         font-weight: 700;
       }
 
+      .row-title-line {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 8px;
+      }
+
+      .row-title-line .row-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .row-sub {
         margin-top: 3px;
         color: var(--muted);
         font-size: 12px;
+      }
+
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .row-tree {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        align-items: center;
+        gap: 4px;
+      }
+
+      .tree-toggle {
+        width: 24px;
+        height: 28px;
+        border: 0;
+        border-radius: 4px;
+        padding: 0;
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .tree-toggle:hover {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .binding-device-cell {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        align-items: start;
+        gap: 6px;
+      }
+
+      .binding-history-row td {
+        background: #fbfdff;
+      }
+
+      .binding-history-panel {
+        margin-left: 30px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .binding-history-title {
+        margin-bottom: 8px;
+        color: #475467;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .binding-history-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .binding-history-table th,
+      .binding-history-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .group-row td {
+        background: #fbfdff;
+      }
+
+      .muted-cell {
+        color: #98a2b3;
       }
 
       .tag {
@@ -339,6 +451,13 @@
         font-weight: 750;
       }
 
+      .detail-title-line {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 8px;
+      }
+
       .detail-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -399,6 +518,38 @@
         line-height: 1.6;
       }
 
+      .usage-note {
+        border: 1px solid #bfdbfe;
+        border-radius: 5px;
+        padding: 9px 12px;
+        margin-bottom: 12px;
+        background: #f8fbff;
+        color: #255077;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .usage-note strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #174a7c;
+        font-size: 13px;
+      }
+
+      .usage-note ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+
+      .usage-note li + li {
+        margin-top: 2px;
+      }
+
+      .usage-note.list {
+        margin-top: 10px;
+        margin-bottom: 0;
+      }
+
       .drawer-mask {
         position: fixed;
         inset: 0;
@@ -421,6 +572,10 @@
         flex-direction: column;
         background: #fff;
         box-shadow: var(--shadow);
+      }
+
+      .drawer.wide {
+        width: min(1040px, calc(100vw - 96px));
       }
 
       .drawer-head,
@@ -447,14 +602,164 @@
         margin-left: auto;
       }
 
+      .drawer-floating-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 5;
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+      }
+
+      .drawer-floating-close:hover {
+        color: var(--blue);
+        background: var(--blue-soft);
+      }
+
       .drawer-body {
         padding: 16px;
         overflow: auto;
       }
 
+      .drawer.wide .drawer-body {
+        flex: 1;
+        padding: 12px;
+        background: #f7f9fc;
+      }
+
+      .drawer.wide .drawer-head,
+      .drawer.wide .drawer-foot {
+        display: none;
+      }
+
+      .drawer.wide .detail-head,
+      .drawer.wide .section {
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+
+      .drawer.wide .back-row {
+        flex-wrap: wrap;
+      }
+
+      .drawer.wide .detail-title {
+        font-size: 16px;
+      }
+
+      .drawer.wide .detail-grid {
+        gap: 8px;
+      }
+
+      .drawer.wide .detail-stat {
+        padding: 8px;
+      }
+
+      .drawer.wide .metric-value {
+        margin-top: 4px;
+        font-size: 18px;
+      }
+
+      .drawer.wide .tabs,
+      .drawer.wide .quick-tabs {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .drawer.wide .tab {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
+      .drawer.wide .table-wrap {
+        overflow-x: hidden;
+      }
+
+      .drawer.wide th,
+      .drawer.wide td {
+        padding: 8px 7px;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .drawer.wide th {
+        vertical-align: top;
+      }
+
+      .drawer.wide .row-title {
+        line-height: 1.4;
+      }
+
+      .drawer.wide .row-sub {
+        line-height: 1.45;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .drawer.wide .tag {
+        height: auto;
+        min-height: 22px;
+        padding: 2px 6px;
+        line-height: 1.3;
+        white-space: normal;
+      }
+
+      .drawer.wide .btn {
+        min-height: 30px;
+        padding: 5px 8px;
+        font-size: 12px;
+      }
+
+      .drawer.wide .actions {
+        gap: 6px;
+      }
+
+      .drawer.wide .actions .btn {
+        padding: 4px 5px;
+        white-space: normal;
+      }
+
       .form-grid {
         display: grid;
-        gap: 12px;
+        gap: 9px;
+      }
+
+      .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .form-section-title::before {
+        content: "";
+        width: 3px;
+        height: 14px;
+        border-radius: 999px;
+        background: var(--blue);
+      }
+
+      .field-hint {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 18px;
+      }
+
+      .field input[readonly] {
+        color: var(--muted);
+        background: #f7f9fc;
       }
 
       .field label {
@@ -486,6 +791,100 @@
         border-color: var(--red);
       }
 
+      .log-timeline {
+        display: grid;
+        gap: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #fff;
+      }
+
+      .log-node {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .log-node-rail {
+        display: grid;
+        justify-items: center;
+        padding-top: 2px;
+      }
+
+      .log-node-dot {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 1px solid #b7e4c7;
+        border-radius: 999px;
+        color: var(--green);
+        background: #f0fff5;
+        font-size: 12px;
+      }
+
+      .log-node.fail .log-node-dot {
+        border-color: #ffccc7;
+        color: var(--red);
+        background: #fff1f0;
+      }
+
+      .log-node-line {
+        width: 1px;
+        min-height: 64px;
+        background: var(--line);
+      }
+
+      .log-node-card {
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+        padding-bottom: 18px;
+      }
+
+      .log-node-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .log-node-title {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .log-node-title strong {
+        color: var(--text);
+        overflow-wrap: anywhere;
+      }
+
+      .log-node-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 16px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .log-node-meta span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .log-node-note {
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: #475467;
+        background: #f7f9fc;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
       .toast {
         position: fixed;
         right: 24px;
@@ -511,7 +910,7 @@
       <aside class="sidebar">
         <div class="brand">设备中心</div>
         <button class="nav-btn active" data-nav="dealers">经销商列表</button>
-        <button class="nav-btn" data-nav="logs">测试操作日志</button>
+        <button class="nav-btn" data-nav="logs">App测试操作日志</button>
       </aside>
       <section class="workspace">
         <header class="topbar">
@@ -540,34 +939,52 @@
 
     <script>
       const dealers = [
-        { id: "DL-1001", name: "华东经销商-智联科技", status: "可用", accounts: 3, activeAccounts: 2, pending: 1, testing: 6, ended: 18, exceptions: 2, risk: "反激活异常", last: "2026-07-07 10:22" },
-        { id: "DL-1002", name: "华南经销商-安视电子", status: "可用", accounts: 1, activeAccounts: 1, pending: 0, testing: 3, ended: 9, exceptions: 1, risk: "4G 补偿异常", last: "2026-07-07 09:50" },
-        { id: "DL-1003", name: "西部经销商-通达安防", status: "停用", accounts: 2, activeAccounts: 0, pending: 0, testing: 0, ended: 12, exceptions: 0, risk: "正常", last: "2026-07-05 17:12" },
-        { id: "DL-1004", name: "华北经销商-恒信数码", status: "可用", accounts: 1, activeAccounts: 1, pending: 0, testing: 2, ended: 6, exceptions: 0, risk: "正常", last: "2026-07-06 16:08" }
+        { id: "DL-1001", name: "华东经销商-智联科技", level: "一级", parentName: "华东区域", status: "可用", accounts: 3, activeAccounts: 2, deviceTotal: 86, testing: 6, ended: 18, exceptions: 2, risk: "反激活异常", last: "2026-07-07 10:22" },
+        { id: "DL-1002", name: "华南经销商-安视电子", level: "一级", parentName: "华南区域", status: "可用", accounts: 1, activeAccounts: 1, deviceTotal: 74, testing: 3, ended: 9, exceptions: 1, risk: "4G 补偿异常", last: "2026-07-07 09:50" },
+        { id: "DL-1003", name: "西部经销商-通达安防", level: "一级", parentName: "西部区域", status: "停用", accounts: 2, activeAccounts: 0, deviceTotal: 25, testing: 0, ended: 12, exceptions: 0, risk: "正常", last: "2026-07-05 17:12" },
+        { id: "DL-1004", name: "华东二级经销商-恒信数码", level: "二级", parentName: "华东经销商-智联科技", status: "可用", accounts: 1, activeAccounts: 1, deviceTotal: 32, testing: 2, ended: 6, exceptions: 0, risk: "正常", last: "2026-07-06 16:08" }
+      ];
+
+      const dealerOrgNodes = [
+        { id: "ROOT", name: "全部经销商", level: "全部", parentId: "" },
+        { id: "REGION-EAST", name: "华东区域", parentId: "ROOT" },
+        { id: "DL-1001", name: "华东经销商-智联科技", level: "一级", parentId: "REGION-EAST", dealerId: "DL-1001" },
+        { id: "DL-1004", name: "华东二级经销商-恒信数码", level: "二级", parentId: "DL-1001", dealerId: "DL-1004" },
+        { id: "REGION-SOUTH", name: "华南区域", parentId: "ROOT" },
+        { id: "DL-1002", name: "华南经销商-安视电子", level: "一级", parentId: "REGION-SOUTH", dealerId: "DL-1002" },
+        { id: "REGION-WEST", name: "西部区域", parentId: "ROOT" },
+        { id: "DL-1003", name: "西部经销商-通达安防", level: "一级", parentId: "REGION-WEST", dealerId: "DL-1003" }
       ];
 
       const accounts = [
-        { org: "DL-1001", name: "华东测试01", user: "139****5678", status: "生效中", approval: "已通过", period: "2026-06-15 至 2026-07-15", devices: 4, last: "延期 2026-07-06" },
-        { org: "DL-1001", name: "华东测试02", user: "137****9012", status: "生效中", approval: "已通过", period: "2026-05-20 至 2026-08-20", devices: 2, last: "绑定 2026-07-07" },
-        { org: "DL-1001", name: "华东测试03", user: "138****1234", status: "审批中", approval: "钉钉审批中", period: "2026-07-07 至 2026-10-05", devices: 0, last: "提交审批 2026-07-06" },
-        { org: "DL-1002", name: "华南测试01", user: "132****4567", status: "生效中", approval: "已通过", period: "2026-06-20 至 2026-07-20", devices: 3, last: "绑定 2026-07-07" }
+        { org: "DL-1001", name: "华东测试01", userId: "U100201", mobile: "139****5678", accountSource: "关联已有用户中心账号", region: "中国", clientName: "小鹰看看", clientId: "app-xiaoying-kankan", status: "生效中", period: "2026-06-15 至 2026-07-15", devices: 4, last: "延期 2026-07-06" },
+        { org: "DL-1001", name: "华东测试02", userId: "U100202", mobile: "137****9012", accountSource: "关联已有用户中心账号", region: "中国", clientName: "小鹰视界", clientId: "app-xiaoying-vision", status: "生效中", period: "2026-05-20 至 2026-08-20", devices: 2, last: "绑定 2026-07-07" },
+        { org: "DL-1001", name: "华东测试03", userId: "U100203", mobile: "138****1234", accountSource: "创建新用户中心账号", region: "中国", clientName: "小鹰看看", clientId: "app-xiaoying-kankan", status: "已过期", period: "2026-06-01 至 2026-06-30", devices: 0, last: "过期 2026-06-30" },
+        { org: "DL-1002", name: "华南测试01", userId: "U200201", mobile: "132****4567", accountSource: "关联已有用户中心账号", region: "亚洲", clientName: "小鹰视界", clientId: "app-xiaoying-vision", status: "生效中", period: "2026-06-20 至 2026-07-20", devices: 3, last: "绑定 2026-07-07" }
+      ];
+
+      const testAccountClients = [
+        { clientName: "小鹰看看", clientId: "app-xiaoying-kankan" },
+        { clientName: "小鹰视界", clientId: "app-xiaoying-vision" }
       ];
 
       const devices = [
         { org: "DL-1001", sn: "IPC4G-20260707001", id: "D-90001", type: "4G 设备", account: "华东测试01", relation: "已失败", activation: "测试激活成功", deactivation: "反激活失败待处理", last: "2026-07-07 10:22", reason: "绑定失败后 4G 通信能力未回收" },
-        { org: "DL-1001", sn: "IPC-20260707002", id: "D-90002", type: "普通设备", account: "华东测试02", relation: "生效中", activation: "测试激活成功", deactivation: "无需反激活", last: "2026-07-07 09:42", reason: "" },
-        { org: "DL-1001", sn: "IPC4G-20260706009", id: "D-90009", type: "4G 设备", account: "华东测试01", relation: "已解绑", activation: "已反激活", deactivation: "成功", last: "2026-07-06 18:10", reason: "" },
+        { org: "DL-1001", sn: "IPC-20260707002", id: "D-90002-C", type: "普通设备", account: "华东测试02", relation: "生效中", activation: "测试激活成功", deactivation: "无需反激活", last: "2026-07-07 09:42", unbindAt: "", reason: "" },
+        { org: "DL-1001", sn: "IPC-20260707002", id: "D-90002-B", type: "普通设备", account: "华东测试01", relation: "已解绑", activation: "已反激活", deactivation: "成功", last: "2026-06-22 11:30", unbindAt: "2026-06-22 15:40", reason: "" },
+        { org: "DL-1001", sn: "IPC-20260707002", id: "D-90002-A", type: "普通设备", account: "华东测试02", relation: "已解绑", activation: "已反激活", deactivation: "成功", last: "2026-06-18 10:00", unbindAt: "2026-06-18 15:30", reason: "" },
+        { org: "DL-1001", sn: "IPC4G-20260706009", id: "D-90009", type: "4G 设备", account: "华东测试01", relation: "已解绑", activation: "已反激活", deactivation: "成功", last: "2026-07-06 18:10", unbindAt: "2026-07-06 18:10", reason: "" },
         { org: "DL-1001", sn: "IPC-20260705017", id: "D-90017", type: "普通设备", account: "华东测试02", relation: "已接管", activation: "已转正式激活", deactivation: "无需反激活", last: "2026-07-05 14:12", reason: "" },
         { org: "DL-1002", sn: "IPC4G-20260707011", id: "D-91011", type: "4G 设备", account: "华南测试01", relation: "已失败", activation: "测试激活成功", deactivation: "绑定失败待补偿", last: "2026-07-07 09:50", reason: "应用端超时，测试关系未创建" },
         { org: "DL-1002", sn: "IPC-20260702008", id: "D-91008", type: "普通设备", account: "华南测试01", relation: "生效中", activation: "测试激活成功", deactivation: "无需反激活", last: "2026-07-02 11:21", reason: "" }
       ];
 
       const logs = [
-        { id: "LOG-10001", org: "DL-1001", time: "2026-07-07 10:22:33", type: "反激活补偿", result: "失败", dealer: "华东经销商-智联科技", subject: "IPC4G-20260707001", state: "反激活失败待处理", reason: "4G 通信能力回收失败" },
-        { id: "LOG-10002", org: "DL-1001", time: "2026-07-07 10:21:58", type: "测试绑定", result: "失败", dealer: "华东经销商-智联科技", subject: "IPC4G-20260707001", state: "测试激活成功", reason: "设备关系创建失败" },
-        { id: "LOG-10003", org: "DL-1001", time: "2026-07-07 09:42:10", type: "测试激活", result: "成功", dealer: "华东经销商-智联科技", subject: "IPC-20260707002", state: "权益隔离成功", reason: "" },
-        { id: "LOG-10004", org: "DL-1002", time: "2026-07-07 09:50:03", type: "绑定失败补偿", result: "处理中", dealer: "华南经销商-安视电子", subject: "IPC4G-20260707011", state: "绑定失败待补偿", reason: "应用端超时" },
-        { id: "LOG-10005", org: "DL-1001", time: "2026-07-06 18:10:41", type: "反激活", result: "成功", dealer: "华东经销商-智联科技", subject: "IPC4G-20260706009", state: "已反激活", reason: "" }
+        { id: "LOG-10001", org: "DL-1001", time: "2026-07-08 11:12:00", type: "重置App测试账号密码", result: "成功", dealer: "华东经销商-智联科技", subject: "华东测试01 / U100201", state: "新密码已生成", reason: "经销商测试人员遗失初始密码", creator: "汤彦珊" },
+        { id: "LOG-10002", org: "DL-1001", time: "2026-07-08 09:15:00", type: "创建App测试账号", result: "成功", dealer: "华东经销商-智联科技", subject: "华东测试03 / U100203", state: "创建后立即生效", reason: "华东区域样机抽检", creator: "汤彦珊" },
+        { id: "LOG-10003", org: "DL-1002", time: "2026-07-08 09:48:00", type: "重试清理", result: "失败", dealer: "华南经销商-安视电子", subject: "IPC4G-20260707011", state: "仍需平台处理", reason: "4G 流量通道释放超时", creator: "汤彦珊" },
+        { id: "LOG-10004", org: "DL-1002", time: "2026-07-08 09:40:00", type: "创建App测试账号", result: "成功", dealer: "华南经销商-安视电子", subject: "华南测试03 / U200203", state: "创建后立即生效", reason: "华南门店异常复测", creator: "汤彦珊" },
+        { id: "LOG-10005", org: "DL-1001", time: "2026-07-07 10:30:00", type: "手动清理", result: "成功", dealer: "华东经销商-智联科技", subject: "IPC4G-20260707001", state: "设备恢复可交付", reason: "平台运营手动清理测试设备", creator: "汤彦珊" }
       ];
 
       let view = "dealers";
@@ -577,16 +994,26 @@
       let dealerKeyword = "";
       let dealerStatus = "全部";
       let dealerRisk = "全部";
+      let expandedDealerNodes = new Set(dealerOrgNodes.map((item) => item.id));
       let logKeyword = "";
       let logType = "全部";
       let logResult = "全部";
       let logTimeRange = "最近 7 天";
+      let bindingDeviceKeyword = "";
+      let bindingAccountKeyword = "";
+      let bindingStartDate = "";
+      let bindingEndDate = "";
+      let expandedBindingDevices = new Set();
 
       function tagTone(value) {
+        if (value === "中国") return "info";
+        if (value === "亚洲") return "ok";
+        if (value === "北美") return "violet";
+        if (value === "欧洲") return "warn";
         if (["可用", "生效中", "成功", "已通过", "已反激活", "正常", "已转正式激活"].includes(value)) return "ok";
-        if (["审批中", "处理中", "待审批", "测试激活成功", "无需反激活", "反激活中"].includes(value)) return "info";
+        if (["处理中", "测试激活成功", "无需反激活", "反激活中"].includes(value)) return "info";
         if (["反激活异常", "4G 补偿异常", "反激活失败待处理", "绑定失败待补偿", "失败", "已失败"].includes(value)) return "danger";
-        if (["停用", "已过期", "已撤销", "已解绑"].includes(value)) return "warn";
+        if (["停用", "已过期", "已解绑"].includes(value)) return "warn";
         return "";
       }
 
@@ -594,12 +1021,25 @@
         return `<span class="tag ${tagTone(value)}">${value}</span>`;
       }
 
+      function levelTag(level) {
+        if (!level) return "";
+        const toneMap = { "一级": "info", "二级": "warn", "三级": "violet", "全部": "" };
+        return `<span class="tag ${toneMap[level] || ""}">${level}</span>`;
+      }
+
+      function openUserCenterDetail(userId) {
+        if (!userId) {
+          showToast("缺少用户ID，无法跳转用户中心详情");
+          return;
+        }
+        window.open(`/user-center/users/${encodeURIComponent(userId)}`, "_blank", "noopener,noreferrer");
+      }
+
       function selected(current, value) {
         return current === value ? "selected" : "";
       }
 
       function routeHash() {
-        if (view === "dealerDetail") return `#dealer/${selectedDealerId}`;
         return `#${view}`;
       }
 
@@ -619,13 +1059,16 @@
         if (raw.startsWith("dealer/")) {
           const dealerId = raw.split("/")[1];
           selectedDealerId = dealers.some((item) => item.id === dealerId) ? dealerId : dealers[0].id;
-          view = "dealerDetail";
+          view = "dealers";
         } else {
           view = raw === "logs" ? "logs" : "dealers";
         }
         closeDrawer();
         updateNav();
         render();
+        if (raw.startsWith("dealer/")) {
+          openDealer(selectedDealerId);
+        }
         if (!raw) {
           syncRoute(false);
         }
@@ -634,7 +1077,7 @@
 
       function updateNav() {
         document.querySelectorAll(".nav-btn").forEach((btn) => {
-          const active = view === "dealerDetail" ? btn.dataset.nav === "dealers" : btn.dataset.nav === view;
+          const active = btn.dataset.nav === view;
           btn.classList.toggle("active", active);
         });
       }
@@ -658,72 +1101,132 @@
       function render() {
         const titleMap = {
           dealers: "经销商列表",
-          dealerDetail: "经销商详情",
-          logs: "测试操作日志"
+          logs: "App测试操作日志"
         };
         document.getElementById("pageTitle").textContent = titleMap[view] || "经销商列表";
-        document.getElementById("app").innerHTML = view === "logs" ? renderGlobalLogs() : view === "dealerDetail" ? renderDealerDetailPage() : renderDealers();
+        document.getElementById("app").innerHTML = view === "logs" ? renderGlobalLogs() : renderDealers();
+      }
+
+      function buildDealerHierarchyRows(visibleDealers) {
+        const dealerMap = new Map(visibleDealers.map((item) => [item.id, item]));
+        const allDealerMap = new Map(dealers.map((item) => [item.id, item]));
+        const matchedIds = new Set(visibleDealers.map((item) => item.id));
+        const childrenMap = new Map();
+        dealerOrgNodes.forEach((node) => {
+          const key = node.parentId || "";
+          if (!childrenMap.has(key)) childrenMap.set(key, []);
+          childrenMap.get(key).push(node);
+        });
+        const descendants = (nodeId) => {
+          const stack = [...(childrenMap.get(nodeId) || [])];
+          const result = [];
+          while (stack.length) {
+            const node = stack.shift();
+            result.push(node);
+            stack.unshift(...(childrenMap.get(node.id) || []));
+          }
+          return result;
+        };
+        const hasMatchedDealer = (node) => {
+          if (node.dealerId && matchedIds.has(node.dealerId)) return true;
+          return descendants(node.id).some((item) => item.dealerId && matchedIds.has(item.dealerId));
+        };
+        const buildRows = (parentId, depth = 0) => {
+          return (childrenMap.get(parentId) || []).flatMap((node) => {
+            if (!hasMatchedDealer(node)) return [];
+            const dealer = node.dealerId ? dealerMap.get(node.dealerId) : null;
+            const childDealers = descendants(node.id).map((item) => item.dealerId && allDealerMap.get(item.dealerId)).filter(Boolean);
+            const aggregateDealers = dealer ? [dealer, ...childDealers] : childDealers;
+            const aggregate = {
+              accounts: aggregateDealers.reduce((sum, item) => sum + item.accounts, 0),
+              deviceTotal: aggregateDealers.reduce((sum, item) => sum + item.deviceTotal, 0),
+              enabled: aggregateDealers.some((item) => item.accounts > 0),
+              childDealerCount: childDealers.length
+            };
+            const visibleChildren = (childrenMap.get(node.id) || []).filter(hasMatchedDealer);
+            const current = { node, dealer, depth, aggregate, hasChildren: visibleChildren.length > 0 };
+            if (!expandedDealerNodes.has(node.id)) return [current];
+            return [current, ...buildRows(node.id, depth + 1)];
+          });
+        };
+        return buildRows("ROOT");
+      }
+
+      function toggleDealerNode(nodeId) {
+        if (expandedDealerNodes.has(nodeId)) expandedDealerNodes.delete(nodeId);
+        else expandedDealerNodes.add(nodeId);
+        render();
+      }
+
+      function expandDealerHierarchy() {
+        expandedDealerNodes = new Set(dealerOrgNodes.map((item) => item.id));
+        render();
+      }
+
+      function collapseDealerHierarchy() {
+        expandedDealerNodes = new Set();
+        render();
       }
 
       function renderDealers() {
-        const totalAccounts = dealers.reduce((sum, item) => sum + item.activeAccounts, 0);
-        const testing = dealers.reduce((sum, item) => sum + item.testing, 0);
-        const exceptions = dealers.reduce((sum, item) => sum + item.exceptions, 0);
         const keyword = dealerKeyword.trim();
         const visibleDealers = dealers
           .filter((item) => !keyword || item.name.includes(keyword) || item.id.includes(keyword))
-          .filter((item) => dealerStatus === "全部" || item.status === dealerStatus)
-          .filter((item) => dealerRisk === "全部" || item.risk === dealerRisk)
-          .sort((a, b) => b.exceptions - a.exceptions);
+          .sort((a, b) => a.id.localeCompare(b.id));
+        const totalAccounts = visibleDealers.reduce((sum, item) => sum + item.accounts, 0);
+        const enabledDealers = visibleDealers.filter((item) => item.accounts > 0).length;
+        const totalDevices = visibleDealers.reduce((sum, item) => sum + item.deviceTotal, 0);
+        const treeRows = buildDealerHierarchyRows(visibleDealers);
         return `
           <div class="metrics">
-            <div class="metric"><div class="metric-label">经销商总数</div><div class="metric-value">${dealers.length}</div></div>
-            <div class="metric ok"><div class="metric-label">生效中测试账号</div><div class="metric-value">${totalAccounts}</div></div>
-            <div class="metric"><div class="metric-label">测试中设备</div><div class="metric-value">${testing}</div></div>
-            <div class="metric danger"><div class="metric-label">待处理异常</div><div class="metric-value">${exceptions}</div></div>
+            <div class="metric"><div class="metric-label">经销商总数</div><div class="metric-value">${visibleDealers.length}</div></div>
+            <div class="metric ok"><div class="metric-label">已开通测试</div><div class="metric-value">${enabledDealers}</div></div>
+            <div class="metric"><div class="metric-label">App测试账号总数</div><div class="metric-value">${totalAccounts}</div></div>
+            <div class="metric"><div class="metric-label">设备总数</div><div class="metric-value">${totalDevices}</div></div>
           </div>
           <div class="toolbar dealer-toolbar">
             <input value="${dealerKeyword}" placeholder="经销商名称 / 经销商ID" oninput="dealerKeyword=this.value" />
-            <select onchange="dealerStatus=this.value; render()">
-              <option value="全部" ${selected(dealerStatus, "全部")}>组织状态：全部</option>
-              <option value="可用" ${selected(dealerStatus, "可用")}>可用</option>
-              <option value="停用" ${selected(dealerStatus, "停用")}>停用</option>
-            </select>
-            <select onchange="dealerRisk=this.value; render()">
-              <option value="全部" ${selected(dealerRisk, "全部")}>异常状态：全部</option>
-              <option value="反激活异常" ${selected(dealerRisk, "反激活异常")}>反激活异常</option>
-              <option value="4G 补偿异常" ${selected(dealerRisk, "4G 补偿异常")}>4G 补偿异常</option>
-              <option value="正常" ${selected(dealerRisk, "正常")}>正常</option>
-            </select>
             <button class="btn" onclick="render()">查询</button>
             <button class="btn" onclick="resetDealerFilters()">重置</button>
-            <button class="btn primary" onclick="openCreateDrawer()">创建测试账号</button>
+            <button class="btn" onclick="expandDealerHierarchy()">全部展开</button>
+            <button class="btn" onclick="collapseDealerHierarchy()">全部收起</button>
+            <button class="btn primary" onclick="openCreateDrawer()">创建账号</button>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th style="width: 25%">经销商</th>
-                  <th>组织状态</th>
-                  <th>测试账号</th>
-                  <th>测试设备</th>
-                  <th>最近测试时间</th>
-                  <th>风险状态</th>
+                  <th style="width: 28%">经销商名称</th>
+                  <th>经销商ID</th>
+                  <th>App测试账号</th>
+                  <th>是否开通测试</th>
+                  <th>设备总数</th>
+                  <th>下级经销商数</th>
                   <th style="width: 150px">操作</th>
                 </tr>
               </thead>
               <tbody>
-                ${visibleDealers.length ? visibleDealers.map((item) => `
-                    <tr>
-                      <td><div class="row-title">${item.name}</div><div class="row-sub">${item.id}</div></td>
-                      <td>${tag(item.status)}</td>
-                      <td><div>${item.accounts} 个</div><div class="row-sub">生效中 ${item.activeAccounts}，待审批 ${item.pending}</div></td>
-                      <td><div>测试中 ${item.testing}</div><div class="row-sub">已结束 ${item.ended}，异常 ${item.exceptions}</div></td>
-                      <td>${item.last}</td>
-                      <td>${tag(item.risk)}</td>
+                ${treeRows.length ? treeRows.map(({ node, dealer, depth, aggregate, hasChildren }) => `
+                    <tr class="${dealer ? "" : "group-row"}">
+                      <td>
+                        <div class="row-tree" style="padding-left:${depth * 22}px">
+                          <button class="tree-toggle" ${hasChildren ? "" : "disabled"} onclick="toggleDealerNode('${node.id}')">${hasChildren ? (expandedDealerNodes.has(node.id) ? "⌄" : "›") : ""}</button>
+                          <div>
+                            <div class="row-title-line">
+                              <div class="row-title">${node.name}</div>
+                              ${levelTag(dealer ? dealer.level : node.level)}
+                            </div>
+                            <div class="row-sub">${dealer ? `上级：${dealer.parentName || "总部直营"}` : `组织分组，包含 ${aggregate.childDealerCount} 家经销商`}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="${dealer ? "" : "muted-cell"}">${dealer ? dealer.id : "-"}</td>
+                      <td><div>${aggregate.accounts} 个</div>${dealer ? `<div class="row-sub">生效中 ${dealer.activeAccounts}</div>` : ""}</td>
+                      <td>${tag(aggregate.enabled ? "是" : "否")}</td>
+                      <td>${aggregate.deviceTotal}</td>
+                      <td>${aggregate.childDealerCount ? `<button class="btn link" onclick="toggleDealerNode('${node.id}')">${aggregate.childDealerCount}</button>` : "0"}</td>
                       <td class="actions">
-                        <button class="btn link" onclick="openDealer('${item.id}')">详情</button>
-                        <button class="btn link" onclick="openCreateDrawer('${item.id}')">创建账号</button>
+                        ${dealer ? `<button class="btn link" onclick="openDealer('${dealer.id}')">详情</button><button class="btn link" onclick="openCreateDrawer('${dealer.id}')">创建账号</button>` : `<span class="muted-cell">-</span>`}
                       </td>
                     </tr>
                   `).join("") : `<tr><td colspan="7"><div class="empty">暂无匹配的经销商</div></td></tr>`}
@@ -735,8 +1238,6 @@
 
       function resetDealerFilters() {
         dealerKeyword = "";
-        dealerStatus = "全部";
-        dealerRisk = "全部";
         render();
       }
 
@@ -744,11 +1245,11 @@
         selectedDealerId = id;
         detailTab = "accounts";
         deviceFilter = "全部";
-        view = "dealerDetail";
-        updateNav();
-        render();
-        syncRoute(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        const dealer = dealers.find((item) => item.id === selectedDealerId);
+        document.getElementById("drawerTitle").textContent = dealer ? `经销商详情 - ${dealer.name}` : "经销商详情";
+        document.getElementById("drawerBody").innerHTML = renderDealerDetailPage();
+        document.getElementById("drawerFoot").innerHTML = `<button class="btn primary" onclick="closeDrawer()">关闭</button>`;
+        showDrawer("wide");
       }
 
       function renderDealerDetailPage() {
@@ -761,37 +1262,75 @@
         const failedCount = dealerDevices.filter((item) => item.deactivation.includes("失败")).length;
         const pendingCount = dealerDevices.filter((item) => item.deactivation.includes("待补偿")).length;
         return `
-          <div class="breadcrumb">
-            <button class="btn link" onclick="setView('dealers')">经销商列表</button>
-            <span>/</span>
-            <span>${dealer.name}</span>
-          </div>
+          <button class="drawer-floating-close" onclick="closeDrawer()" aria-label="关闭详情">×</button>
           <section class="detail-head" id="dealerDetail">
             <div class="back-row">
-              <button class="btn" onclick="setView('dealers')">返回列表</button>
-              <div class="detail-title">${dealer.name}</div>
-              ${tag(dealer.status)}
-              ${tag(dealer.risk)}
-              <button class="btn primary" style="margin-left:auto" onclick="openCreateDrawer('${dealer.id}')">创建测试账号</button>
+              <div class="detail-title-line">
+                <div class="detail-title">${dealer.name}</div>
+                ${levelTag(dealer.level)}
+              </div>
+              <button class="btn primary" style="margin-left:auto" onclick="openCreateDrawer('${dealer.id}')">创建账号</button>
             </div>
             <div class="detail-grid">
-              <div class="detail-stat"><div class="metric-label">生效中测试账号</div><div class="metric-value">${dealer.activeAccounts}</div></div>
-              <div class="detail-stat"><div class="metric-label">测试中设备</div><div class="metric-value">${dealer.testing}</div></div>
-              <div class="detail-stat"><div class="metric-label">反激活失败</div><div class="metric-value">${failedCount}</div></div>
-              <div class="detail-stat"><div class="metric-label">绑定失败待补偿</div><div class="metric-value">${pendingCount}</div></div>
+              <div class="detail-stat"><div class="metric-label">App测试账号总数</div><div class="metric-value">${dealer.accounts}</div></div>
+              <div class="detail-stat"><div class="metric-label">生效中App测试账号</div><div class="metric-value">${dealer.activeAccounts}</div></div>
+              <div class="detail-stat"><div class="metric-label">反激活异常</div><div class="metric-value">${failedCount}</div></div>
+              <div class="detail-stat"><div class="metric-label">设备总数</div><div class="metric-value">${dealer.deviceTotal}</div></div>
             </div>
           </section>
           <div class="tabs">
-            ${tabButton("accounts", "测试账号")}
-            ${tabButton("devices", "测试设备")}
-            ${tabButton("dealerLogs", "操作日志")}
+            ${tabButton("accounts", "App测试账号")}
+            ${tabButton("devices", "设备测试记录")}
           </div>
-          ${detailTab === "accounts" ? renderAccounts() : detailTab === "devices" ? renderDevices() : renderDealerLogs()}
+          ${detailTab === "accounts" ? renderAccounts() : renderDevices()}
         `;
       }
 
       function tabButton(key, label) {
-        return `<button class="tab ${detailTab === key ? "active" : ""}" onclick="detailTab='${key}'; render()">${label}</button>`;
+        return `<button class="tab ${detailTab === key ? "active" : ""}" onclick="setDealerDetailTab('${key}')">${label}</button>`;
+      }
+
+      function renderAppTestUsageNote(extraClass = "") {
+        const className = extraClass ? `usage-note ${extraClass}` : "usage-note";
+        return `
+          <div class="${className}">
+            <strong>APP测试账号使用说明</strong>
+            <ul>
+              <li>APP测试账号仅用于经销商设备抽检、样机验证和异常复测。</li>
+              <li>APP端可完成扫码添加、配网、在线检查、音视频、基础控制和 4G 通信测试。</li>
+              <li>测试期间仅生成测试设备关系，不产生设备激活信息。</li>
+              <li>测试完成后需在 APP 端解绑，保证用户能正常绑定并正式激活使用设备。</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      function setDealerDetailTab(key) {
+        detailTab = key;
+        const drawer = document.querySelector(".drawer");
+        if (drawer.classList.contains("wide")) {
+          document.getElementById("drawerBody").innerHTML = renderDealerDetailPage();
+        } else {
+          render();
+        }
+      }
+
+      function refreshDealerDetail() {
+        const drawer = document.querySelector(".drawer");
+        if (drawer.classList.contains("wide")) {
+          document.getElementById("drawerBody").innerHTML = renderDealerDetailPage();
+        } else {
+          render();
+        }
+      }
+
+      function toggleBindingDevice(sn) {
+        if (expandedBindingDevices.has(sn)) {
+          expandedBindingDevices.delete(sn);
+        } else {
+          expandedBindingDevices.add(sn);
+        }
+        refreshDealerDetail();
       }
 
       function renderAccounts() {
@@ -801,86 +1340,99 @@
             <table>
               <thead>
                 <tr>
-                  <th>测试账号</th>
+                  <th>账号名称</th>
+                  <th>用户ID</th>
+                  <th>手机号</th>
+                  <th>所属大区</th>
+                  <th>客户端</th>
                   <th>权限状态</th>
                   <th>有效期</th>
                   <th>活跃测试设备</th>
                   <th>最近操作</th>
-                  <th style="width: 220px">操作</th>
+                  <th style="width: 80px">操作</th>
                 </tr>
               </thead>
               <tbody>
                 ${list.length ? list.map((item) => `
                   <tr>
-                    <td><div class="row-title">${item.name}</div><div class="row-sub">${item.user}</div></td>
-                    <td>${tag(item.status)} ${tag(item.approval)}</td>
+                    <td>
+                      <div class="row-title">${item.name}</div>
+                    </td>
+                    <td>${item.userId || "-"}</td>
+                    <td>${item.mobile || "-"}</td>
+                    <td>${tag(item.region || "中国")}</td>
+                    <td><div class="row-title">${item.clientName || "小鹰看看"}</div><div class="row-sub">${item.clientId || "app-xiaoying-kankan"}</div></td>
+                    <td>${tag(item.status)}</td>
                     <td>${item.period}</td>
                     <td>${item.devices}</td>
                     <td>${item.last}</td>
                     <td class="actions">
-                      <button class="btn link" onclick="openApprovalDrawer('${item.name}')">查看审批</button>
-                      <button class="btn link" onclick="openAccountActionDrawer('延期', '${item.name}', ${item.devices})">延期</button>
-                      <button class="btn link" onclick="openAccountActionDrawer('停用', '${item.name}', ${item.devices})">停用</button>
-                      <button class="btn link" onclick="openAccountActionDrawer('撤销', '${item.name}', ${item.devices})">撤销</button>
+                      <button class="btn link" onclick="openUserCenterDetail('${item.userId || ""}')">查看</button>
                     </td>
                   </tr>
-                `).join("") : `<tr><td colspan="6"><div class="empty">该经销商暂无测试账号</div></td></tr>`}
+                `).join("") : `<tr><td colspan="10"><div class="empty">该经销商暂无App测试账号</div></td></tr>`}
               </tbody>
             </table>
           </div>
+          ${renderAppTestUsageNote("list")}
         `;
       }
 
       function renderDevices() {
-        const filters = ["全部", "测试中", "反激活中", "反激活失败", "绑定失败待补偿", "已反激活", "已接管"];
+        const deviceKey = bindingDeviceKeyword.trim();
+        const accountKey = bindingAccountKeyword.trim();
         const list = devices
           .filter((item) => item.org === selectedDealerId)
           .filter((item) => {
-            if (deviceFilter === "全部") return true;
-            if (deviceFilter === "测试中") return item.relation === "生效中";
-            if (deviceFilter === "反激活失败") return item.deactivation === "反激活失败待处理";
-            if (deviceFilter === "绑定失败待补偿") return item.deactivation === "绑定失败待补偿";
-            if (deviceFilter === "已反激活") return item.activation === "已反激活";
-            if (deviceFilter === "已接管") return item.relation === "已接管";
-            if (deviceFilter === "反激活中") return item.deactivation === "处理中";
+            const account = accounts.find((accountItem) => accountItem.org === item.org && accountItem.name === item.account);
+            const userId = account?.userId || "";
+            if (deviceKey && !item.id.includes(deviceKey)) return false;
+            if (accountKey && !item.account.includes(accountKey) && !userId.includes(accountKey)) return false;
+            if (bindingStartDate && item.last.slice(0, 10) < bindingStartDate) return false;
+            if (bindingEndDate && item.last.slice(0, 10) > bindingEndDate) return false;
             return true;
           })
-          .sort((a, b) => Number(b.deactivation.includes("失败") || b.deactivation.includes("待补偿")) - Number(a.deactivation.includes("失败") || a.deactivation.includes("待补偿")));
+          .sort((a, b) => b.last.localeCompare(a.last));
 
         return `
-          <div class="quick-tabs">
-            ${filters.map((item) => `<button class="tab ${deviceFilter === item ? "active" : ""}" onclick="deviceFilter='${item}'; render()">${item}</button>`).join("")}
+          <div class="toolbar binding-toolbar">
+            <label class="toolbar-field">
+              <span>设备 ID</span>
+              <input value="${bindingDeviceKeyword}" placeholder="请输入设备 ID" oninput="bindingDeviceKeyword=this.value; refreshDealerDetail()" />
+            </label>
+            <label class="toolbar-field">
+              <span>App测试账号 / 用户ID</span>
+              <input value="${bindingAccountKeyword}" placeholder="请输入App测试账号或用户ID" oninput="bindingAccountKeyword=this.value; refreshDealerDetail()" />
+            </label>
+            <label class="toolbar-field">
+              <span>添加时间</span>
+              <div class="date-range">
+                <input type="date" value="${bindingStartDate}" oninput="bindingStartDate=this.value; refreshDealerDetail()" />
+                <span>至</span>
+                <input type="date" value="${bindingEndDate}" oninput="bindingEndDate=this.value; refreshDealerDetail()" />
+              </div>
+            </label>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th style="width: 18%">设备</th>
-                  <th>设备类型</th>
-                  <th>测试账号</th>
-                  <th>测试关系</th>
-                  <th>测试激活</th>
-                  <th>反激活结果</th>
-                  <th>最近操作</th>
-                  <th style="width: 160px">操作</th>
+                  <th>设备 ID</th>
+                  <th>App测试账号</th>
+                  <th>添加时间</th>
                 </tr>
               </thead>
               <tbody>
-                ${list.length ? list.map((item) => `
+                ${list.length ? list.map((item) => {
+                  const account = accounts.find((accountItem) => accountItem.org === item.org && accountItem.name === item.account);
+                  return `
                   <tr>
-                    <td><div class="row-title">${item.sn}</div><div class="row-sub">${item.id}</div></td>
-                    <td>${tag(item.type)}</td>
-                    <td>${item.account}</td>
-                    <td>${tag(item.relation)}</td>
-                    <td>${tag(item.activation)}</td>
-                    <td><div>${tag(item.deactivation)}</div>${item.reason ? `<div class="row-sub">${item.reason}</div>` : ""}</td>
+                    <td><button class="btn link mono" onclick="openDeviceDrawer('${item.id}')">${item.id}</button></td>
+                    <td><div class="row-title">${item.account}</div><div class="row-sub">${account?.userId || "-"}</div></td>
                     <td>${item.last}</td>
-                    <td class="actions">
-                      <button class="btn link" onclick="openDeviceDrawer('${item.id}')">详情</button>
-                      ${item.deactivation.includes("失败") || item.deactivation.includes("待补偿") ? `<button class="btn link" onclick="retryDeactivation('${item.id}')">重试</button>` : `<button class="btn link" onclick="openLogByDevice('${item.sn}')">日志</button>`}
-                    </td>
                   </tr>
-                `).join("") : `<tr><td colspan="8"><div class="empty">当前筛选下暂无设备</div></td></tr>`}
+                `;
+                }).join("") : `<tr><td colspan="3"><div class="empty">当前筛选下暂无设备测试记录</div></td></tr>`}
               </tbody>
             </table>
           </div>
@@ -895,18 +1447,18 @@
         const list = filterLogs(logs);
         return `
           <div class="toolbar" style="grid-template-columns: 1fr 180px 180px 180px auto">
-            <input value="${logKeyword}" placeholder="设备序列号 / 测试账号 / 经销商" oninput="logKeyword=this.value" />
+            <input value="${logKeyword}" placeholder="设备序列号 / App测试账号 / 经销商" oninput="logKeyword=this.value" />
             <select onchange="logType=this.value; render()">
               <option value="全部" ${selected(logType, "全部")}>操作类型：全部</option>
-              <option value="测试激活" ${selected(logType, "测试激活")}>测试激活</option>
-              <option value="反激活" ${selected(logType, "反激活")}>反激活</option>
-              <option value="补偿" ${selected(logType, "补偿")}>补偿</option>
+              <option value="创建App测试账号" ${selected(logType, "创建App测试账号")}>创建App测试账号</option>
+              <option value="重置App测试账号密码" ${selected(logType, "重置App测试账号密码")}>重置App测试账号密码</option>
+              <option value="手动清理" ${selected(logType, "手动清理")}>手动清理</option>
+              <option value="重试清理" ${selected(logType, "重试清理")}>重试清理</option>
             </select>
             <select onchange="logResult=this.value; render()">
               <option value="全部" ${selected(logResult, "全部")}>操作结果：全部</option>
               <option value="成功" ${selected(logResult, "成功")}>成功</option>
               <option value="失败" ${selected(logResult, "失败")}>失败</option>
-              <option value="处理中" ${selected(logResult, "处理中")}>处理中</option>
             </select>
             <select onchange="logTimeRange=this.value; render()">
               <option value="最近 7 天" ${selected(logTimeRange, "最近 7 天")}>时间：最近 7 天</option>
@@ -932,86 +1484,59 @@
 
       function renderLogTable(list) {
         return `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>操作时间</th>
-                  <th>操作类型</th>
-                  <th>结果</th>
-                  <th>经销商</th>
-                  <th>账号 / 设备</th>
-                  <th>关键状态</th>
-                  <th>失败原因</th>
-                  <th style="width: 90px">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length ? list.map((item) => `
-                  <tr>
-                    <td>${item.time}</td>
-                    <td>${item.type}</td>
-                    <td>${tag(item.result)}</td>
-                    <td>${item.dealer}</td>
-                    <td>${item.subject}</td>
-                    <td>${tag(item.state)}</td>
-                    <td>${item.reason || "-"}</td>
-                    <td><button class="btn link" onclick="openLogDrawer('${item.id}')">详情</button></td>
-                  </tr>
-                `).join("") : `<tr><td colspan="8"><div class="empty">暂无匹配的操作日志</div></td></tr>`}
-              </tbody>
-            </table>
+          <div class="log-timeline">
+            ${list.length ? list.map((item, index) => `
+              <article class="log-node ${item.result === "失败" ? "fail" : ""}">
+                <div class="log-node-rail" aria-hidden="true">
+                  <span class="log-node-dot">${item.result === "失败" ? "!" : "✓"}</span>
+                  ${index < list.length - 1 ? `<span class="log-node-line"></span>` : ""}
+                </div>
+                <div class="log-node-card">
+                  <div class="log-node-head">
+                    <div class="log-node-title">
+                      <strong>${item.type}</strong>
+                      <span class="row-sub">${item.time}</span>
+                    </div>
+                    ${tag(item.result)}
+                  </div>
+                  <div class="log-node-meta">
+                    <span>经销商：${item.dealer}</span>
+                    <span>操作对象：${item.subject}</span>
+                    <span>创建人：${item.creator || "-"}</span>
+                    <span>关键状态：${item.state}</span>
+                  </div>
+                  ${item.reason ? `<div class="log-node-note">${item.result === "失败" ? "失败原因" : "操作原因"}：${item.reason}</div>` : ""}
+                  <div><button class="btn link" onclick="openLogDrawer('${item.id}')">查看详情</button></div>
+                </div>
+              </article>
+            `).join("") : `<div class="empty">暂无匹配的App测试操作日志</div>`}
           </div>
         `;
       }
 
       function openCreateDrawer(dealerId) {
-        const dealer = dealers.find((item) => item.id === dealerId);
-        const orgField = dealer
-          ? `<input value="${dealer.name}" readonly /><input id="createDealerId" type="hidden" value="${dealer.id}" />`
-          : `<select id="createDealerId">${dealers.map((item) => `<option value="${item.id}" ${item.id === selectedDealerId ? "selected" : ""}>${item.name}</option>`).join("")}</select>`;
-        document.getElementById("drawerTitle").textContent = "创建测试应用账号";
+        const dealer = dealers.find((item) => item.id === (dealerId || selectedDealerId)) || dealers[0];
+        const orgField = `<input value="${dealer.name}" readonly /><input id="createDealerId" type="hidden" value="${dealer.id}" />`;
+        document.getElementById("drawerTitle").textContent = "创建App测试账号";
         document.getElementById("drawerBody").innerHTML = `
+          ${renderAppTestUsageNote()}
           <div class="form-grid">
+            <div class="form-section-title">基础信息</div>
             <div class="field"><label>经销商组织</label>${orgField}</div>
-            <div class="field"><label>账号来源</label><select><option>关联已有用户中心账号</option><option>创建新用户中心账号</option></select></div>
-            <div class="field"><label>手机号或用户ID</label><input id="createUser" placeholder="请输入手机号或用户ID" /></div>
-            <div class="field"><label>账号名称</label><input id="createAccountName" placeholder="例如：华东测试04" /></div>
+            <div class="field"><label>账号名称</label><input id="createAccountName" placeholder="例如：华东经销商测试员A" /></div>
+            <div class="field"><label>手机号（可选）</label><input id="createMobile" placeholder="请输入手机号" /></div>
+            <div class="form-section-title">使用范围</div>
+            <div class="field"><label>账号所属大区</label><select id="createRegion"><option>中国</option><option>亚洲</option><option>北美</option><option>欧洲</option></select></div>
+            <div class="field"><label>客户端名称</label><select id="createClientName" onchange="syncDefaultClient()">${testAccountClients.map((item) => `<option value="${item.clientName}">${item.clientName}</option>`).join("")}</select></div>
+            <div class="field"><label>客户端ID</label><input id="createClientId" value="app-xiaoying-kankan" readonly /></div>
             <div class="field"><label>有效期</label><select><option>默认 30 天</option><option>60 天</option><option>90 天</option></select></div>
-            <div class="field"><label>申请原因</label><textarea placeholder="请填写抽检批次、测试范围或业务原因"></textarea></div>
+            <div class="field"><label>创建原因</label><textarea placeholder="请填写抽检批次、测试范围或业务原因"></textarea></div>
           </div>
         `;
         document.getElementById("drawerFoot").innerHTML = `
           <button class="btn" onclick="closeDrawer()">取消</button>
-          <button class="btn primary" onclick="submitCreate()">提交审批</button>
+          <button class="btn primary" onclick="submitCreate()">创建账号</button>
         `;
-        showDrawer();
-      }
-
-      function openApprovalDrawer(accountName) {
-        const account = accounts.find((item) => item.org === selectedDealerId && item.name === accountName) || accounts.find((item) => item.name === accountName);
-        if (!account) {
-          showToast("未找到审批信息");
-          return;
-        }
-        document.getElementById("drawerTitle").textContent = "钉钉审批信息";
-        document.getElementById("drawerBody").innerHTML = `
-          <div class="section">
-            <h3 class="section-title">审批单</h3>
-            <div class="form-grid">
-              <div class="field"><label>测试账号</label><input value="${account.name}" readonly /></div>
-              <div class="field"><label>审批状态</label><input value="${account.approval}" readonly /></div>
-              <div class="field"><label>权限状态</label><input value="${account.status}" readonly /></div>
-              <div class="field"><label>有效期</label><input value="${account.period}" readonly /></div>
-            </div>
-          </div>
-          <ul class="timeline">
-            <li class="done"><strong>提交申请</strong><div class="row-sub">平台运营提交测试账号创建申请</div></li>
-            <li class="${account.approval === "钉钉审批中" ? "" : "done"}"><strong>负责人审批</strong><div class="row-sub">${account.approval}</div></li>
-            <li class="${account.approval === "已通过" ? "done" : ""}"><strong>账号生效</strong><div class="row-sub">${account.status}</div></li>
-          </ul>
-        `;
-        document.getElementById("drawerFoot").innerHTML = `<button class="btn primary" onclick="closeDrawer()">关闭</button>`;
         showDrawer();
       }
 
@@ -1021,14 +1546,15 @@
           showToast("未找到设备信息");
           return;
         }
-        document.getElementById("drawerTitle").textContent = "设备测试详情";
+        document.getElementById("drawerTitle").textContent = "设备详情";
         document.getElementById("drawerBody").innerHTML = `
           <div class="section">
             <h3 class="section-title">基础信息</h3>
             <div class="form-grid">
+              <div class="field"><label>设备ID</label><input value="${item.id}" readonly /></div>
               <div class="field"><label>设备序列号</label><input value="${item.sn}" readonly /></div>
               <div class="field"><label>设备类型</label><input value="${item.type}" readonly /></div>
-              <div class="field"><label>测试账号</label><input value="${item.account}" readonly /></div>
+              <div class="field"><label>App测试账号</label><input value="${item.account}" readonly /></div>
             </div>
           </div>
           <div class="section">
@@ -1050,76 +1576,6 @@
           ? `<button class="btn" onclick="closeDrawer()">取消</button><button class="btn danger" onclick="retryDeactivation('${item.id}')">重试反激活</button>`
           : `<button class="btn primary" onclick="closeDrawer()">关闭</button>`;
         showDrawer();
-      }
-
-      function openAccountActionDrawer(action, accountName, deviceCount) {
-        const isExtend = action === "延期";
-        const account = accounts.find((item) => item.org === selectedDealerId && item.name === accountName) || accounts.find((item) => item.name === accountName);
-        if (!account) {
-          showToast("未找到测试账号");
-          return;
-        }
-        document.getElementById("drawerTitle").textContent = `${action}测试账号`;
-        document.getElementById("drawerBody").innerHTML = `
-          <div class="section">
-            <h3 class="section-title">账号信息</h3>
-            <div class="form-grid">
-              <div class="field"><label>测试账号</label><input value="${accountName}" readonly /></div>
-              <div class="field"><label>当前状态</label><input value="${account.status}" readonly /></div>
-              <div class="field"><label>受影响活跃测试设备</label><input value="${deviceCount} 台" readonly /></div>
-            </div>
-          </div>
-          ${isExtend ? "" : `<div class="notice">确认${action}后，该账号将停止测试权限；未完成正式接管的测试设备进入反激活处理，处理结果写入测试操作日志。</div>`}
-          <div class="form-grid">
-            ${isExtend ? `<div class="field"><label>新失效时间</label><input value="2026-08-15" /></div>` : ""}
-            <div class="field"><label>${action}原因</label><textarea placeholder="请填写${action}原因，操作将写入测试操作日志"></textarea></div>
-            ${isExtend ? "" : `<div class="field"><label>影响提示</label><input value="${action}后将撤销测试访问，并触发测试反激活" readonly /></div>`}
-          </div>
-        `;
-        document.getElementById("drawerFoot").innerHTML = `
-          <button class="btn" onclick="closeDrawer()">取消</button>
-          <button class="btn ${isExtend ? "primary" : "danger"}" onclick="confirmAccountAction('${action}', '${accountName}')">确认${action}</button>
-        `;
-        showDrawer();
-      }
-
-      function confirmAccountAction(action, accountName) {
-        const account = accounts.find((item) => item.org === selectedDealerId && item.name === accountName) || accounts.find((item) => item.name === accountName);
-        if (!account) {
-          showToast("未找到测试账号");
-          return;
-        }
-        if (action === "延期") {
-          account.period = account.period.replace(/ 至 .+$/, " 至 2026-08-15");
-          account.last = "延期 2026-07-07";
-          closeDrawer();
-          render();
-          showToast("延期已记录，账号有效期已更新");
-          return;
-        }
-        const previousStatus = account.status;
-        account.status = action === "撤销" ? "已撤销" : "停用";
-        account.last = `${action} 2026-07-07`;
-        const affectedDevices = devices.filter((item) => item.org === account.org && item.account === account.name && item.relation !== "已接管" && item.activation !== "已反激活");
-        affectedDevices.forEach((item) => {
-          item.relation = "反激活中";
-          item.deactivation = "处理中";
-          item.reason = `${action}测试账号后触发测试反激活`;
-          item.last = "2026-07-07 11:08";
-        });
-        account.devices = 0;
-        const dealer = dealers.find((item) => item.id === account.org);
-        if (dealer) {
-          if (previousStatus === "生效中") dealer.activeAccounts = Math.max(0, dealer.activeAccounts - 1);
-          if (previousStatus === "审批中") dealer.pending = Math.max(0, dealer.pending - 1);
-          dealer.testing = Math.max(0, dealer.testing - affectedDevices.length);
-          dealer.last = "2026-07-07 11:08";
-        }
-        detailTab = "devices";
-        deviceFilter = "反激活中";
-        closeDrawer();
-        render();
-        showToast(`${action}已提交，${affectedDevices.length} 台设备进入反激活中`);
       }
 
       function retryDeactivation(deviceId) {
@@ -1153,7 +1609,7 @@
           showToast("未找到日志详情");
           return;
         }
-        document.getElementById("drawerTitle").textContent = "操作日志详情";
+        document.getElementById("drawerTitle").textContent = "App测试操作日志详情";
         document.getElementById("drawerBody").innerHTML = `
           <div class="form-grid">
             <div class="field"><label>日志编号</label><input value="${item.id}" readonly /></div>
@@ -1161,6 +1617,7 @@
             <div class="field"><label>操作类型</label><input value="${item.type}" readonly /></div>
             <div class="field"><label>操作结果</label><input value="${item.result}" readonly /></div>
             <div class="field"><label>经销商</label><input value="${item.dealer}" readonly /></div>
+            <div class="field"><label>创建人</label><input value="${item.creator || "-"}" readonly /></div>
             <div class="field"><label>账号 / 设备</label><input value="${item.subject}" readonly /></div>
             <div class="field"><label>关键状态</label><input value="${item.state}" readonly /></div>
             <div class="field"><label>失败原因</label><textarea readonly>${item.reason || "无"}</textarea></div>
@@ -1170,6 +1627,12 @@
         showDrawer();
       }
 
+      function syncDefaultClient() {
+        const clientName = document.getElementById("createClientName")?.value || "小鹰看看";
+        const config = testAccountClients.find((item) => item.clientName === clientName) || testAccountClients[0];
+        document.getElementById("createClientId").value = config.clientId;
+      }
+
       function submitCreate() {
         const dealerId = document.getElementById("createDealerId")?.value || selectedDealerId;
         const dealer = dealers.find((item) => item.id === dealerId);
@@ -1177,36 +1640,56 @@
           showToast("未找到经销商组织");
           return;
         }
+        const mobileInput = document.getElementById("createMobile")?.value.trim() || "";
         const accountName = document.getElementById("createAccountName")?.value.trim() || `${dealer.name.replace(/.*-/, "")}测试新账号`;
-        const user = document.getElementById("createUser")?.value.trim() || "待补充";
+        const accountSource = "设备中心创建";
+        const userId = `U${Date.now().toString().slice(-6)}`;
+        const mobile = mobileInput || "待同步";
+        const region = document.getElementById("createRegion")?.value || "中国";
+        const clientName = document.getElementById("createClientName")?.value || "小鹰看看";
+        const clientId = document.getElementById("createClientId")?.value || "app-xiaoying-kankan";
         accounts.push({
           org: dealerId,
           name: accountName,
-          user,
-          status: "审批中",
-          approval: "钉钉审批中",
+          userId,
+          mobile,
+          accountSource,
+          region,
+          clientName,
+          clientId,
+          status: "生效中",
           period: "2026-07-07 至 2026-08-06",
           devices: 0,
-          last: "提交审批 2026-07-07"
+          last: "创建 2026-07-07"
+        });
+        logs.unshift({
+          id: `LOG-${Date.now().toString().slice(-5)}`,
+          org: dealerId,
+          time: "2026-07-07 11:08:00",
+          type: "创建App测试账号",
+          result: "成功",
+          dealer: dealer.name,
+          subject: accountName,
+          state: "生效中",
+          reason: `大区：${region}；客户端：${clientName} / ${clientId}`,
+          creator: "汤彦珊"
         });
         dealer.accounts += 1;
-        dealer.pending += 1;
+        dealer.activeAccounts += 1;
         dealer.last = "2026-07-07 11:08";
-        if (view === "dealerDetail") {
-          selectedDealerId = dealerId;
-          detailTab = "accounts";
-        }
         closeDrawer();
         render();
-        showToast("测试账号申请已提交钉钉审批");
+        showToast("App测试账号已创建并生效");
       }
 
-      function showDrawer() {
+      function showDrawer(mode = "") {
+        document.querySelector(".drawer").classList.toggle("wide", mode === "wide");
         document.getElementById("drawerMask").classList.add("show");
       }
 
       function closeDrawer() {
         document.getElementById("drawerMask").classList.remove("show");
+        document.querySelector(".drawer").classList.remove("wide");
       }
 
       function showToast(message) {
