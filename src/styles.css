@@ -19031,3 +19031,239 @@ button {
     justify-content: flex-start;
   }
 }
+
+/* PROTOTYPE: device add-count presentation variants. Remove after a variant is selected. */
+.dm-record-table {
+  min-width: 900px;
+}
+
+.dm-record-table th:nth-child(1) {
+  width: 22%;
+}
+
+.dm-record-summary-row.expanded > td {
+  background: #f8fbff;
+}
+
+.dm-record-summary-row .dm-count-link:disabled {
+  color: #344054;
+  cursor: default;
+}
+
+.dm-record-table-grouped tbody tr.dm-group-start:not(:first-child) td {
+  border-top: 2px solid #dfe5ee;
+}
+
+.dm-record-table-grouped .dm-grouped-device-cell,
+.dm-record-table-grouped .dm-grouped-count-cell {
+  vertical-align: top;
+  padding-top: 14px;
+  background: #fbfcfe;
+}
+
+.dm-count-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #b7d7ff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: #155ebc;
+  background: #f0f7ff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dm-grouped-record-index {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.dm-grouped-record-index > span {
+  color: #667085;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dm-record-drawer-mask {
+  z-index: 90;
+}
+
+.dm-record-drawer {
+  display: flex;
+  width: 460px;
+  flex-direction: column;
+}
+
+.dm-record-drawer .dm-drawer-head {
+  justify-content: space-between;
+  min-height: 66px;
+}
+
+.dm-record-drawer .dm-drawer-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.dm-record-drawer .dm-drawer-head span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.dm-record-drawer .dm-drawer-head button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.dm-record-drawer .dm-drawer-head button:hover {
+  color: #1f2937;
+  background: #f2f4f7;
+}
+
+.dm-record-drawer-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  border-bottom: 1px solid #edf0f5;
+  padding: 14px 16px;
+  background: #f8fbff;
+}
+
+.dm-record-drawer-summary span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.dm-record-drawer-summary strong {
+  grid-column: 1;
+  color: #1f2937;
+  font-size: 20px;
+}
+
+.dm-record-drawer-summary .dm-link-btn {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.dm-record-drawer-body {
+  overflow-y: auto;
+  padding: 4px 16px 20px;
+}
+
+.dm-record-drawer-item {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid #edf0f5;
+  padding: 16px 8px 16px 30px;
+}
+
+.dm-record-drawer-item::before {
+  position: absolute;
+  top: 22px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid #1677ff;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
+.dm-record-drawer-item:not(:last-child)::after {
+  position: absolute;
+  top: 32px;
+  bottom: -23px;
+  left: 12px;
+  width: 1px;
+  background: #d9e0ea;
+  content: "";
+}
+
+.dm-record-drawer-index {
+  color: #155ebc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dm-record-drawer-item time {
+  color: #667085;
+  font-size: 12px;
+}
+
+.dm-prototype-switcher {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  z-index: 75;
+  display: grid;
+  grid-template-columns: 36px minmax(164px, auto) 36px;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid #344054;
+  border-radius: 8px;
+  padding: 4px;
+  color: #fff;
+  background: #1f2937;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  transform: translateX(-50%);
+}
+
+.dm-prototype-switcher button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  background: transparent;
+}
+
+.dm-prototype-switcher button:hover,
+.dm-prototype-switcher button:focus-visible {
+  outline: 2px solid transparent;
+  color: #fff;
+  background: #475467;
+}
+
+.dm-prototype-switcher > div {
+  display: grid;
+  gap: 1px;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.dm-prototype-switcher span {
+  color: #cbd5e1;
+  font-size: 10px;
+}
+
+.dm-prototype-switcher strong {
+  font-size: 12px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .dm-history-panel {
+    margin-left: 0;
+  }
+
+  .dm-record-drawer {
+    width: calc(100vw - 24px);
+    max-width: none;
+  }
+
+  .dm-prototype-switcher {
+    bottom: 10px;
+    grid-template-columns: 36px minmax(142px, auto) 36px;
+  }
+}
