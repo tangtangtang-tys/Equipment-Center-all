@@ -39,6 +39,8 @@ export const initialDealers = [
   {
     id: 'DL-1001',
     name: '华东一级经销商',
+    shortName: 'EC',
+    createdAt: '2024-03-18 09:20:00',
     level: '一级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -54,6 +56,8 @@ export const initialDealers = [
   {
     id: 'DL-1002',
     name: '华南一级经销商',
+    shortName: 'SC',
+    createdAt: '2024-04-02 14:10:00',
     level: '一级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -69,6 +73,8 @@ export const initialDealers = [
   {
     id: 'DL-1003',
     name: '北京二级经销商',
+    shortName: 'BJ',
+    createdAt: '2025-01-08 11:32:00',
     level: '二级',
     parentId: 'DL-1009',
     parentName: '华北一级经销商',
@@ -84,6 +90,8 @@ export const initialDealers = [
   {
     id: 'DL-1004',
     name: '上海二级经销商',
+    shortName: 'SH',
+    createdAt: '2024-06-21 10:05:00',
     level: '二级',
     parentId: 'DL-1001',
     parentName: '华东一级经销商',
@@ -99,6 +107,8 @@ export const initialDealers = [
   {
     id: 'DL-1005',
     name: '成都三级经销商',
+    shortName: 'CD',
+    createdAt: '2025-02-14 16:40:00',
     level: '三级',
     parentId: 'DL-1010',
     parentName: '西南二级经销商',
@@ -114,6 +124,8 @@ export const initialDealers = [
   {
     id: 'DL-1006',
     name: '武汉三级经销商',
+    shortName: 'WH',
+    createdAt: '2025-03-06 09:45:00',
     level: '三级',
     parentId: 'DL-1011',
     parentName: '华中二级经销商',
@@ -129,6 +141,8 @@ export const initialDealers = [
   {
     id: 'DL-1007',
     name: '西安二级经销商',
+    shortName: 'XA',
+    createdAt: '2024-11-19 13:22:00',
     level: '二级',
     parentId: 'DL-1012',
     parentName: '西北一级经销商',
@@ -144,6 +158,8 @@ export const initialDealers = [
   {
     id: 'DL-1008',
     name: '杭州一级经销商',
+    shortName: 'HZ',
+    createdAt: '2024-05-16 15:18:00',
     level: '一级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -159,6 +175,8 @@ export const initialDealers = [
   {
     id: 'DL-1009',
     name: '华北一级经销商',
+    shortName: 'NC',
+    createdAt: '2024-04-25 10:36:00',
     level: '一级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -174,6 +192,8 @@ export const initialDealers = [
   {
     id: 'DL-1010',
     name: '西南二级经销商',
+    shortName: 'SW',
+    createdAt: '2024-09-12 08:58:00',
     level: '二级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -189,6 +209,8 @@ export const initialDealers = [
   {
     id: 'DL-1011',
     name: '华中二级经销商',
+    shortName: 'CC',
+    createdAt: '2024-10-09 17:06:00',
     level: '二级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',
@@ -204,6 +226,8 @@ export const initialDealers = [
   {
     id: 'DL-1012',
     name: '西北一级经销商',
+    shortName: 'NW',
+    createdAt: '2024-08-27 12:15:00',
     level: '一级',
     parentId: 'ORG-ROOT',
     parentName: '总部直营',

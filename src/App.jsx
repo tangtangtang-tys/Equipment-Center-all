@@ -932,7 +932,7 @@ function App() {
   };
 
   return (
-    <div className="console-shell">
+    <div className={cls('console-shell', view === 'dealerList' && 'dealer-console-shell')}>
       <TopBar />
       <div className="console-body">
         <Sidebar view={view} onNavigate={setView} />
@@ -1053,8 +1053,8 @@ function TopBar() {
           系统管理
         </span>
         <span className="divider" />
-        <span className="avatar">汤</span>
-        <span>汤彦珊</span>
+        <span className="avatar">系</span>
+        <span>系统管理员</span>
       </div>
     </header>
   );
@@ -1077,14 +1077,7 @@ function Sidebar({ view, onNavigate }) {
           onClick={() => onNavigate('deviceManagement')}
         >
           <Database size={16} />
-          设备管理
-        </button>
-        <button
-          className={cls('side-item', view === 'detailIterationScope' && 'active')}
-          onClick={() => onNavigate('detailIterationScope')}
-        >
-          <MonitorCog size={16} />
-          【202606】详情模块迭代阶段范围
+          设备列表
         </button>
         <button className={cls('side-item', view === 'map' && 'active')} onClick={() => onNavigate('map')}>
           <MapPin size={17} />
@@ -1094,8 +1087,15 @@ function Sidebar({ view, onNavigate }) {
           className={cls('side-item', view === 'disableRequirement' && 'active')}
           onClick={() => onNavigate('disableRequirement')}
         >
-          <FileClock size={16} />
-          禁用需求说明
+          <RotateCcw size={16} />
+          套餐转移
+        </button>
+        <button
+          className={cls('side-item', view === 'globalTestLogs' && 'active')}
+          onClick={() => onNavigate('globalTestLogs')}
+        >
+          <FileText size={16} />
+          操作日志
         </button>
         <div className="side-divider" />
         <button

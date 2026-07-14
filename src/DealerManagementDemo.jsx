@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Building2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   CheckCircle2,
   ClipboardList,
@@ -41,12 +40,6 @@ const TEST_ACCOUNT_CLIENTS = [
 ];
 const DEFAULT_TEST_ACCOUNT_CLIENT = TEST_ACCOUNT_CLIENTS[0];
 const MAX_TEST_ACCOUNT_VALID_DAYS = 90;
-// PROTOTYPE: three device add-count layouts switchable through ?variant=A|B|C.
-const RECORD_PROTOTYPE_VARIANTS = [
-  { id: 'A', label: '聚合展开' },
-  { id: 'B', label: '连续分组' },
-  { id: 'C', label: '侧栏明细' },
-];
 const DEFAULT_DEALER_LIST_FILTERS = {
   keyword: '',
 };
@@ -83,11 +76,12 @@ const ANNOTATION_RULES = [
   {
     id: 'dealerContext',
     title: '经销商详情摘要',
-    summary: '用于确认当前正在操作的经销商对象，并提供最小必要的基础信息。',
+    summary: '以经销商名称作为主身份，紧凑展示当前组织的关键基础信息。',
     rules: [
-      '详情区仅保留经销商名称、经销商 ID、APP 测试账号数、设备总数。',
-      '经销商 ID 保留在详情区，方便核对业务对象；左侧树不重复展示。',
-      '设备总数用于反映该经销商组织下的设备归属规模。',
+      '经销商名称作为模块主标题，名称旁仅展示层级标签，不展示启用或停用标签。',
+      '详情字段固定为经销商 ID、经销商简称、创建时间、设备总数，不重复展示名称字段。',
+      '基础字段横向平铺，不使用独立指标卡，不提供折叠或编辑交互。',
+      '设备总数展示单位“台”，其余字段保持组织中心数据格式。',
     ],
   },
   {
@@ -103,16 +97,17 @@ const ANNOTATION_RULES = [
   {
     id: 'recordFilters',
     title: '设备测试记录查询',
-    summary: '设备测试记录按设备 ID 汇总，帮助运营快速识别同一设备被成功添加的次数。',
+    summary: '设备测试记录按设备 ID 汇总，主表展示最近一次记录和累计添加次数。',
     fields: [
       '设备 ID：非必填；按设备 ID 匹配测试记录。',
-      'APP 测试账号 / 用户 ID：非必填；支持按账号名称或用户 ID 匹配。',
-      '添加时间：范围控件；开始时间不能晚于结束时间，筛选字段为添加绑定时间。',
+      'App测试账号 / 用户 ID：非必填；只匹配最近一次添加记录中的账号名称或用户 ID。',
+      '添加时间：范围控件；开始时间不能晚于结束时间，只匹配最近一次添加记录的添加时间。',
     ],
     rules: [
-      '添加次数按成功生成的添加记录累计；同一有效关系下重复扫码不新增次数。',
-      '默认每个设备 ID 展示一行，最近添加账号和最近添加时间作为摘要信息。',
-      '展开后按添加时间倒序查看该设备的全部添加记录。',
+      '每个设备 ID 只展示一行，字段为设备 ID、最近添加账号、最近添加时间、添加次数和操作。',
+      '添加次数按该设备正式形成的添加记录累计，点击次数或展开箭头在表格内查看添加历史。',
+      '筛选条件只匹配最近一次添加记录；历史添加记录不影响主表筛选结果。',
+      '底层保留每次正式形成的添加记录，不因主列表聚合而覆盖历史记录。',
     ],
   },
   {
@@ -121,8 +116,8 @@ const ANNOTATION_RULES = [
     summary: '设备测试记录只保留入口，完整设备日志在设备详情模块承载。',
     flow: [
       '点击设备 ID 跳转到【202606】详情模块迭代阶段范围中的设备详情。',
-      '列表展开区域仅展示添加序号、App测试账号和添加时间。',
-      '设备详情负责查看解绑、反激活补偿和异常处理等完整日志。',
+      '设备详情负责查看历史添加、解绑、反激活补偿和异常处理等完整日志。',
+      '主列表展示添加次数，多次添加历史通过当前表格展开行查看。',
     ],
   },
   {
@@ -286,6 +281,24 @@ function openDeviceCenterDetail(deviceId) {
   return Boolean(openedWindow);
 }
 
+function buildDeviceRecordGroups(records) {
+  const groupMap = new Map();
+  [...records]
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+    .forEach((record) => {
+      const deviceId = getRecordDeviceId(record);
+      if (!groupMap.has(deviceId)) groupMap.set(deviceId, []);
+      groupMap.get(deviceId).push(record);
+    });
+
+  return Array.from(groupMap, ([deviceId, deviceRecords]) => ({
+    deviceId,
+    latest: deviceRecords[0],
+    records: deviceRecords,
+    addCount: deviceRecords.length,
+  }));
+}
+
 function buildOrgIndexes(orgNodes) {
   const nodeMap = new Map();
   const childrenMap = new Map();
@@ -334,15 +347,19 @@ function getOrgPath(node, nodeMap) {
 function getDealerStats(dealerId, accounts, records) {
   const dealerAccounts = accounts.filter((account) => account.dealerId === dealerId);
   const dealerRecords = records.filter((record) => record.dealerId === dealerId);
+  const recordGroups = buildDeviceRecordGroups(dealerRecords);
   const activeTestAccountCount = dealerAccounts.filter((account) => account.status === 'active').length;
   return {
     testAccountCount: dealerAccounts.length,
     activeTestAccountCount,
-    testingDeviceCount: dealerRecords.filter((record) => record.status === 'testing').length,
-    abnormalDeviceCount: dealerRecords.filter((record) => record.status === 'clean_failed').length,
-    hasTesting: dealerRecords.some((record) => record.status === 'testing'),
+    testingDeviceCount: recordGroups.filter((group) => group.latest.status === 'testing').length,
+    endedDeviceCount: recordGroups.filter((group) => group.latest.status !== 'testing').length,
+    abnormalDeviceCount: recordGroups.filter((group) => group.latest.status === 'clean_failed').length,
+    testedDeviceCount: recordGroups.length,
+    totalAddCount: dealerRecords.length,
+    hasTesting: recordGroups.some((group) => group.latest.status === 'testing'),
     hasTestAccount: dealerAccounts.length > 0,
-    latestTestAt: dealerRecords.map((record) => record.startedAt).filter(Boolean).sort().at(-1) || '',
+    latestTestAt: recordGroups.map((group) => group.latest.startedAt).filter(Boolean).sort().at(-1) || '',
   };
 }
 
@@ -881,10 +898,11 @@ function DealerWorkbenchView({
 
   return (
     <>
-      <div className="dm-page-head">
-        <div>
-          <span className="dm-kicker">设备中心 / 经销商列表</span>
-          <h1>经销商列表</h1>
+      <div className="dm-page-head dm-workbench-page-head">
+        <div className="dm-workbench-breadcrumb">
+          <span>经销商列表</span>
+          <ChevronRight size={13} aria-hidden="true" />
+          <strong>{selectedDealer?.name || '请选择经销商'}</strong>
         </div>
         <div className="dm-page-head-actions">
           <AnnotationToggle enabled={annotation?.enabled} onToggle={annotation?.onToggle} />
@@ -1488,7 +1506,6 @@ function DealerDetailView({
   hideToolbar = false,
   annotation,
 }) {
-  const stats = getDealerStats(dealer.id, accounts, records);
   const dealerAccounts = accounts.filter((account) => account.dealerId === dealer.id);
   const dealerRecords = records.filter((record) => record.dealerId === dealer.id);
   const dealerLogs = logs.filter((log) => log.dealerId === dealer.id);
@@ -1513,25 +1530,29 @@ function DealerDetailView({
 
       <AnnotationArea id="dealerContext" annotation={annotation}>
         <section className="dm-card dm-detail-card">
-          <div className="dm-detail-title">
-            <div>
-              <span className="dm-kicker">经销商详情</span>
-              <div className="dm-detail-title-line">
-                <h1>经销商详情 - {dealer.name}</h1>
+          <header className="dm-dealer-profile-head">
+            <div className="dm-dealer-profile-identity">
+              <div className="dm-dealer-profile-title">
+                <h1>{dealer.name}</h1>
                 <LevelTag level={dealer.level} />
               </div>
             </div>
-          </div>
-          <div className="dm-info-grid">
-            <InfoItem label="经销商名称" value={dealer.name} />
-            <InfoItem label="经销商 ID" value={dealer.id} mono />
-            <InfoItem label="App测试账号数" value={stats.testAccountCount} />
-            <InfoItem label="设备总数" value={dealer.deviceTotalCount || 0} />
-          </div>
+            <div className="dm-dealer-profile-actions">
+              <button className="dm-btn" type="button" onClick={() => onRefresh?.('已刷新经销商详情')}>
+                <RefreshCw size={14} />刷新
+              </button>
+            </div>
+          </header>
+          <dl className="dm-dealer-summary-fields">
+            <DealerSummaryField label="经销商ID" value={dealer.id} mono />
+            <DealerSummaryField label="经销商简称" value={dealer.shortName || '-'} />
+            <DealerSummaryField label="创建时间" value={dealer.createdAt || '-'} time />
+            <DealerSummaryField label="设备总数" value={`${dealer.deviceTotalCount || 0} 台`} accent />
+          </dl>
         </section>
       </AnnotationArea>
 
-      <section className="dm-card">
+      <section className="dm-card dm-detail-tabs-card">
         <AnnotationArea id="detailTabs" annotation={annotation}>
           <div className="dm-tabs">
             {DETAIL_TABS.map((tab) => (
@@ -1572,6 +1593,15 @@ function DealerDetailView({
         )}
       </section>
     </>
+  );
+}
+
+function DealerSummaryField({ label, value, mono = false, time = false, accent = false }) {
+  return (
+    <div className={cls('dm-dealer-summary-field', accent && 'accent')}>
+      <dt>{label}</dt>
+      <dd className={cls(mono && 'dm-mono', time && 'dm-time')}>{value}</dd>
+    </div>
   );
 }
 
@@ -1700,45 +1730,34 @@ function TestRecordTab({ records, keyword, setKeyword, onOpenDeviceDetail, annot
   const [accountKeyword, setAccountKeyword] = useState('');
   const [bindingStartAt, setBindingStartAt] = useState('');
   const [bindingEndAt, setBindingEndAt] = useState('');
-  const [variant, setVariant] = useState(() => {
-    const queryVariant = new URLSearchParams(window.location.search).get('variant');
-    return RECORD_PROTOTYPE_VARIANTS.some((item) => item.id === queryVariant) ? queryVariant : 'A';
-  });
+  const [expandedDeviceId, setExpandedDeviceId] = useState(null);
 
-  const rows = useMemo(() => records
-    .filter((record) => {
-      const deviceId = getRecordDeviceId(record);
-      if (keyword && !deviceId.includes(keyword)) return false;
-      if (accountKeyword && !record.accountName.includes(accountKeyword) && !record.userId.includes(accountKeyword)) return false;
-      if (bindingStartAt && record.startedAt.slice(0, 10) < bindingStartAt) return false;
-      if (bindingEndAt && record.startedAt.slice(0, 10) > bindingEndAt) return false;
-      return true;
-    })
-    .sort((a, b) => b.startedAt.localeCompare(a.startedAt)), [records, keyword, accountKeyword, bindingStartAt, bindingEndAt]);
+  const rows = useMemo(() => {
+    return buildDeviceRecordGroups(records)
+      .filter((group) => {
+        const { latest, deviceId } = group;
+        if (keyword && !deviceId.includes(keyword)) return false;
+        if (accountKeyword && !latest.accountName.includes(accountKeyword) && !latest.userId.includes(accountKeyword)) return false;
+        if (bindingStartAt && latest.startedAt.slice(0, 10) < bindingStartAt) return false;
+        if (bindingEndAt && latest.startedAt.slice(0, 10) > bindingEndAt) return false;
+        return true;
+      })
+      .sort((a, b) => b.latest.startedAt.localeCompare(a.latest.startedAt));
+  }, [records, keyword, accountKeyword, bindingStartAt, bindingEndAt]);
 
-  const groups = useMemo(() => {
-    const groupMap = new Map();
-    rows.forEach((record) => {
-      const deviceId = getRecordDeviceId(record);
-      if (!groupMap.has(deviceId)) groupMap.set(deviceId, []);
-      groupMap.get(deviceId).push(record);
-    });
-    return Array.from(groupMap, ([deviceId, deviceRecords]) => ({
-      deviceId,
-      records: deviceRecords,
-      latest: deviceRecords[0],
-    }));
-  }, [rows]);
+  useEffect(() => {
+    const firstMultiAddGroup = rows.find((group) => group.addCount > 1);
+    if (expandedDeviceId === null) {
+      setExpandedDeviceId(firstMultiAddGroup?.deviceId || '');
+      return;
+    }
+    if (expandedDeviceId && !rows.some((group) => group.deviceId === expandedDeviceId)) {
+      setExpandedDeviceId(firstMultiAddGroup?.deviceId || '');
+    }
+  }, [rows, expandedDeviceId]);
 
   const handleOpenDevice = (record) => {
     onOpenDeviceDetail?.(record);
-  };
-
-  const handleVariantChange = (nextVariant) => {
-    setVariant(nextVariant);
-    const url = new URL(window.location.href);
-    url.searchParams.set('variant', nextVariant);
-    window.history.replaceState({}, '', url.toString());
   };
 
   return (
@@ -1765,271 +1784,104 @@ function TestRecordTab({ records, keyword, setKeyword, onOpenDeviceDetail, annot
       </AnnotationArea>
 
       <AnnotationArea id="deviceLink" annotation={annotation}>
-        <TableShell empty={groups.length === 0} emptyTitle="暂无设备测试记录">
-          {variant === 'A' && <RecordVariantA groups={groups} onOpenDevice={handleOpenDevice} />}
-          {variant === 'B' && <RecordVariantB groups={groups} onOpenDevice={handleOpenDevice} />}
-          {variant === 'C' && <RecordVariantC groups={groups} onOpenDevice={handleOpenDevice} />}
+        <TableShell empty={rows.length === 0} emptyTitle="暂无设备测试记录">
+          <table className="dm-table dm-record-latest-table">
+            <thead>
+              <tr>
+                <th>设备 ID</th>
+                <th>最近添加账号</th>
+                <th>最近添加时间</th>
+                <th>添加次数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((group) => {
+                const record = group.latest;
+                const expanded = expandedDeviceId === group.deviceId;
+                return (
+                  <React.Fragment key={group.deviceId}>
+                    <tr className={cls('dm-record-summary-row', expanded && 'expanded')}>
+                      <td>
+                        <div className="dm-device-summary">
+                          {group.addCount > 1 ? (
+                            <button
+                              className="dm-row-toggle"
+                              type="button"
+                              aria-expanded={expanded}
+                              aria-label={expanded ? `收起 ${group.deviceId} 的添加记录` : `展开 ${group.deviceId} 的添加记录`}
+                              onClick={() => setExpandedDeviceId(expanded ? '' : group.deviceId)}
+                            >
+                              {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                          ) : (
+                            <span className="dm-row-toggle-placeholder" />
+                          )}
+                          <button className="dm-link-btn dm-mono" type="button" onClick={() => handleOpenDevice(record)}>
+                            {group.deviceId}
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="dm-cell-stack">
+                          <strong>{record.accountName}</strong>
+                          <span className="dm-mono">{record.userId}</span>
+                        </div>
+                      </td>
+                      <td className="dm-time">{record.startedAt}</td>
+                      <td>
+                        {group.addCount > 1 ? (
+                          <button className="dm-count-link" type="button" onClick={() => setExpandedDeviceId(expanded ? '' : group.deviceId)}>
+                            {group.addCount} 次
+                          </button>
+                        ) : (
+                          <span className="dm-add-count-text">1 次</span>
+                        )}
+                      </td>
+                      <td>
+                        <button className="dm-link-btn" type="button" onClick={() => handleOpenDevice(record)}>查看设备详情</button>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="dm-history-row">
+                        <td colSpan={5}>
+                          <div className="dm-history-panel">
+                            <div className="dm-history-title">添加记录（按添加时间倒序）</div>
+                            <table className="dm-history-table">
+                              <thead>
+                                <tr>
+                                  <th>添加序号</th>
+                                  <th>App测试账号</th>
+                                  <th>添加时间</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.records.map((historyRecord, index) => (
+                                  <tr key={historyRecord.id}>
+                                    <td>第 {group.records.length - index} 次添加</td>
+                                    <td>
+                                      <div className="dm-cell-stack">
+                                        <strong>{historyRecord.accountName}</strong>
+                                        <span className="dm-mono">{historyRecord.userId}</span>
+                                      </div>
+                                    </td>
+                                    <td className="dm-time">{historyRecord.startedAt}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </TableShell>
       </AnnotationArea>
-      <RecordPrototypeSwitcher current={variant} onChange={handleVariantChange} />
     </div>
-  );
-}
-
-function RecordVariantA({ groups, onOpenDevice }) {
-  const [expandedDeviceId, setExpandedDeviceId] = useState(groups[0]?.records.length > 1 ? groups[0].deviceId : '');
-
-  return (
-    <table className="dm-table dm-record-table">
-      <thead>
-        <tr>
-          <th>设备 ID</th>
-          <th>最近添加账号</th>
-          <th>最近添加时间</th>
-          <th>添加次数</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {groups.map((group) => {
-          const expanded = expandedDeviceId === group.deviceId;
-          return (
-            <React.Fragment key={group.deviceId}>
-              <tr className={cls('dm-record-summary-row', expanded && 'expanded')}>
-                <td>
-                  <div className="dm-device-summary">
-                    <button
-                      className="dm-row-toggle"
-                      type="button"
-                      disabled={group.records.length < 2}
-                      aria-expanded={expanded}
-                      aria-label={expanded ? `收起 ${group.deviceId} 的添加记录` : `展开 ${group.deviceId} 的添加记录`}
-                      onClick={() => setExpandedDeviceId(expanded ? '' : group.deviceId)}
-                    >
-                      {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </button>
-                    <button className="dm-link-btn dm-mono" type="button" onClick={() => onOpenDevice(group.latest)}>
-                      {group.deviceId}
-                    </button>
-                  </div>
-                </td>
-                <td><AccountCell record={group.latest} /></td>
-                <td className="dm-time">{group.latest.startedAt}</td>
-                <td>
-                  <button
-                    className="dm-count-link"
-                    type="button"
-                    disabled={group.records.length < 2}
-                    onClick={() => setExpandedDeviceId(expanded ? '' : group.deviceId)}
-                  >
-                    {group.records.length} 次
-                  </button>
-                </td>
-                <td>
-                  <button className="dm-link-btn" type="button" onClick={() => onOpenDevice(group.latest)}>查看设备详情</button>
-                </td>
-              </tr>
-              {expanded && (
-                <tr className="dm-history-row">
-                  <td colSpan={5}>
-                    <div className="dm-history-panel">
-                      <div className="dm-history-title">添加记录（按添加时间倒序）</div>
-                      <table className="dm-history-table">
-                        <thead>
-                          <tr>
-                            <th>添加序号</th>
-                            <th>App测试账号</th>
-                            <th>添加时间</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {group.records.map((record, index) => (
-                            <tr key={record.id}>
-                              <td>第 {group.records.length - index} 次添加</td>
-                              <td><AccountCell record={record} /></td>
-                              <td className="dm-time">{record.startedAt}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
-function RecordVariantB({ groups, onOpenDevice }) {
-  return (
-    <table className="dm-table dm-record-table dm-record-table-grouped">
-      <thead>
-        <tr>
-          <th>设备 ID</th>
-          <th>添加次数</th>
-          <th>App测试账号</th>
-          <th>添加时间</th>
-        </tr>
-      </thead>
-      <tbody>
-        {groups.map((group) => group.records.map((record, index) => (
-          <tr key={record.id} className={cls(index === 0 && 'dm-group-start')}>
-            {index === 0 && (
-              <>
-                <td className="dm-grouped-device-cell" rowSpan={group.records.length}>
-                  <button className="dm-link-btn dm-mono" type="button" onClick={() => onOpenDevice(group.latest)}>
-                    {group.deviceId}
-                  </button>
-                </td>
-                <td className="dm-grouped-count-cell" rowSpan={group.records.length}>
-                  <span className="dm-count-badge">{group.records.length} 次</span>
-                </td>
-              </>
-            )}
-            <td>
-              <div className="dm-grouped-record-index">
-                <span>第 {group.records.length - index} 次添加</span>
-                <AccountCell record={record} />
-              </div>
-            </td>
-            <td className="dm-time">{record.startedAt}</td>
-          </tr>
-        )))}
-      </tbody>
-    </table>
-  );
-}
-
-function RecordVariantC({ groups, onOpenDevice }) {
-  const [selectedGroup, setSelectedGroup] = useState(null);
-
-  return (
-    <>
-      <table className="dm-table dm-record-table dm-record-table-drawer">
-        <thead>
-          <tr>
-            <th>设备 ID</th>
-            <th>最近添加账号</th>
-            <th>最近添加时间</th>
-            <th>添加次数</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((group) => (
-            <tr key={group.deviceId}>
-              <td>
-                <button className="dm-link-btn dm-mono" type="button" onClick={() => onOpenDevice(group.latest)}>
-                  {group.deviceId}
-                </button>
-              </td>
-              <td><AccountCell record={group.latest} /></td>
-              <td className="dm-time">{group.latest.startedAt}</td>
-              <td><span className="dm-count-badge">{group.records.length} 次</span></td>
-              <td>
-                <button className="dm-link-btn" type="button" onClick={() => setSelectedGroup(group)}>查看添加记录</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {selectedGroup && (
-        <RecordHistoryDrawer
-          group={selectedGroup}
-          onOpenDevice={onOpenDevice}
-          onClose={() => setSelectedGroup(null)}
-        />
-      )}
-    </>
-  );
-}
-
-function AccountCell({ record }) {
-  return (
-    <div className="dm-cell-stack">
-      <strong>{record.accountName}</strong>
-      <span className="dm-mono">{record.userId}</span>
-    </div>
-  );
-}
-
-function RecordHistoryDrawer({ group, onOpenDevice, onClose }) {
-  useEffect(() => {
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [onClose]);
-
-  return (
-    <div className="dm-drawer-mask dm-record-drawer-mask" onClick={onClose}>
-      <aside className="dm-drawer dm-record-drawer" role="dialog" aria-modal="true" aria-label={`${group.deviceId} 添加记录`} onClick={(event) => event.stopPropagation()}>
-        <div className="dm-drawer-head">
-          <div>
-            <span>设备添加记录</span>
-            <h3 className="dm-mono">{group.deviceId}</h3>
-          </div>
-          <button type="button" onClick={onClose} aria-label="关闭添加记录"><X size={18} /></button>
-        </div>
-        <div className="dm-record-drawer-summary">
-          <span>累计添加次数</span>
-          <strong>{group.records.length} 次</strong>
-          <button className="dm-link-btn" type="button" onClick={() => onOpenDevice(group.latest)}>查看设备详情</button>
-        </div>
-        <div className="dm-record-drawer-body">
-          {group.records.map((record, index) => (
-            <article className="dm-record-drawer-item" key={record.id}>
-              <div className="dm-record-drawer-index">第 {group.records.length - index} 次添加</div>
-              <AccountCell record={record} />
-              <time>{record.startedAt}</time>
-            </article>
-          ))}
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-function RecordPrototypeSwitcher({ current, onChange }) {
-  useEffect(() => {
-    const cycleVariant = (event) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      const target = event.target;
-      if (target instanceof HTMLElement && (target.matches('input, textarea, select, [contenteditable="true"]') || target.isContentEditable)) return;
-      const currentIndex = RECORD_PROTOTYPE_VARIANTS.findIndex((item) => item.id === current);
-      const direction = event.key === 'ArrowLeft' ? -1 : 1;
-      const nextIndex = (currentIndex + direction + RECORD_PROTOTYPE_VARIANTS.length) % RECORD_PROTOTYPE_VARIANTS.length;
-      event.preventDefault();
-      onChange(RECORD_PROTOTYPE_VARIANTS[nextIndex].id);
-    };
-    document.addEventListener('keydown', cycleVariant);
-    return () => document.removeEventListener('keydown', cycleVariant);
-  }, [current, onChange]);
-
-  if (!import.meta.env.DEV) return null;
-  const currentIndex = RECORD_PROTOTYPE_VARIANTS.findIndex((item) => item.id === current);
-  const previous = RECORD_PROTOTYPE_VARIANTS[(currentIndex - 1 + RECORD_PROTOTYPE_VARIANTS.length) % RECORD_PROTOTYPE_VARIANTS.length];
-  const next = RECORD_PROTOTYPE_VARIANTS[(currentIndex + 1) % RECORD_PROTOTYPE_VARIANTS.length];
-  const active = RECORD_PROTOTYPE_VARIANTS[currentIndex];
-
-  return (
-    <nav className="dm-prototype-switcher" aria-label="设备添加记录原型方案切换">
-      <button type="button" onClick={() => onChange(previous.id)} aria-label={`切换到方案 ${previous.id}：${previous.label}`} title={previous.label}>
-        <ChevronLeft size={17} />
-      </button>
-      <div>
-        <span>原型方案</span>
-        <strong>{active.id} · {active.label}</strong>
-      </div>
-      <button type="button" onClick={() => onChange(next.id)} aria-label={`切换到方案 ${next.id}：${next.label}`} title={next.label}>
-        <ChevronRight size={17} />
-      </button>
-    </nav>
   );
 }
 
