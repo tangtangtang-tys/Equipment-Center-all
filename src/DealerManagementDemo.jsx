@@ -1567,7 +1567,6 @@ function DealerDetailView({
             dealer={dealer}
             accounts={dealerAccounts}
             onOpenCreate={onOpenCreate}
-            onRefresh={() => onRefresh?.('已刷新App测试账号列表')}
             onOpenUserDetail={onOpenUserDetail}
             onResetPassword={onResetPassword}
             annotation={annotation}
@@ -1628,7 +1627,7 @@ function AppTestAccountUsageNote({ className }) {
   );
 }
 
-function TestAccountTab({ dealer, accounts, onOpenCreate, onRefresh, onOpenUserDetail, onResetPassword, annotation }) {
+function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onResetPassword, annotation }) {
   const [keyword, setKeyword] = useState('');
 
   const rows = accounts
@@ -1657,7 +1656,6 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onRefresh, onOpenUserD
             >
               <Plus size={15} />创建账号
             </button>
-            <button className="dm-btn" type="button" onClick={onRefresh}><RefreshCw size={15} />刷新</button>
           </div>
         </AnnotationArea>
       </div>
