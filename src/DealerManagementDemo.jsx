@@ -9,16 +9,11 @@ import {
   ChevronRight,
   CheckCircle2,
   ClipboardList,
-  Clock3,
   Copy,
-  Eye,
-  EyeOff,
   FileText,
   KeyRound,
-  MoreHorizontal,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   UserPlus,
   X,
@@ -40,8 +35,9 @@ const TEST_ACCOUNT_CLIENTS = [
   { clientName: '小鹰视界', clientId: 'app-xiaoying-vision' },
 ];
 const DEFAULT_TEST_ACCOUNT_CLIENT = TEST_ACCOUNT_CLIENTS[0];
-const DEFAULT_TEST_ACCOUNT_VALID_DAYS = 30;
-const MAX_TEST_ACCOUNT_VALID_DAYS = 90;
+const DEFAULT_TEST_ACCOUNT_VALID_YEARS = 1;
+const MAX_TEST_ACCOUNT_VALID_YEARS = 10;
+const TEST_ACCOUNT_VALIDITY_PRESETS = [1, 3, 10];
 const DEFAULT_DEALER_LIST_FILTERS = {
   keyword: '',
 };
@@ -156,7 +152,8 @@ const ANNOTATION_RULES = [
       '账号所属大区：必填；可选中国、亚洲、北美、欧洲，默认中国。',
       '客户端名称：必填；从客户端清单选择，并自动带出客户端 ID。',
       '客户端 ID：由客户端名称联动生成，以禁用态展示，不允许手动修改。',
-      '到期时间：必填；创建成功后立即生效，默认有效 30 天，过去日期不可选，单次最长 90 天。',
+      '到期时间：必填；创建成功后立即生效，默认有效 1 年，过去日期不可选，单次最长 10 年。',
+      '到期时间为单日期选择，支持 1 年、3 年、10 年快捷选项；有效期按自然年计算，含创建日和到期日。',
       '创建原因：必填，用于说明设备抽检、样机验证或异常复测场景。',
     ],
     rules: [
@@ -169,7 +166,8 @@ const ANNOTATION_RULES = [
     title: '创建/重置成功反馈',
     summary: '账号创建或密码重置后，需要把可交付给经销商的信息一次性展示清楚。',
     rules: [
-      '临时密码默认明文展示，用户可选择隐藏或复制。',
+      '创建账号和重置密码使用同一规则：安全随机生成 10 位，仅包含大写字母、小写字母和数字，并保证三类字符各至少包含 1 位。',
+      '临时密码始终明文展示，不提供显示 / 隐藏操作，支持一键复制。',
       '复制密码只触发前端剪贴板操作，不写入操作日志。',
       '弹窗关闭后不可再次查看当前临时密码；遗失时通过重置密码重新生成。',
     ],
@@ -183,6 +181,7 @@ const ANNOTATION_RULES = [
     ],
     rules: [
       '重置后旧密码立即失效，新密码仅本次展示。',
+      '新密码沿用统一临时密码规则：安全随机 10 位，并保证包含大写字母、小写字母和数字。',
       '重置密码不改变账号权限状态，已停用或已过期账号不会因此恢复可用。',
       '重置成功后写入操作日志，记录操作人、账号、用户 ID、原因和时间。',
     ],
@@ -247,20 +246,11 @@ function formatDateInputValue(date) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function plusDaysText(days) {
-  const date = new Date('2026-07-08T00:00:00');
-  date.setDate(date.getDate() + days);
-  return formatDateInputValue(date);
-}
-
-function dateDiffDays(startDateText, endDateText) {
-  const startDate = new Date(`${startDateText}T00:00:00`);
-  const endDate = new Date(`${endDateText}T00:00:00`);
-  return Math.round((endDate - startDate) / 86400000);
-}
-
-function getInclusiveDayCount(startDateText, endDateText) {
-  return dateDiffDays(startDateText, endDateText) + 1;
+function getValidityEndDateText(startDateText, years) {
+  const [year, month, day] = startDateText.split('-').map(Number);
+  const endDate = new Date(year + years, month - 1, day);
+  endDate.setDate(endDate.getDate() - 1);
+  return formatDateInputValue(endDate);
 }
 
 function getEffectiveAccountStatus(account) {
@@ -304,10 +294,6 @@ function createTemporaryPassword() {
     [password[index], password[swapIndex]] = [password[swapIndex], password[index]];
   }
   return password.join('');
-}
-
-function maskPassword(password) {
-  return '•'.repeat(Math.max(12, password.length));
 }
 
 function getClientConfig(clientName) {
@@ -539,13 +525,12 @@ function AnnotationArea({ id, annotation, className, children }) {
 export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const [dealers] = useState(initialDealers);
   const [accounts, setAccounts] = useState(initialTestAccounts);
-  const [records, setRecords] = useState(initialTestRecords);
+  const [records] = useState(initialTestRecords);
   const [logs, setLogs] = useState(initialOperationLogs);
   const [selectedDealerId, setSelectedDealerId] = useState(initialDealers[0].id);
   const [activeTab, setActiveTab] = useState('设备测试记录');
   const [recordKeyword, setRecordKeyword] = useState('');
   const [modal, setModal] = useState(null);
-  const [drawer, setDrawer] = useState(null);
   const [toast, setToast] = useState(null);
   const [annotationEnabled, setAnnotationEnabled] = useState(true);
   const [activeAnnotationId, setActiveAnnotationId] = useState('');
@@ -677,9 +662,9 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     if (
       !formData.validEndAt
       || formData.validEndAt < validStartAt
-      || getInclusiveDayCount(validStartAt, formData.validEndAt) > MAX_TEST_ACCOUNT_VALID_DAYS
+      || formData.validEndAt > getValidityEndDateText(validStartAt, MAX_TEST_ACCOUNT_VALID_YEARS)
     ) {
-      showToast('到期时间无效，请选择今天起 90 天内的日期', 'error');
+      showToast('到期时间无效，请选择今天起 10 年内的日期', 'error');
       return;
     }
     const account = {
@@ -744,57 +729,6 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     showToast('密码已重置，新密码仅本次展示');
   };
 
-  const manualClean = (record) => {
-    setRecords((prev) => prev.map((item) => item.id === record.id ? {
-      ...item,
-      status: 'cleaned',
-      endedAt: nowText(),
-      endReason: '平台手动清理',
-      cleanResult: 'success',
-      failReason: '',
-      latestCleanAt: nowText(),
-    } : item));
-    appendLog({
-      dealerId: record.dealerId,
-      accountId: record.accountId,
-      userId: record.userId,
-      accountName: record.accountName,
-      deviceSn: record.deviceSn,
-      actionType: '手动清理',
-      remark: '平台运营手动清理测试设备，设备恢复可交付状态',
-    });
-    setModal(null);
-    showToast('设备已手动清理，状态变为已清理');
-  };
-
-  const retryClean = (record, formData) => {
-    const success = formData.result === 'success';
-    setRecords((prev) => prev.map((item) => item.id === record.id ? {
-      ...item,
-      status: success ? 'cleaned' : 'clean_failed',
-      endedAt: item.endedAt || nowText(),
-      cleanResult: success ? 'success' : 'failed',
-      failReason: success ? '' : formData.failReason,
-      latestCleanAt: nowText(),
-    } : item));
-    appendLog({
-      dealerId: record.dealerId,
-      accountId: record.accountId,
-      userId: record.userId,
-      accountName: record.accountName,
-      deviceSn: record.deviceSn,
-      actionType: '重试清理',
-      result: success ? '成功' : '失败',
-      failReason: success ? '' : formData.failReason,
-      remark: success ? '重试清理成功，设备可进入正式交付流程' : '重试清理失败，仍需平台处理',
-    });
-    setModal(null);
-    showToast(
-      success ? '重试清理成功，状态变为已清理' : '重试清理失败，已更新失败原因',
-      success ? 'success' : 'error',
-    );
-  };
-
   return (
     <section className="dm-page">
       <DealerWorkbenchView
@@ -847,22 +781,6 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
           onClose={() => setModal(null)}
           annotation={annotation}
         />
-      )}
-      {modal?.type === 'manualClean' && modal.record && (
-        <ConfirmModal
-          title="手动清理测试设备"
-          tone="danger"
-          desc="确认清理该测试设备？清理成功后设备将恢复可正式交付状态。"
-          confirmText="确认清理"
-          onConfirm={() => manualClean(modal.record)}
-          onClose={() => setModal(null)}
-        />
-      )}
-      {modal?.type === 'retryClean' && modal.record && (
-        <RetryCleanModal record={modal.record} onSubmit={retryClean} onClose={() => setModal(null)} />
-      )}
-      {drawer?.type === 'failure' && drawer.record && (
-        <FailureReasonDrawer record={drawer.record} onClose={() => setDrawer(null)} />
       )}
       <Toast message={toast?.message} tone={toast?.tone} />
     </section>
@@ -1674,15 +1592,6 @@ function DealerSummaryField({ label, value, mono = false, time = false, accent =
   );
 }
 
-function InfoItem({ label, value, tone, mono }) {
-  return (
-    <div className="dm-info-item">
-      <span>{label}</span>
-      <strong className={cls(tone && `tone-${tone}`, mono && 'dm-mono')}>{value}</strong>
-    </div>
-  );
-}
-
 function AppTestAccountUsageNote({ className }) {
   return (
     <div className={cls('dm-usage-note', className)}>
@@ -2222,28 +2131,7 @@ function BaseModal({ title, children, footer, onClose, width = 560, className })
   );
 }
 
-function ConfirmModal({ title, desc, confirmText, tone = 'primary', onConfirm, onClose }) {
-  return (
-    <BaseModal
-      title={title}
-      onClose={onClose}
-      footer={(
-        <>
-          <button className="dm-btn" type="button" onClick={onClose}>取消</button>
-          <button className={cls('dm-btn', tone === 'danger' ? 'dm-btn-danger' : 'dm-btn-primary')} type="button" onClick={onConfirm}>{confirmText}</button>
-        </>
-      )}
-    >
-      <div className="dm-confirm">
-        <AlertTriangle size={24} />
-        <p>{desc}</p>
-      </div>
-    </BaseModal>
-  );
-}
-
 function CredentialResultModal({ mode, dealer, account, password, onCopy, onClose, annotation }) {
-  const [visible, setVisible] = useState(true);
   const title = mode === 'reset' ? '密码已重置' : '创建成功';
   const source = mode === 'reset' ? '重置成功弹窗' : '创建成功弹窗';
 
@@ -2275,10 +2163,6 @@ function CredentialResultModal({ mode, dealer, account, password, onCopy, onClos
           <div className="dm-password-panel-head">
             <span>临时密码</span>
             <div className="dm-password-actions">
-              <button className="dm-password-action" type="button" onClick={() => setVisible((prev) => !prev)}>
-                {visible ? <EyeOff size={14} /> : <Eye size={14} />}
-                {visible ? '隐藏密码' : '显示密码'}
-              </button>
               <button
                 className="dm-password-action primary"
                 type="button"
@@ -2288,7 +2172,7 @@ function CredentialResultModal({ mode, dealer, account, password, onCopy, onClos
               </button>
             </div>
           </div>
-          <strong className="dm-mono">{visible ? password : maskPassword(password)}</strong>
+          <strong className="dm-mono">{password}</strong>
         </div>
       </AnnotationArea>
     </BaseModal>
@@ -2298,12 +2182,14 @@ function CredentialResultModal({ mode, dealer, account, password, onCopy, onClos
 function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const reasonRef = useRef(null);
   const effectiveStatus = getEffectiveAccountStatus(account);
   const statusCfg = ACCOUNT_STATUS_MAP[effectiveStatus] || ACCOUNT_STATUS_MAP.active;
   const submit = () => {
     const nextReason = reason.trim();
     if (!nextReason) {
       setError('请输入重置原因');
+      requestAnimationFrame(() => reasonRef.current?.focus());
       return;
     }
     onSubmit(account, { reason: nextReason });
@@ -2340,7 +2226,19 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
       <AnnotationArea id="resetPassword" annotation={annotation}>
         <div className="dm-form-grid">
           <Field label="重置原因" error={error}>
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="请填写密码重置原因，便于后续审计追溯" />
+            <textarea
+              ref={reasonRef}
+              name="resetReason"
+              value={reason}
+              aria-invalid={Boolean(error)}
+              autoComplete="off"
+              maxLength={200}
+              onChange={(event) => {
+                setReason(event.target.value);
+                if (error) setError('');
+              }}
+              placeholder="请填写密码重置原因，便于后续审计追溯…"
+            />
           </Field>
         </div>
       </AnnotationArea>
@@ -2352,7 +2250,7 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
   const currentDealer = dealers.find((dealer) => dealer.id === defaultDealerId) || dealers.find((dealer) => dealer.status === 'normal');
   const formRef = useRef(null);
   const validStartAt = nowText().slice(0, 10);
-  const maxValidEndAt = plusDaysText(MAX_TEST_ACCOUNT_VALID_DAYS - 1);
+  const maxValidEndAt = getValidityEndDateText(validStartAt, MAX_TEST_ACCOUNT_VALID_YEARS);
   const [form, setForm] = useState({
     dealerId: currentDealer?.id || '',
     accountName: '',
@@ -2361,7 +2259,7 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     clientName: DEFAULT_TEST_ACCOUNT_CLIENT.clientName,
     clientId: DEFAULT_TEST_ACCOUNT_CLIENT.clientId,
     validStartAt,
-    validEndAt: plusDaysText(DEFAULT_TEST_ACCOUNT_VALID_DAYS - 1),
+    validEndAt: getValidityEndDateText(validStartAt, DEFAULT_TEST_ACCOUNT_VALID_YEARS),
     applyReason: '',
   });
   const [errors, setErrors] = useState({});
@@ -2408,8 +2306,8 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     if (!form.clientId.trim()) nextErrors.clientId = '请选择有效的客户端';
     if (!form.validEndAt) nextErrors.validEndAt = '请选择到期时间';
     else if (form.validEndAt < validStartAt) nextErrors.validEndAt = '到期时间不能早于今天';
-    else if (getInclusiveDayCount(validStartAt, form.validEndAt) > MAX_TEST_ACCOUNT_VALID_DAYS) {
-      nextErrors.validEndAt = `有效期最长不能超过 ${MAX_TEST_ACCOUNT_VALID_DAYS} 天`;
+    else if (form.validEndAt > maxValidEndAt) {
+      nextErrors.validEndAt = `有效期最长不能超过 ${MAX_TEST_ACCOUNT_VALID_YEARS} 年`;
     }
     if (!form.applyReason.trim()) nextErrors.applyReason = '请输入创建原因';
     setErrors(nextErrors);
@@ -2479,17 +2377,41 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
           <Field label="客户端 ID" hint="由客户端名称自动带出，不可编辑" error={errors.clientId}>
             <input name="clientId" value={form.clientId} disabled aria-disabled="true" />
           </Field>
-          <Field label="到期时间" hint={`创建后立即生效，默认 ${DEFAULT_TEST_ACCOUNT_VALID_DAYS} 天，最长 ${MAX_TEST_ACCOUNT_VALID_DAYS} 天`} error={errors.validEndAt}>
-            <input
-              name="validEndAt"
-              type="date"
-              value={form.validEndAt}
-              min={validStartAt}
-              max={maxValidEndAt}
-              aria-invalid={Boolean(errors.validEndAt)}
-              autoComplete="off"
-              onChange={(event) => update('validEndAt', event.target.value)}
-            />
+          <Field
+            label="到期时间"
+            labelFor="validEndAt"
+            hint={`创建后立即生效，默认 ${DEFAULT_TEST_ACCOUNT_VALID_YEARS} 年，最长 ${MAX_TEST_ACCOUNT_VALID_YEARS} 年`}
+            error={errors.validEndAt}
+          >
+            <div className="dm-validity-date-control">
+              <input
+                id="validEndAt"
+                name="validEndAt"
+                type="date"
+                value={form.validEndAt}
+                min={validStartAt}
+                max={maxValidEndAt}
+                aria-invalid={Boolean(errors.validEndAt)}
+                autoComplete="off"
+                onChange={(event) => update('validEndAt', event.target.value)}
+              />
+              <div className="dm-validity-presets" role="group" aria-label="到期时间快捷选项">
+                {TEST_ACCOUNT_VALIDITY_PRESETS.map((years) => {
+                  const presetDate = getValidityEndDateText(validStartAt, years);
+                  return (
+                    <button
+                      key={years}
+                      className={cls(form.validEndAt === presetDate && 'active')}
+                      type="button"
+                      aria-pressed={form.validEndAt === presetDate}
+                      onClick={() => update('validEndAt', presetDate)}
+                    >
+                      {years}年
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </Field>
           <Field label="创建原因" error={errors.applyReason} className="dm-field-full">
             <textarea
@@ -2508,70 +2430,18 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
   );
 }
 
-function RetryCleanModal({ record, onSubmit, onClose }) {
-  const [form, setForm] = useState({ result: 'success', failReason: '访问凭证撤销仍超时' });
-  const [errors, setErrors] = useState({});
-  const submit = () => {
-    const nextErrors = {};
-    if (form.result === 'failed' && !form.failReason.trim()) nextErrors.failReason = '请输入失败原因';
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) onSubmit(record, form);
-  };
-  return (
-    <BaseModal
-      title="重试清理"
-      onClose={onClose}
-      footer={(
-        <>
-          <button className="dm-btn" type="button" onClick={onClose}>取消</button>
-          <button className="dm-btn dm-btn-primary" type="button" onClick={submit}>确认重试</button>
-        </>
-      )}
-    >
-      <div className="dm-modal-info-grid">
-        <div><span>设备 SN</span><strong>{record.deviceSn}</strong></div>
-        <div><span>最近失败原因</span><strong>{record.failReason}</strong></div>
-        <div><span>最近清理时间</span><strong>{record.latestCleanAt || '-'}</strong></div>
+function Field({ label, labelFor, hint, error, children, className }) {
+  if (labelFor) {
+    return (
+      <div className={cls('dm-field', className)}>
+        <label htmlFor={labelFor}>{label}</label>
+        {children}
+        {hint && <span className="dm-field-hint">{hint}</span>}
+        {error && <small role="alert">{error}</small>}
       </div>
-      <div className="dm-form-grid">
-        <Field label="重试结果">
-          <select value={form.result} onChange={(event) => setForm((prev) => ({ ...prev, result: event.target.value }))}>
-            <option value="success">重试成功</option>
-            <option value="failed">重试失败</option>
-          </select>
-        </Field>
-        {form.result === 'failed' && (
-          <Field label="失败原因" error={errors.failReason}>
-            <textarea value={form.failReason} onChange={(event) => setForm((prev) => ({ ...prev, failReason: event.target.value }))} />
-          </Field>
-        )}
-      </div>
-    </BaseModal>
-  );
-}
+    );
+  }
 
-function FailureReasonDrawer({ record, onClose }) {
-  return (
-    <div className="dm-drawer-mask" onClick={onClose}>
-      <aside className="dm-drawer" onClick={(event) => event.stopPropagation()}>
-        <div className="dm-drawer-head">
-          <h3>清理失败原因</h3>
-          <button type="button" onClick={onClose}><X size={18} /></button>
-        </div>
-        <div className="dm-drawer-body">
-          <InfoItem label="设备 SN" value={record.deviceSn} mono />
-          <InfoItem label="设备型号" value={record.deviceModel} />
-          <InfoItem label="App测试账号" value={record.accountName} />
-          <InfoItem label="当前状态" value="清理失败" tone="danger" />
-          <InfoItem label="失败原因" value={record.failReason || '-'} tone="danger" />
-          <InfoItem label="最近清理时间" value={record.latestCleanAt || '-'} />
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-function Field({ label, hint, error, children, className }) {
   return (
     <label className={cls('dm-field', className)}>
       <span>{label}</span>
