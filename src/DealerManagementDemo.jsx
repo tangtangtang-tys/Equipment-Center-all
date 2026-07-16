@@ -35,9 +35,6 @@ const TEST_ACCOUNT_CLIENTS = [
   { clientName: '小鹰视界', clientId: 'app-xiaoying-vision' },
 ];
 const DEFAULT_TEST_ACCOUNT_CLIENT = TEST_ACCOUNT_CLIENTS[0];
-const DEFAULT_TEST_ACCOUNT_VALID_YEARS = 1;
-const MAX_TEST_ACCOUNT_VALID_YEARS = 10;
-const TEST_ACCOUNT_VALIDITY_PRESETS = [1, 3, 10];
 const DEFAULT_DEALER_LIST_FILTERS = {
   keyword: '',
 };
@@ -127,8 +124,8 @@ const ANNOTATION_RULES = [
       '刷新：刷新当前经销商下的 APP 测试账号列表，不改变查询关键字。',
     ],
     rules: [
-      '不提供账号状态查询条件，避免第一阶段筛选项过重。',
-      '账号状态仅在列表内展示，用于识别生效中、已停用、已过期。',
+      '第一阶段不提供账号权限状态和有效期的查询、展示或维护能力。',
+      '账号是否允许测试由服务端结合经销商组织状态、用户中心账号状态和内部测试权限策略判断。',
     ],
   },
   {
@@ -137,7 +134,7 @@ const ANNOTATION_RULES = [
     summary: '创建入口与查询区保持同一行，降低用户在当前经销商下新增账号的操作成本。',
     flow: [
       '点击创建账号后打开弹窗，默认带入当前选中的经销商组织。',
-      '第一阶段不接入审批流，提交成功后立即生效。',
+      '第一阶段不接入审批流，提交成功后直接进入当前经销商的账号列表。',
       '经销商停用时按钮置灰，不允许创建。',
     ],
   },
@@ -152,11 +149,10 @@ const ANNOTATION_RULES = [
       '账号所属大区：必填；可选中国、亚洲、北美、欧洲，默认中国。',
       '客户端名称：必填；从客户端清单选择，并自动带出客户端 ID。',
       '客户端 ID：由客户端名称联动生成，以禁用态展示，不允许手动修改。',
-      '到期时间：必填；创建成功后立即生效，默认有效 1 年，过去日期不可选，单次最长 10 年。',
-      '到期时间为单日期选择，支持 1 年、3 年、10 年快捷选项；有效期按自然年计算，含创建日和到期日。',
       '创建原因：必填，用于说明设备抽检、样机验证或异常复测场景。',
     ],
     rules: [
+      '第一阶段创建表单不配置账号权限状态和到期时间，前端创建请求也不提交这两个字段。',
       '提交成功后返回账号名称、用户 ID 和临时密码。',
       '临时密码仅本次展示，关闭后不可再次查看。',
     ],
@@ -182,7 +178,7 @@ const ANNOTATION_RULES = [
     rules: [
       '重置后旧密码立即失效，新密码仅本次展示。',
       '新密码沿用统一临时密码规则：安全随机 10 位，并保证包含大写字母、小写字母和数字。',
-      '重置密码不改变账号权限状态，已停用或已过期账号不会因此恢复可用。',
+      '重置密码只处理登录凭证，不改变经销商组织或用户中心账号的可用状态。',
       '重置成功后写入操作日志，记录操作人、账号、用户 ID、原因和时间。',
     ],
   },
@@ -203,12 +199,6 @@ const ANNOTATION_RULES = [
 ].map((rule, index) => ({ ...rule, number: String(index + 1).padStart(2, '0') }));
 
 const ANNOTATION_RULE_MAP = new Map(ANNOTATION_RULES.map((rule) => [rule.id, rule]));
-
-const ACCOUNT_STATUS_MAP = {
-  active: { label: '生效中', tone: 'success' },
-  stopped: { label: '已停用', tone: 'muted' },
-  expired: { label: '已过期', tone: 'orange' },
-};
 
 const DEALER_STATUS_MAP = {
   normal: { label: '正常', tone: 'success' },
@@ -231,32 +221,6 @@ const LEVEL_TAG_TONE = {
 
 function nowText() {
   return '2026-07-08 11:30:00';
-}
-
-const DATE_INPUT_FORMATTER = new Intl.DateTimeFormat('en-CA', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-
-function formatDateInputValue(date) {
-  const parts = Object.fromEntries(
-    DATE_INPUT_FORMATTER.formatToParts(date).map(({ type, value }) => [type, value]),
-  );
-  return `${parts.year}-${parts.month}-${parts.day}`;
-}
-
-function getValidityEndDateText(startDateText, years) {
-  const [year, month, day] = startDateText.split('-').map(Number);
-  const endDate = new Date(year + years, month - 1, day);
-  endDate.setDate(endDate.getDate() - 1);
-  return formatDateInputValue(endDate);
-}
-
-function getEffectiveAccountStatus(account) {
-  if (account.status === 'stopped') return 'stopped';
-  if (account.validEndAt && account.validEndAt < nowText().slice(0, 10)) return 'expired';
-  return 'active';
 }
 
 function createId(prefix) {
@@ -385,10 +349,8 @@ function getDealerStats(dealerId, accounts, records) {
   const dealerAccounts = accounts.filter((account) => account.dealerId === dealerId);
   const dealerRecords = records.filter((record) => record.dealerId === dealerId);
   const recordGroups = buildDeviceRecordGroups(dealerRecords);
-  const activeTestAccountCount = dealerAccounts.filter((account) => getEffectiveAccountStatus(account) === 'active').length;
   return {
     testAccountCount: dealerAccounts.length,
-    activeTestAccountCount,
     testingDeviceCount: recordGroups.filter((group) => group.latest.status === 'testing').length,
     endedDeviceCount: recordGroups.filter((group) => group.latest.status !== 'testing').length,
     abnormalDeviceCount: recordGroups.filter((group) => group.latest.status === 'clean_failed').length,
@@ -658,15 +620,6 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       return;
     }
     const client = getClientConfig(formData.clientName);
-    const validStartAt = nowText().slice(0, 10);
-    if (
-      !formData.validEndAt
-      || formData.validEndAt < validStartAt
-      || formData.validEndAt > getValidityEndDateText(validStartAt, MAX_TEST_ACCOUNT_VALID_YEARS)
-    ) {
-      showToast('到期时间无效，请选择今天起 10 年内的日期', 'error');
-      return;
-    }
     const account = {
       id: createId('TA'),
       dealerId: dealer.id,
@@ -677,9 +630,6 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       region: formData.region,
       clientName: client.clientName,
       clientId: client.clientId,
-      status: 'active',
-      validStartAt,
-      validEndAt: formData.validEndAt,
       applyReason: formData.applyReason,
       createdAt: nowText(),
     };
@@ -692,7 +642,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       accountName: account.accountName,
       actionType: '创建App测试账号',
       creator: '汤彦珊',
-      remark: `大区：${account.region}；客户端：${account.clientName} / ${account.clientId}；创建后立即生效；临时密码仅本次展示`,
+      remark: `大区：${account.region}；客户端：${account.clientName} / ${account.clientId}；临时密码仅本次展示`,
     });
     setSelectedDealerId(dealer.id);
     setActiveTab('APP测试账号');
@@ -703,7 +653,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       account,
       password: temporaryPassword,
     });
-    showToast('创建成功，App测试账号已立即生效');
+    showToast('创建成功，已加入App测试账号列表');
   };
 
   const handleResetPassword = (account, formData) => {
@@ -1317,7 +1267,6 @@ function DealerHierarchyListView({ dealers, orgNodes, accounts, records, onOpenD
         const aggregate = {
           testEnabled: aggregateDealers.some((item) => item.testEnabled),
           testAccountCount: aggregateDealers.reduce((sum, item) => sum + item.testAccountCount, 0),
-          activeTestAccountCount: aggregateDealers.reduce((sum, item) => sum + item.activeTestAccountCount, 0),
           testingDeviceCount: aggregateDealers.reduce((sum, item) => sum + item.testingDeviceCount, 0),
           deviceTotalCount: aggregateDealers.reduce((sum, item) => sum + (item.deviceTotalCount || 0), 0),
           childDealerCount: descendantDealers.length,
@@ -1647,55 +1596,42 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
               <th>手机号</th>
               <th>所属大区</th>
               <th>客户端</th>
-              <th>权限状态</th>
-              <th>有效期</th>
               <th>创建时间</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((account) => {
-              const effectiveStatus = getEffectiveAccountStatus(account);
-              const statusCfg = ACCOUNT_STATUS_MAP[effectiveStatus];
-              return (
-                <tr key={account.id}>
-                  <td>
-                    <div className="dm-cell-stack">
-                      <strong>{account.accountName}</strong>
-                    </div>
-                  </td>
-                  <td className="dm-mono">{account.userId}</td>
-                  <td>{account.mobile || '-'}</td>
-                  <td><Tag tone={REGION_TAG_TONE[account.region] || 'muted'}>{account.region || '中国'}</Tag></td>
-                  <td>
-                    <div className="dm-cell-stack">
-                      <strong>{account.clientName || DEFAULT_TEST_ACCOUNT_CLIENT.clientName}</strong>
-                      <span className="dm-mono">{account.clientId || DEFAULT_TEST_ACCOUNT_CLIENT.clientId}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="dm-cell-stack">
-                      <span><Tag tone={statusCfg.tone}>{statusCfg.label}</Tag></span>
-                    </div>
-                  </td>
-                  <td className="dm-time">{account.validStartAt} 至 {account.validEndAt}</td>
-                  <td className="dm-time">{account.createdAt}</td>
-                  <td>
-                    <div className="dm-row-actions">
-                      <button className="dm-link-btn" type="button" onClick={() => onOpenUserDetail?.(account)}>查看</button>
-                      <button
-                        className="dm-link-btn"
-                        type="button"
-                        onClick={() => onResetPassword?.(account)}
-                        title={effectiveStatus === 'active' ? '' : '重置密码不改变账号权限状态'}
-                      >
-                        重置密码
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((account) => (
+              <tr key={account.id}>
+                <td>
+                  <div className="dm-cell-stack">
+                    <strong>{account.accountName}</strong>
+                  </div>
+                </td>
+                <td className="dm-mono">{account.userId}</td>
+                <td>{account.mobile || '-'}</td>
+                <td><Tag tone={REGION_TAG_TONE[account.region] || 'muted'}>{account.region || '中国'}</Tag></td>
+                <td>
+                  <div className="dm-cell-stack">
+                    <strong>{account.clientName || DEFAULT_TEST_ACCOUNT_CLIENT.clientName}</strong>
+                    <span className="dm-mono">{account.clientId || DEFAULT_TEST_ACCOUNT_CLIENT.clientId}</span>
+                  </div>
+                </td>
+                <td className="dm-time">{account.createdAt}</td>
+                <td>
+                  <div className="dm-row-actions">
+                    <button className="dm-link-btn" type="button" onClick={() => onOpenUserDetail?.(account)}>查看</button>
+                    <button
+                      className="dm-link-btn"
+                      type="button"
+                      onClick={() => onResetPassword?.(account)}
+                    >
+                      重置密码
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </TableShell>
@@ -2183,8 +2119,6 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const reasonRef = useRef(null);
-  const effectiveStatus = getEffectiveAccountStatus(account);
-  const statusCfg = ACCOUNT_STATUS_MAP[effectiveStatus] || ACCOUNT_STATUS_MAP.active;
   const submit = () => {
     const nextReason = reason.trim();
     if (!nextReason) {
@@ -2215,14 +2149,7 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
         <div><span>经销商</span><strong>{dealer.name}</strong></div>
         <div><span>账号名称</span><strong>{account.accountName}</strong></div>
         <div><span>用户 ID</span><strong className="dm-mono">{account.userId}</strong></div>
-        <div><span>权限状态</span><strong>{statusCfg.label}</strong></div>
       </div>
-      {effectiveStatus !== 'active' && (
-        <div className="dm-inline-alert">
-          <AlertTriangle size={16} />
-          重置密码不改变账号权限状态，已停用或已过期账号仍不能继续添加测试设备。
-        </div>
-      )}
       <AnnotationArea id="resetPassword" annotation={annotation}>
         <div className="dm-form-grid">
           <Field label="重置原因" error={error}>
@@ -2249,8 +2176,6 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
 function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onValidationError, onClose, annotation }) {
   const currentDealer = dealers.find((dealer) => dealer.id === defaultDealerId) || dealers.find((dealer) => dealer.status === 'normal');
   const formRef = useRef(null);
-  const validStartAt = nowText().slice(0, 10);
-  const maxValidEndAt = getValidityEndDateText(validStartAt, MAX_TEST_ACCOUNT_VALID_YEARS);
   const [form, setForm] = useState({
     dealerId: currentDealer?.id || '',
     accountName: '',
@@ -2258,8 +2183,6 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     region: '中国',
     clientName: DEFAULT_TEST_ACCOUNT_CLIENT.clientName,
     clientId: DEFAULT_TEST_ACCOUNT_CLIENT.clientId,
-    validStartAt,
-    validEndAt: getValidityEndDateText(validStartAt, DEFAULT_TEST_ACCOUNT_VALID_YEARS),
     applyReason: '',
   });
   const [errors, setErrors] = useState({});
@@ -2304,15 +2227,10 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     if (!form.region) nextErrors.region = '请选择账号所属大区';
     if (!form.clientName.trim()) nextErrors.clientName = '请输入客户端名称';
     if (!form.clientId.trim()) nextErrors.clientId = '请选择有效的客户端';
-    if (!form.validEndAt) nextErrors.validEndAt = '请选择到期时间';
-    else if (form.validEndAt < validStartAt) nextErrors.validEndAt = '到期时间不能早于今天';
-    else if (form.validEndAt > maxValidEndAt) {
-      nextErrors.validEndAt = `有效期最长不能超过 ${MAX_TEST_ACCOUNT_VALID_YEARS} 年`;
-    }
     if (!form.applyReason.trim()) nextErrors.applyReason = '请输入创建原因';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0) {
-      onSubmit({ ...form, validStartAt, accountName });
+      onSubmit({ ...form, accountName });
       return;
     }
     const firstErrorKey = Object.keys(nextErrors)[0];
@@ -2376,42 +2294,6 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
           </Field>
           <Field label="客户端 ID" hint="由客户端名称自动带出，不可编辑" error={errors.clientId}>
             <input name="clientId" value={form.clientId} disabled aria-disabled="true" />
-          </Field>
-          <Field
-            label="到期时间"
-            labelFor="validEndAt"
-            hint={`创建后立即生效，默认 ${DEFAULT_TEST_ACCOUNT_VALID_YEARS} 年，最长 ${MAX_TEST_ACCOUNT_VALID_YEARS} 年`}
-            error={errors.validEndAt}
-          >
-            <div className="dm-validity-date-control">
-              <input
-                id="validEndAt"
-                name="validEndAt"
-                type="date"
-                value={form.validEndAt}
-                min={validStartAt}
-                max={maxValidEndAt}
-                aria-invalid={Boolean(errors.validEndAt)}
-                autoComplete="off"
-                onChange={(event) => update('validEndAt', event.target.value)}
-              />
-              <div className="dm-validity-presets" role="group" aria-label="到期时间快捷选项">
-                {TEST_ACCOUNT_VALIDITY_PRESETS.map((years) => {
-                  const presetDate = getValidityEndDateText(validStartAt, years);
-                  return (
-                    <button
-                      key={years}
-                      className={cls(form.validEndAt === presetDate && 'active')}
-                      type="button"
-                      aria-pressed={form.validEndAt === presetDate}
-                      onClick={() => update('validEndAt', presetDate)}
-                    >
-                      {years}年
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </Field>
           <Field label="创建原因" error={errors.applyReason} className="dm-field-full">
             <textarea

@@ -24,9 +24,6 @@ export type TestAccount = {
   region: '中国' | '亚洲' | '北美' | '欧洲';
   clientName: string;
   clientId: string;
-  status: 'active' | 'stopped' | 'expired';
-  validStartAt: string;
-  validEndAt: string;
   currentTestingDeviceCount: number;
   applyReason: string;
   createdAt: string;
