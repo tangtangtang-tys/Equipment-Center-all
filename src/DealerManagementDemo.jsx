@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
   Building2,
+  CalendarDays,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CheckCircle2,
   ClipboardList,
@@ -22,7 +24,6 @@ import {
   X,
 } from 'lucide-react';
 import {
-  LOG_ACTION_OPTIONS,
   initialDealers,
   initialDealerOrgNodes,
   initialOperationLogs,
@@ -39,6 +40,7 @@ const TEST_ACCOUNT_CLIENTS = [
   { clientName: '小鹰视界', clientId: 'app-xiaoying-vision' },
 ];
 const DEFAULT_TEST_ACCOUNT_CLIENT = TEST_ACCOUNT_CLIENTS[0];
+const DEFAULT_TEST_ACCOUNT_VALID_DAYS = 30;
 const MAX_TEST_ACCOUNT_VALID_DAYS = 90;
 const DEFAULT_DEALER_LIST_FILTERS = {
   keyword: '',
@@ -153,8 +155,8 @@ const ANNOTATION_RULES = [
       '手机号：可选；填写时必须为 11 位手机号。',
       '账号所属大区：必填；可选中国、亚洲、北美、欧洲，默认中国。',
       '客户端名称：必填；从客户端清单选择，并自动带出客户端 ID。',
-      '客户端 ID：必填，只读，由客户端名称联动生成。',
-      '有效期：必填；结束日期不能早于开始日期，单次最长 90 天。',
+      '客户端 ID：由客户端名称联动生成，以禁用态展示，不允许手动修改。',
+      '到期时间：必填；创建成功后立即生效，默认有效 30 天，过去日期不可选，单次最长 90 天。',
       '创建原因：必填，用于说明设备抽检、样机验证或异常复测场景。',
     ],
     rules: [
@@ -190,12 +192,10 @@ const ANNOTATION_RULES = [
     title: '操作日志范围',
     summary: '操作日志采用时间节点形式，记录后台可审计的人为操作。',
     fields: [
-      '关键字：非必填；支持按经销商、账号名称、用户 ID、设备 SN 匹配。',
-      '操作类型：非必填；用于筛选创建账号、重置密码、手动清理、重试清理等后台动作。',
-      '操作结果：非必填；支持成功、失败筛选。',
-      '操作时间：非必填；按操作发生日期筛选。',
+      '操作日期：单日期选择；默认选中今日并展示今日操作日志。',
     ],
     rules: [
+      '日历中仅有操作日志的日期可选择，无日志日期置灰且不可点击。',
       '记录创建 APP 测试账号、重置 APP 测试账号密码、手动清理、重试清理。',
       '不记录复制密码、APP 端测试绑定、自动清理、主动解绑。',
       '每条日志展示操作对象、来源、创建人、操作人、结果、失败原因和备注。',
@@ -234,10 +234,23 @@ function nowText() {
   return '2026-07-08 11:30:00';
 }
 
+const DATE_INPUT_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+function formatDateInputValue(date) {
+  const parts = Object.fromEntries(
+    DATE_INPUT_FORMATTER.formatToParts(date).map(({ type, value }) => [type, value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function plusDaysText(days) {
   const date = new Date('2026-07-08T00:00:00');
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return formatDateInputValue(date);
 }
 
 function dateDiffDays(startDateText, endDateText) {
@@ -246,13 +259,51 @@ function dateDiffDays(startDateText, endDateText) {
   return Math.round((endDate - startDate) / 86400000);
 }
 
+function getInclusiveDayCount(startDateText, endDateText) {
+  return dateDiffDays(startDateText, endDateText) + 1;
+}
+
+function getEffectiveAccountStatus(account) {
+  if (account.status === 'stopped') return 'stopped';
+  if (account.validEndAt && account.validEndAt < nowText().slice(0, 10)) return 'expired';
+  return 'active';
+}
+
 function createId(prefix) {
   return `${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 90 + 10)}`;
 }
 
+const TEMP_PASSWORD_GROUPS = [
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  'abcdefghijklmnopqrstuvwxyz',
+  '0123456789',
+];
+const TEMP_PASSWORD_LENGTH = 10;
+
+function secureRandomIndex(length) {
+  const values = new Uint32Array(1);
+  const limit = Math.floor(0x100000000 / length) * length;
+  do {
+    crypto.getRandomValues(values);
+  } while (values[0] >= limit);
+  return values[0] % length;
+}
+
+function randomCharacter(characters) {
+  return characters[secureRandomIndex(characters.length)];
+}
+
 function createTemporaryPassword() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-  return Array.from({ length: 14 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const allCharacters = TEMP_PASSWORD_GROUPS.join('');
+  const password = TEMP_PASSWORD_GROUPS.map(randomCharacter);
+  while (password.length < TEMP_PASSWORD_LENGTH) {
+    password.push(randomCharacter(allCharacters));
+  }
+  for (let index = password.length - 1; index > 0; index -= 1) {
+    const swapIndex = secureRandomIndex(index + 1);
+    [password[index], password[swapIndex]] = [password[swapIndex], password[index]];
+  }
+  return password.join('');
 }
 
 function maskPassword(password) {
@@ -348,7 +399,7 @@ function getDealerStats(dealerId, accounts, records) {
   const dealerAccounts = accounts.filter((account) => account.dealerId === dealerId);
   const dealerRecords = records.filter((record) => record.dealerId === dealerId);
   const recordGroups = buildDeviceRecordGroups(dealerRecords);
-  const activeTestAccountCount = dealerAccounts.filter((account) => account.status === 'active').length;
+  const activeTestAccountCount = dealerAccounts.filter((account) => getEffectiveAccountStatus(account) === 'active').length;
   return {
     testAccountCount: dealerAccounts.length,
     activeTestAccountCount,
@@ -386,11 +437,12 @@ function EmptyState({ title = '暂无数据', desc = '当前筛选条件下没�
   );
 }
 
-function Toast({ message }) {
+function Toast({ message, tone = 'success' }) {
   if (!message) return null;
+  const Icon = tone === 'error' ? AlertTriangle : CheckCircle2;
   return (
-    <div className="dm-toast">
-      <CheckCircle2 size={16} />
+    <div className={cls('dm-toast', tone)} role="status" aria-live="polite">
+      <Icon size={16} aria-hidden="true" />
       {message}
     </div>
   );
@@ -494,7 +546,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const [recordKeyword, setRecordKeyword] = useState('');
   const [modal, setModal] = useState(null);
   const [drawer, setDrawer] = useState(null);
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState(null);
   const [annotationEnabled, setAnnotationEnabled] = useState(true);
   const [activeAnnotationId, setActiveAnnotationId] = useState('');
 
@@ -536,10 +588,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     };
   }, [annotationEnabled, activeAnnotationId]);
 
-  const showToast = (message) => {
-    setToast(message);
+  const showToast = (message, tone = 'success') => {
+    setToast({ message, tone });
     window.clearTimeout(window.__dmToastTimer);
-    window.__dmToastTimer = window.setTimeout(() => setToast(''), 2200);
+    window.__dmToastTimer = window.setTimeout(() => setToast(null), 2200);
   };
 
   const appendLog = (payload) => {
@@ -578,7 +630,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
 
   const handleOpenUserCenterDetail = (account) => {
     const opened = openUserCenterDetail(account.userId);
-    showToast(opened ? '已在新标签页打开用户中心详情' : '浏览器已拦截新标签页，请允许弹窗后重试');
+    showToast(
+      opened ? '已在新标签页打开用户中心详情' : '浏览器已拦截新标签页，请允许弹窗后重试',
+      opened ? 'success' : 'error',
+    );
   };
 
   const handleOpenDeviceCenterDetail = (record) => {
@@ -589,7 +644,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       return;
     }
     const opened = openDeviceCenterDetail(deviceId);
-    showToast(opened ? '已在新标签页打开设备详情' : '浏览器已拦截新标签页，请允许弹窗后重试');
+    showToast(
+      opened ? '已在新标签页打开设备详情' : '浏览器已拦截新标签页，请允许弹窗后重试',
+      opened ? 'success' : 'error',
+    );
   };
 
   const handleCopyCredentialPassword = async ({ password }) => {
@@ -598,20 +656,30 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       await navigator.clipboard?.writeText(password);
       showToast('临时密码已复制');
     } catch (error) {
-      showToast('复制失败，请手动选中密码复制');
+      showToast('复制失败，请手动选中密码复制', 'error');
     }
   };
 
   const handleCreateAccount = (formData) => {
     const dealer = dealers.find((item) => item.id === formData.dealerId);
     if (!dealer || dealer.status === 'disabled') {
-      showToast('经销商已停用，无法创建App测试账号');
+      showToast('经销商已停用，无法创建App测试账号', 'error');
       return;
     }
     const accountName = formData.accountName.trim();
     const hasDuplicateName = accounts.some((account) => account.dealerId === dealer.id && account.accountName === accountName);
     if (hasDuplicateName) {
-      showToast('该经销商下已存在同名App测试账号，请调整账号名称');
+      showToast('该经销商下已存在同名App测试账号，请调整账号名称', 'error');
+      return;
+    }
+    const client = getClientConfig(formData.clientName);
+    const validStartAt = nowText().slice(0, 10);
+    if (
+      !formData.validEndAt
+      || formData.validEndAt < validStartAt
+      || getInclusiveDayCount(validStartAt, formData.validEndAt) > MAX_TEST_ACCOUNT_VALID_DAYS
+    ) {
+      showToast('到期时间无效，请选择今天起 90 天内的日期', 'error');
       return;
     }
     const account = {
@@ -622,10 +690,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       mobile: formData.mobile,
       accountSource: '设备中心创建',
       region: formData.region,
-      clientName: formData.clientName,
-      clientId: formData.clientId,
+      clientName: client.clientName,
+      clientId: client.clientId,
       status: 'active',
-      validStartAt: formData.validStartAt,
+      validStartAt,
       validEndAt: formData.validEndAt,
       applyReason: formData.applyReason,
       createdAt: nowText(),
@@ -721,7 +789,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       remark: success ? '重试清理成功，设备可进入正式交付流程' : '重试清理失败，仍需平台处理',
     });
     setModal(null);
-    showToast(success ? '重试清理成功，状态变为已清理' : '重试清理失败，已更新失败原因');
+    showToast(
+      success ? '重试清理成功，状态变为已清理' : '重试清理失败，已更新失败原因',
+      success ? 'success' : 'error',
+    );
   };
 
   return (
@@ -752,7 +823,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
           accounts={accounts}
           defaultDealerId={modal.dealerId || selectedDealer.id}
           onSubmit={handleCreateAccount}
-          onValidationError={(message) => showToast(message)}
+          onValidationError={(message) => showToast(message, 'error')}
           onClose={() => setModal(null)}
           annotation={annotation}
         />
@@ -793,7 +864,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       {drawer?.type === 'failure' && drawer.record && (
         <FailureReasonDrawer record={drawer.record} onClose={() => setDrawer(null)} />
       )}
-      <Toast message={toast} />
+      <Toast message={toast?.message} tone={toast?.tone} />
     </section>
   );
 }
@@ -1585,8 +1656,7 @@ function DealerDetailView({
           <OperationLogTab
             logs={dealerLogs}
             showDealerColumn={false}
-            emptyTitle="暂无当前经销商操作日志"
-            keywordPlaceholder="账号名称 / 用户 ID / 设备 SN"
+            emptyTitle="所选日期暂无当前经销商操作日志"
             annotation={annotation}
           />
         )}
@@ -1676,7 +1746,8 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
           </thead>
           <tbody>
             {rows.map((account) => {
-              const statusCfg = ACCOUNT_STATUS_MAP[account.status];
+              const effectiveStatus = getEffectiveAccountStatus(account);
+              const statusCfg = ACCOUNT_STATUS_MAP[effectiveStatus];
               return (
                 <tr key={account.id}>
                   <td>
@@ -1707,7 +1778,7 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
                         className="dm-link-btn"
                         type="button"
                         onClick={() => onResetPassword?.(account)}
-                        title={account.status === 'active' ? '' : '重置密码不改变账号权限状态'}
+                        title={effectiveStatus === 'active' ? '' : '重置密码不改变账号权限状态'}
                       >
                         重置密码
                       </button>
@@ -1890,60 +1961,151 @@ function getOperationLogTarget(log) {
   return log.dealerId || '-';
 }
 
+function getCalendarDays(month) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const firstWeekday = new Date(year, monthNumber - 1, 1).getDay();
+  const totalDays = new Date(year, monthNumber, 0).getDate();
+  return [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from({ length: totalDays }, (_, index) => index + 1),
+  ];
+}
+
+function formatCalendarDate(month, day) {
+  return `${month}-${String(day).padStart(2, '0')}`;
+}
+
+function formatCalendarMonth(month) {
+  const [year, monthNumber] = month.split('-');
+  return `${year}年${Number(monthNumber)}月`;
+}
+
+function OperationLogDatePicker({ availableDates, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(value.slice(0, 7));
+  const pickerRef = useRef(null);
+  const availableDateSet = useMemo(() => new Set(availableDates), [availableDates]);
+  const availableMonths = useMemo(() => Array.from(new Set([
+    value.slice(0, 7),
+    ...availableDates.map((date) => date.slice(0, 7)),
+  ])).sort(), [availableDates, value]);
+  const currentMonthIndex = Math.max(availableMonths.indexOf(month), 0);
+  const calendarDays = useMemo(() => getCalendarDays(month), [month]);
+
+  useEffect(() => {
+    setMonth(value.slice(0, 7));
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (!pickerRef.current?.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  const selectDate = (date) => {
+    onChange(date);
+    setOpen(false);
+  };
+
+  return (
+    <div className="dm-log-date-picker" ref={pickerRef}>
+      <button
+        className="dm-log-date-trigger"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((visible) => !visible)}
+      >
+        <CalendarDays size={16} />
+        <span>{value}</span>
+        <ChevronDown size={15} />
+      </button>
+      {open && (
+        <div className="dm-log-calendar" role="dialog" aria-label="选择操作日志日期">
+          <div className="dm-log-calendar-head">
+            <button
+              type="button"
+              aria-label="上一个有日志月份"
+              disabled={currentMonthIndex === 0}
+              onClick={() => setMonth(availableMonths[currentMonthIndex - 1])}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <strong>{formatCalendarMonth(month)}</strong>
+            <button
+              type="button"
+              aria-label="下一个有日志月份"
+              disabled={currentMonthIndex === availableMonths.length - 1}
+              onClick={() => setMonth(availableMonths[currentMonthIndex + 1])}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="dm-log-calendar-week" aria-hidden="true">
+            {['日', '一', '二', '三', '四', '五', '六'].map((weekday) => <span key={weekday}>{weekday}</span>)}
+          </div>
+          <div className="dm-log-calendar-days">
+            {calendarDays.map((day, index) => {
+              if (!day) return <span className="empty" key={`empty-${index}`} />;
+              const date = formatCalendarDate(month, day);
+              const hasLogs = availableDateSet.has(date);
+              return (
+                <button
+                  key={date}
+                  className={cls(hasLogs && 'has-logs', value === date && 'selected')}
+                  type="button"
+                  aria-label={hasLogs ? `${date}，有操作日志` : `${date}，无操作日志`}
+                  disabled={!hasLogs}
+                  onClick={() => selectDate(date)}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <div className="dm-log-calendar-legend">
+            <span><i />有操作日志</span>
+            <span className="disabled">无日志日期不可选</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OperationLogTab({
   logs,
-  keyword: controlledKeyword,
-  setKeyword: setControlledKeyword,
   showDealerColumn = true,
   emptyTitle = '暂无App测试操作日志',
-  keywordPlaceholder = '经销商 ID / 用户 ID / 设备 SN',
   annotation,
 }) {
-  const [localKeyword, setLocalKeyword] = useState('');
-  const [actionType, setActionType] = useState('all');
-  const [result, setResult] = useState('all');
-  const [date, setDate] = useState('');
-  const keyword = controlledKeyword ?? localKeyword;
-  const setKeyword = setControlledKeyword ?? setLocalKeyword;
+  const [date, setDate] = useState(nowText().slice(0, 10));
+  const availableDates = useMemo(() => Array.from(new Set(
+    logs.map((log) => log.createdAt.slice(0, 10)),
+  )).sort(), [logs]);
 
   const rows = useMemo(() => logs
-    .filter((log) => {
-      const key = keyword.trim();
-      if (key && ![log.dealerId, log.dealerName, log.userId, log.deviceSn, log.accountName].some((item) => item?.includes(key))) return false;
-      if (actionType !== 'all' && log.actionType !== actionType) return false;
-      if (result !== 'all' && log.result !== result) return false;
-      if (date && log.createdAt.slice(0, 10) !== date) return false;
-      return true;
-    })
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [logs, keyword, actionType, result, date]);
+    .filter((log) => log.createdAt.slice(0, 10) === date)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [logs, date]);
 
   return (
     <div>
       <AnnotationArea id="operationLog" annotation={annotation}>
-        <div className="dm-filter-grid log">
-          <label>
-            <span>关键字</span>
-            <input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder={keywordPlaceholder} />
-          </label>
-          <label>
-            <span>操作类型</span>
-            <select value={actionType} onChange={(event) => setActionType(event.target.value)}>
-              <option value="all">全部</option>
-              {LOG_ACTION_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>操作结果</span>
-            <select value={result} onChange={(event) => setResult(event.target.value)}>
-              <option value="all">全部</option>
-              <option value="成功">成功</option>
-              <option value="失败">失败</option>
-            </select>
-          </label>
-          <label>
-            <span>操作时间</span>
-            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-          </label>
+        <div className="dm-log-date-filter">
+          <div className="dm-log-date-field">
+            <span>操作日期</span>
+            <OperationLogDatePicker availableDates={availableDates} value={date} onChange={setDate} />
+          </div>
         </div>
         <TableShell empty={rows.length === 0} emptyTitle={emptyTitle}>
           <div className="dm-log-timeline">
@@ -1991,14 +2153,62 @@ function TableShell({ children, empty, emptyTitle }) {
 }
 
 function BaseModal({ title, children, footer, onClose, width = 560, className }) {
+  const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const modal = modalRef.current;
+    const getFocusableElements = () => Array.from(modal?.querySelectorAll(
+      'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    ) || []);
+    const preferredFocus = modal?.querySelector('input:not(:disabled):not([readonly]), select:not(:disabled), textarea:not(:disabled)');
+    (preferredFocus || getFocusableElements()[0] || modal)?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, []);
+
   return (
     <div className="dm-modal-mask" onClick={onClose}>
       <div
         className={cls('dm-modal', className)}
+        ref={modalRef}
         style={{ width }}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="dm-modal-head">
@@ -2088,7 +2298,8 @@ function CredentialResultModal({ mode, dealer, account, password, onCopy, onClos
 function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-  const statusCfg = ACCOUNT_STATUS_MAP[account.status] || ACCOUNT_STATUS_MAP.active;
+  const effectiveStatus = getEffectiveAccountStatus(account);
+  const statusCfg = ACCOUNT_STATUS_MAP[effectiveStatus] || ACCOUNT_STATUS_MAP.active;
   const submit = () => {
     const nextReason = reason.trim();
     if (!nextReason) {
@@ -2120,7 +2331,7 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
         <div><span>用户 ID</span><strong className="dm-mono">{account.userId}</strong></div>
         <div><span>权限状态</span><strong>{statusCfg.label}</strong></div>
       </div>
-      {account.status !== 'active' && (
+      {effectiveStatus !== 'active' && (
         <div className="dm-inline-alert">
           <AlertTriangle size={16} />
           重置密码不改变账号权限状态，已停用或已过期账号仍不能继续添加测试设备。
@@ -2139,6 +2350,9 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
 
 function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onValidationError, onClose, annotation }) {
   const currentDealer = dealers.find((dealer) => dealer.id === defaultDealerId) || dealers.find((dealer) => dealer.status === 'normal');
+  const formRef = useRef(null);
+  const validStartAt = nowText().slice(0, 10);
+  const maxValidEndAt = plusDaysText(MAX_TEST_ACCOUNT_VALID_DAYS - 1);
   const [form, setForm] = useState({
     dealerId: currentDealer?.id || '',
     accountName: '',
@@ -2146,17 +2360,29 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     region: '中国',
     clientName: DEFAULT_TEST_ACCOUNT_CLIENT.clientName,
     clientId: DEFAULT_TEST_ACCOUNT_CLIENT.clientId,
-    validStartAt: '2026-07-08',
-    validEndAt: plusDaysText(30),
+    validStartAt,
+    validEndAt: plusDaysText(DEFAULT_TEST_ACCOUNT_VALID_DAYS - 1),
     applyReason: '',
   });
   const [errors, setErrors] = useState({});
-  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const clearErrors = (...keys) => {
+    setErrors((prev) => {
+      if (!keys.some((key) => prev[key])) return prev;
+      const next = { ...prev };
+      keys.forEach((key) => delete next[key]);
+      return next;
+    });
+  };
+  const update = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    clearErrors(key);
+  };
   const updateRegion = (region) => {
     setForm((prev) => ({
       ...prev,
       region,
     }));
+    clearErrors('region');
   };
   const updateClientName = (clientName) => {
     const client = getClientConfig(clientName);
@@ -2165,6 +2391,7 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
       clientName: client.clientName,
       clientId: client.clientId,
     }));
+    clearErrors('clientName', 'clientId');
   };
   const submit = () => {
     const nextErrors = {};
@@ -2178,19 +2405,21 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     if (hasMobile && !/^1\d{10}$/.test(form.mobile)) nextErrors.mobile = '请输入 11 位手机号';
     if (!form.region) nextErrors.region = '请选择账号所属大区';
     if (!form.clientName.trim()) nextErrors.clientName = '请输入客户端名称';
-    if (!form.clientId.trim()) nextErrors.clientId = '请输入客户端ID';
-    if (!form.validStartAt || !form.validEndAt) nextErrors.validRange = '请选择有效期';
-    else if (form.validEndAt < form.validStartAt) nextErrors.validRange = '结束日期不能早于开始日期';
-    else if (dateDiffDays(form.validStartAt, form.validEndAt) > MAX_TEST_ACCOUNT_VALID_DAYS) {
-      nextErrors.validRange = `有效期最长不能超过 ${MAX_TEST_ACCOUNT_VALID_DAYS} 天`;
+    if (!form.clientId.trim()) nextErrors.clientId = '请选择有效的客户端';
+    if (!form.validEndAt) nextErrors.validEndAt = '请选择到期时间';
+    else if (form.validEndAt < validStartAt) nextErrors.validEndAt = '到期时间不能早于今天';
+    else if (getInclusiveDayCount(validStartAt, form.validEndAt) > MAX_TEST_ACCOUNT_VALID_DAYS) {
+      nextErrors.validEndAt = `有效期最长不能超过 ${MAX_TEST_ACCOUNT_VALID_DAYS} 天`;
     }
     if (!form.applyReason.trim()) nextErrors.applyReason = '请输入创建原因';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0) {
-      onSubmit({ ...form, accountName });
+      onSubmit({ ...form, validStartAt, accountName });
       return;
     }
-    onValidationError?.(nextErrors.accountName || '请完善创建账号信息后再提交');
+    const firstErrorKey = Object.keys(nextErrors)[0];
+    requestAnimationFrame(() => formRef.current?.querySelector(`[name="${firstErrorKey}"]`)?.focus());
+    onValidationError?.(nextErrors[firstErrorKey] || '请完善创建账号信息后再提交');
   };
 
   return (
@@ -2208,40 +2437,70 @@ function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onVa
     >
       <AppTestAccountUsageNote className="dm-create-account-note" />
       <AnnotationArea id="createFields" annotation={annotation}>
-        <div className="dm-form-grid dm-create-account-form">
+        <div className="dm-form-grid dm-create-account-form" ref={formRef}>
           <div className="dm-form-section-title">基础信息</div>
           <Field label="经销商组织" error={errors.dealerId}>
-            <input value={currentDealer?.name || ''} readOnly />
+            <input name="dealerId" value={currentDealer?.name || ''} readOnly autoComplete="off" />
           </Field>
           <Field label="账号名称" error={errors.accountName}>
-            <input value={form.accountName} onChange={(event) => update('accountName', event.target.value)} placeholder="示例：华东经销商测试员A" />
+            <input
+              name="accountName"
+              value={form.accountName}
+              aria-invalid={Boolean(errors.accountName)}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => update('accountName', event.target.value)}
+              placeholder="示例：华东经销商测试员 A…"
+            />
           </Field>
           <Field label="手机号（可选）" error={errors.mobile}>
-            <input value={form.mobile} onChange={(event) => update('mobile', event.target.value)} placeholder="请输入手机号" />
+            <input
+              name="mobile"
+              type="tel"
+              inputMode="numeric"
+              value={form.mobile}
+              aria-invalid={Boolean(errors.mobile)}
+              autoComplete="off"
+              onChange={(event) => update('mobile', event.target.value)}
+              placeholder="请输入 11 位手机号…"
+            />
           </Field>
           <div className="dm-form-section-title">使用范围</div>
           <Field label="账号所属大区" error={errors.region}>
-            <select value={form.region} onChange={(event) => updateRegion(event.target.value)}>
+            <select name="region" value={form.region} aria-invalid={Boolean(errors.region)} onChange={(event) => updateRegion(event.target.value)}>
               {TEST_ACCOUNT_REGIONS.map((region) => <option key={region} value={region}>{region}</option>)}
             </select>
           </Field>
           <Field label="客户端名称" error={errors.clientName}>
-            <select value={form.clientName} onChange={(event) => updateClientName(event.target.value)}>
+            <select name="clientName" value={form.clientName} aria-invalid={Boolean(errors.clientName)} onChange={(event) => updateClientName(event.target.value)}>
               {TEST_ACCOUNT_CLIENTS.map((client) => <option key={client.clientId} value={client.clientName}>{client.clientName}</option>)}
             </select>
           </Field>
-          <Field label="客户端ID" error={errors.clientId}>
-            <input value={form.clientId} readOnly />
+          <Field label="客户端 ID" hint="由客户端名称自动带出，不可编辑" error={errors.clientId}>
+            <input name="clientId" value={form.clientId} disabled aria-disabled="true" />
           </Field>
-          <Field label="有效期" error={errors.validRange}>
-            <div className="dm-date-range">
-              <input type="date" value={form.validStartAt} onChange={(event) => update('validStartAt', event.target.value)} />
-              <span>至</span>
-              <input type="date" value={form.validEndAt} onChange={(event) => update('validEndAt', event.target.value)} />
-            </div>
+          <Field label="到期时间" hint={`创建后立即生效，默认 ${DEFAULT_TEST_ACCOUNT_VALID_DAYS} 天，最长 ${MAX_TEST_ACCOUNT_VALID_DAYS} 天`} error={errors.validEndAt}>
+            <input
+              name="validEndAt"
+              type="date"
+              value={form.validEndAt}
+              min={validStartAt}
+              max={maxValidEndAt}
+              aria-invalid={Boolean(errors.validEndAt)}
+              autoComplete="off"
+              onChange={(event) => update('validEndAt', event.target.value)}
+            />
           </Field>
           <Field label="创建原因" error={errors.applyReason} className="dm-field-full">
-            <textarea value={form.applyReason} onChange={(event) => update('applyReason', event.target.value)} placeholder="请说明该账号用于哪些设备抽检场景" />
+            <textarea
+              name="applyReason"
+              value={form.applyReason}
+              aria-invalid={Boolean(errors.applyReason)}
+              autoComplete="off"
+              maxLength={200}
+              onChange={(event) => update('applyReason', event.target.value)}
+              placeholder="请说明该账号用于哪些设备抽检场景…"
+            />
           </Field>
         </div>
       </AnnotationArea>
@@ -2312,12 +2571,13 @@ function FailureReasonDrawer({ record, onClose }) {
   );
 }
 
-function Field({ label, error, children, className }) {
+function Field({ label, hint, error, children, className }) {
   return (
     <label className={cls('dm-field', className)}>
       <span>{label}</span>
       {children}
-      {error && <small>{error}</small>}
+      {hint && <span className="dm-field-hint">{hint}</span>}
+      {error && <small role="alert">{error}</small>}
     </label>
   );
 }

@@ -17827,6 +17827,202 @@ button {
   margin-bottom: 12px;
 }
 
+.dm-log-date-filter {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.dm-log-date-field {
+  display: grid;
+  gap: 6px;
+  width: 220px;
+}
+
+.dm-log-date-field > span {
+  color: #24415f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dm-log-date-picker {
+  position: relative;
+}
+
+.dm-log-date-trigger {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #c7daf6;
+  border-radius: 5px;
+  padding: 7px 10px;
+  color: #1f2937;
+  background: #fff;
+  text-align: left;
+}
+
+.dm-log-date-trigger:hover,
+.dm-log-date-trigger:focus-visible {
+  border-color: #1677ff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+}
+
+.dm-log-date-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dm-log-calendar {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 300px;
+  border: 1px solid #d8e1ee;
+  border-radius: 6px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.dm-log-calendar-head {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dm-log-calendar-head strong {
+  color: #1f2937;
+  font-size: 14px;
+  text-align: center;
+}
+
+.dm-log-calendar-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  color: #475467;
+  background: transparent;
+}
+
+.dm-log-calendar-head button:hover:not(:disabled) {
+  color: #0f6bff;
+  background: #eef6ff;
+}
+
+.dm-log-calendar-head button:disabled {
+  cursor: not-allowed;
+  color: #c5ccd6;
+}
+
+.dm-log-calendar-week,
+.dm-log-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 34px);
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.dm-log-calendar-week {
+  margin-bottom: 4px;
+}
+
+.dm-log-calendar-week span {
+  color: #98a2b3;
+  font-size: 11px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.dm-log-calendar-days button,
+.dm-log-calendar-days .empty {
+  width: 34px;
+  height: 34px;
+}
+
+.dm-log-calendar-days button {
+  position: relative;
+  border: 0;
+  border-radius: 4px;
+  color: #344054;
+  background: transparent;
+  font-size: 12px;
+}
+
+.dm-log-calendar-days button.has-logs::after {
+  position: absolute;
+  right: 50%;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #0f6bff;
+  content: '';
+  transform: translateX(50%);
+}
+
+.dm-log-calendar-days button.has-logs:hover {
+  color: #0f6bff;
+  background: #eef6ff;
+}
+
+.dm-log-calendar-days button.selected {
+  color: #fff;
+  background: #0f6bff;
+  font-weight: 700;
+}
+
+.dm-log-calendar-days button.selected::after {
+  background: #fff;
+}
+
+.dm-log-calendar-days button:disabled {
+  cursor: not-allowed;
+  color: #c5ccd6;
+  background: #f8f9fb;
+}
+
+.dm-log-calendar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  border-top: 1px solid #edf1f7;
+  padding-top: 9px;
+  color: #475467;
+  font-size: 11px;
+}
+
+.dm-log-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dm-log-calendar-legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0f6bff;
+}
+
+.dm-log-calendar-legend .disabled {
+  color: #98a2b3;
+}
+
 .dm-filter-grid label,
 .dm-field {
   display: grid;
@@ -17861,11 +18057,11 @@ button {
   resize: vertical;
 }
 
-.dm-filter-grid input:focus,
-.dm-filter-grid select:focus,
-.dm-field input:focus,
-.dm-field select:focus,
-.dm-field textarea:focus {
+.dm-filter-grid input:focus-visible,
+.dm-filter-grid select:focus-visible,
+.dm-field input:focus-visible,
+.dm-field select:focus-visible,
+.dm-field textarea:focus-visible {
   border-color: #1677ff;
   box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
 }
@@ -18097,6 +18293,21 @@ button {
 }
 
 @media (max-width: 720px) {
+  .dm-log-date-field,
+  .dm-log-calendar {
+    width: min(300px, calc(100vw - 64px));
+  }
+
+  .dm-log-calendar-week,
+  .dm-log-calendar-days {
+    grid-template-columns: repeat(7, minmax(28px, 1fr));
+  }
+
+  .dm-log-calendar-days button,
+  .dm-log-calendar-days .empty {
+    width: 100%;
+  }
+
   .dm-log-timeline {
     padding: 10px;
   }
@@ -18632,6 +18843,7 @@ button {
 
 .dm-modal-body {
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 16px;
 }
 
@@ -18787,9 +18999,18 @@ button {
   line-height: 18px;
 }
 
-.dm-field input[readonly] {
+.dm-field input[readonly],
+.dm-field input:disabled {
   color: #667085;
   background: #f7f9fc;
+}
+
+.dm-field input:disabled {
+  cursor: not-allowed;
+  border-color: #e4e7ec;
+  color: #98a2b3;
+  -webkit-text-fill-color: #98a2b3;
+  opacity: 1;
 }
 
 .dm-create-account-modal .dm-field {
@@ -18830,6 +19051,13 @@ button {
   margin-top: -2px;
   font-size: 12px;
   line-height: 18px;
+}
+
+.dm-create-account-modal .dm-field-hint {
+  margin-top: -2px;
+  color: #8a94a6;
+  font-size: 11px;
+  line-height: 16px;
 }
 
 .dm-create-account-modal .dm-field-full {
@@ -19079,6 +19307,12 @@ button {
   color: #16834a;
   background: #f0fff4;
   box-shadow: 0 12px 34px rgba(31, 41, 55, 0.14);
+}
+
+.dm-toast.error {
+  border-color: #ffccc7;
+  color: #b42318;
+  background: #fff1f0;
 }
 
 @media (max-width: 1280px) {

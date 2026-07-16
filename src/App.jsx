@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -93,6 +93,47 @@ const deviceSamples = [
     statusTone: device.disabled ? 'danger' : 'normal',
   },
 ];
+
+const ROUTABLE_VIEWS = new Set([
+  'search',
+  'detail',
+  'map',
+  'disableRequirement',
+  'deviceManagement',
+  'detailIterationScope',
+  'dealerList',
+  'globalTestLogs',
+]);
+
+function readNavigationState() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedView = params.get('view');
+  const requestedTab = params.get('detailTab');
+  return {
+    view: ROUTABLE_VIEWS.has(requestedView) ? requestedView : 'dealerList',
+    deviceId: params.get('deviceId') || deviceSamples[0]?.id || device.id,
+    detailTab: ITERATION_TABS.includes(requestedTab) ? requestedTab : ITERATION_TABS[0],
+  };
+}
+
+function writeNavigationState({ view, deviceId, detailTab }, { replace = false } = {}) {
+  const url = new URL(window.location.href);
+  if (view === 'dealerList') {
+    url.searchParams.delete('view');
+  } else {
+    url.searchParams.set('view', view);
+  }
+  if (view === 'detailIterationScope') {
+    url.searchParams.set('deviceId', deviceId);
+    url.searchParams.set('detailTab', detailTab);
+  } else {
+    url.searchParams.delete('deviceId');
+    url.searchParams.delete('detailTab');
+  }
+  window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+}
+
+const initialNavigationState = readNavigationState();
 
 const serviceIcons = [
   Activity,
@@ -889,7 +930,7 @@ function getIterationModuleMeta(tab, deviceInfo = device) {
 }
 
 function App() {
-  const [view, setView] = useState('dealerList');
+  const [view, setView] = useState(initialNavigationState.view);
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState(MAIN_TABS[0]);
   const [logTab, setLogTab] = useState('登录日志');
@@ -899,9 +940,9 @@ function App() {
   const [disableInfo, setDisableInfo] = useState(null);
   const [disableRecords, setDisableRecords] = useState(defaultDisableRecords);
   const [annotationMode, setAnnotationMode] = useState(true);
-  const [iterationTab, setIterationTab] = useState(ITERATION_TABS[0]);
+  const [iterationTab, setIterationTab] = useState(initialNavigationState.detailTab);
   const [iterationLogTab, setIterationLogTab] = useState(ITERATION_LOG_TABS[0]);
-  const [selectedIterationDeviceId, setSelectedIterationDeviceId] = useState(deviceSamples[0]?.id || device.id);
+  const [selectedIterationDeviceId, setSelectedIterationDeviceId] = useState(initialNavigationState.deviceId);
   const [selectedIterationRecord, setSelectedIterationRecord] = useState(null);
   const baseIterationDevice = deviceSamples[0] || device;
   const currentIterationDevice = deviceSamples.find((item) => item.id === selectedIterationDeviceId) || {
@@ -919,9 +960,30 @@ function App() {
   const [dealerTab, setDealerTab] = useState('App测试账号');
   const [dealerModal, setDealerModal] = useState(null);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextNavigation = readNavigationState();
+      setView(nextNavigation.view);
+      setSelectedIterationDeviceId(nextNavigation.deviceId);
+      setSelectedIterationRecord(null);
+      setIterationTab(nextNavigation.detailTab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (nextView) => {
+    setView(nextView);
+    writeNavigationState({
+      view: nextView,
+      deviceId: selectedIterationDeviceId,
+      detailTab: iterationTab,
+    });
+  };
+
   const goDetail = () => {
-    setView('detail');
     setActiveTab(MAIN_TABS[0]);
+    navigate('detail');
   };
 
   const openIterationDeviceDetail = (deviceId, record = null) => {
@@ -929,13 +991,29 @@ function App() {
     setSelectedIterationRecord(record);
     setIterationTab(ITERATION_TABS[0]);
     setView('detailIterationScope');
+    writeNavigationState({
+      view: 'detailIterationScope',
+      deviceId,
+      detailTab: ITERATION_TABS[0],
+    });
+  };
+
+  const selectIterationTab = (tab) => {
+    setIterationTab(tab);
+    if (view === 'detailIterationScope') {
+      writeNavigationState({
+        view,
+        deviceId: selectedIterationDeviceId,
+        detailTab: tab,
+      }, { replace: true });
+    }
   };
 
   return (
     <div className={cls('console-shell', view === 'dealerList' && 'dealer-console-shell')}>
       <TopBar />
       <div className="console-body">
-        <Sidebar view={view} onNavigate={setView} />
+        <Sidebar view={view} onNavigate={navigate} />
         <main className="workspace">
           {view === 'search' && <SearchHome query={query} setQuery={setQuery} onSubmit={goDetail} />}
           {view === 'detail' && (
@@ -944,7 +1022,7 @@ function App() {
               setActiveTab={setActiveTab}
               logTab={logTab}
               setLogTab={setLogTab}
-              onBack={() => setView('search')}
+              onBack={() => navigate('search')}
               onDrawer={setDrawer}
               onModal={setModal}
               isDisabled={isDisabled}
@@ -965,7 +1043,7 @@ function App() {
             <DetailIterationScopePage
               deviceInfo={currentIterationDevice}
               activeTab={iterationTab}
-              setActiveTab={setIterationTab}
+              setActiveTab={selectIterationTab}
               logTab={iterationLogTab}
               setLogTab={setIterationLogTab}
             />
@@ -1078,6 +1156,13 @@ function Sidebar({ view, onNavigate }) {
         >
           <Database size={16} />
           设备列表
+        </button>
+        <button
+          className={cls('side-item', view === 'detailIterationScope' && 'active')}
+          onClick={() => onNavigate('detailIterationScope')}
+        >
+          <MonitorCog size={16} />
+          【202606】详情模块迭代阶段范围
         </button>
         <button className={cls('side-item', view === 'map' && 'active')} onClick={() => onNavigate('map')}>
           <MapPin size={17} />
