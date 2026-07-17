@@ -120,10 +120,13 @@ const ANNOTATION_RULES = [
     title: 'APP 测试账号查询',
     summary: '账号列表用于查看当前经销商下已创建的 APP 测试账号，并支持跳转用户中心。',
     fields: [
+      '所属大区：固定为中国、亚洲、北美、欧洲四个 Tab；每个 Tab 展示当前经销商对应区域的账号总数。',
       '账号名称 / 用户 ID：非必填；支持账号名称或用户 ID 匹配。',
-      '刷新：刷新当前经销商下的 APP 测试账号列表，不改变查询关键字。',
     ],
     rules: [
+      '默认选中当前经销商最近创建账号所属大区；暂无账号时默认选中中国。',
+      '切换大区时保留关键词并在所选大区内继续筛选；无匹配记录时展示对应大区空状态。',
+      '创建成功后自动切换到新账号所属大区并清空旧关键词，确保新增记录立即可见。',
       '第一阶段不提供账号权限状态和有效期的查询、展示或维护能力。',
       '账号是否允许测试由服务端结合经销商组织状态、用户中心账号状态和内部测试权限策略判断。',
     ],
@@ -1555,23 +1558,89 @@ function AppTestAccountUsageNote({ className }) {
   );
 }
 
+function getDefaultTestAccountRegion(accounts) {
+  const latestAccount = accounts.reduce((latest, account) => {
+    if (!latest || account.createdAt > latest.createdAt) return account;
+    return latest;
+  }, null);
+  return latestAccount?.region || TEST_ACCOUNT_REGIONS[0];
+}
+
 function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onResetPassword, annotation }) {
   const [keyword, setKeyword] = useState('');
+  const preferredRegion = getDefaultTestAccountRegion(accounts);
+  const [activeRegion, setActiveRegion] = useState(preferredRegion);
+  const regionCounts = Object.fromEntries(TEST_ACCOUNT_REGIONS.map((region) => [region, 0]));
+  accounts.forEach((account) => {
+    if (regionCounts[account.region] !== undefined) regionCounts[account.region] += 1;
+  });
+
+  useEffect(() => {
+    setActiveRegion(preferredRegion);
+    setKeyword('');
+  }, [dealer.id, accounts.length, preferredRegion]);
 
   const rows = accounts
     .filter((account) => {
+      if (account.region !== activeRegion) return false;
       if (keyword && !account.accountName.includes(keyword) && !account.userId.includes(keyword)) return false;
       return true;
     });
+  const activeRegionIndex = TEST_ACCOUNT_REGIONS.indexOf(activeRegion);
+  const handleRegionTabKeyDown = (event, index) => {
+    const lastIndex = TEST_ACCOUNT_REGIONS.length - 1;
+    let nextIndex = index;
+    if (event.key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
+    else if (event.key === 'ArrowRight') nextIndex = index === lastIndex ? 0 : index + 1;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = lastIndex;
+    else return;
+
+    event.preventDefault();
+    setActiveRegion(TEST_ACCOUNT_REGIONS[nextIndex]);
+    requestAnimationFrame(() => document.getElementById(`dm-account-region-tab-${nextIndex}`)?.focus());
+  };
 
   return (
     <div>
       <div className="dm-account-query-row">
-        <AnnotationArea id="accountSearch" annotation={annotation} className="dm-annotation-query-field">
-          <label className="dm-account-query-field">
-            <span>账号名称 / 用户 ID</span>
-            <input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="请输入账号名称或用户 ID" />
-          </label>
+        <AnnotationArea id="accountSearch" annotation={annotation} className="dm-annotation-account-filters">
+          <div className="dm-account-filter-stack">
+            <div className="dm-account-region-field">
+              <span className="dm-account-region-label">账号所属大区</span>
+              <div className="dm-account-region-tabs" role="tablist" aria-label="账号所属大区">
+                {TEST_ACCOUNT_REGIONS.map((region, index) => (
+                  <button
+                    id={`dm-account-region-tab-${index}`}
+                    key={region}
+                    className={cls(activeRegion === region && 'active')}
+                    type="button"
+                    role="tab"
+                    aria-label={`${region}，${regionCounts[region]} 个账号`}
+                    aria-selected={activeRegion === region}
+                    aria-controls="dm-account-region-panel"
+                    tabIndex={activeRegion === region ? 0 : -1}
+                    onClick={() => setActiveRegion(region)}
+                    onKeyDown={(event) => handleRegionTabKeyDown(event, index)}
+                  >
+                    <span>{region}</span>
+                    <small>{regionCounts[region]}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="dm-account-query-field">
+              <span>账号名称 / 用户 ID</span>
+              <input
+                name="accountKeyword"
+                value={keyword}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="请输入账号名称或用户 ID…"
+              />
+            </label>
+          </div>
         </AnnotationArea>
         <AnnotationArea id="createEntry" annotation={annotation} className="dm-annotation-query-actions">
           <div className="dm-tab-actions dm-account-query-actions">
@@ -1587,54 +1656,63 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
           </div>
         </AnnotationArea>
       </div>
-      <TableShell empty={rows.length === 0} emptyTitle="暂无App测试账号">
-        <table className="dm-table">
-          <thead>
-            <tr>
-              <th>账号名称</th>
-              <th>用户 ID</th>
-              <th>手机号</th>
-              <th>所属大区</th>
-              <th>客户端</th>
-              <th>创建时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((account) => (
-              <tr key={account.id}>
-                <td>
-                  <div className="dm-cell-stack">
-                    <strong>{account.accountName}</strong>
-                  </div>
-                </td>
-                <td className="dm-mono">{account.userId}</td>
-                <td>{account.mobile || '-'}</td>
-                <td><Tag tone={REGION_TAG_TONE[account.region] || 'muted'}>{account.region || '中国'}</Tag></td>
-                <td>
-                  <div className="dm-cell-stack">
-                    <strong>{account.clientName || DEFAULT_TEST_ACCOUNT_CLIENT.clientName}</strong>
-                    <span className="dm-mono">{account.clientId || DEFAULT_TEST_ACCOUNT_CLIENT.clientId}</span>
-                  </div>
-                </td>
-                <td className="dm-time">{account.createdAt}</td>
-                <td>
-                  <div className="dm-row-actions">
-                    <button className="dm-link-btn" type="button" onClick={() => onOpenUserDetail?.(account)}>查看</button>
-                    <button
-                      className="dm-link-btn"
-                      type="button"
-                      onClick={() => onResetPassword?.(account)}
-                    >
-                      重置密码
-                    </button>
-                  </div>
-                </td>
+      <div
+        id="dm-account-region-panel"
+        role="tabpanel"
+        aria-labelledby={`dm-account-region-tab-${activeRegionIndex}`}
+      >
+        <TableShell
+          empty={rows.length === 0}
+          emptyTitle={keyword ? `${activeRegion}区域暂无匹配的App测试账号` : `${activeRegion}区域暂无App测试账号`}
+        >
+          <table className="dm-table">
+            <thead>
+              <tr>
+                <th>账号名称</th>
+                <th>用户 ID</th>
+                <th>手机号</th>
+                <th>所属大区</th>
+                <th>客户端</th>
+                <th>创建时间</th>
+                <th>操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableShell>
+            </thead>
+            <tbody>
+              {rows.map((account) => (
+                <tr key={account.id}>
+                  <td>
+                    <div className="dm-cell-stack">
+                      <strong>{account.accountName}</strong>
+                    </div>
+                  </td>
+                  <td className="dm-mono">{account.userId}</td>
+                  <td>{account.mobile || '-'}</td>
+                  <td><Tag tone={REGION_TAG_TONE[account.region] || 'muted'}>{account.region || '中国'}</Tag></td>
+                  <td>
+                    <div className="dm-cell-stack">
+                      <strong>{account.clientName || DEFAULT_TEST_ACCOUNT_CLIENT.clientName}</strong>
+                      <span className="dm-mono">{account.clientId || DEFAULT_TEST_ACCOUNT_CLIENT.clientId}</span>
+                    </div>
+                  </td>
+                  <td className="dm-time">{account.createdAt}</td>
+                  <td>
+                    <div className="dm-row-actions">
+                      <button className="dm-link-btn" type="button" onClick={() => onOpenUserDetail?.(account)}>查看</button>
+                      <button
+                        className="dm-link-btn"
+                        type="button"
+                        onClick={() => onResetPassword?.(account)}
+                      >
+                        重置密码
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableShell>
+      </div>
       <AppTestAccountUsageNote className="dm-usage-note-list" />
     </div>
   );
