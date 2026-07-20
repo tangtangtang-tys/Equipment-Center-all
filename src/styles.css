@@ -17784,93 +17784,71 @@ button {
   margin-bottom: 12px;
 }
 
-.dm-account-filter-stack {
-  display: grid;
-  gap: 10px;
+.dm-region-scope {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
   min-width: 0;
 }
 
-.dm-account-region-field {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.dm-account-region-label {
-  color: #475467;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 18px;
-}
-
-.dm-account-region-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 3px;
-  width: min(560px, 100%);
-  border: 1px solid #dfe5ee;
-  border-radius: 6px;
-  padding: 3px;
-  background: #f3f5f8;
-}
-
-.dm-account-region-tabs button {
+.dm-region-scope-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  color: #667085;
+}
+
+.dm-region-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(56px, 64px));
+  gap: 2px;
+  width: auto;
   min-width: 0;
-  min-height: 38px;
+  border: 1px solid #dfe5ee;
+  border-radius: 6px;
+  padding: 2px;
+  background: #f3f5f8;
+}
+
+.dm-region-options button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 30px;
   border: 1px solid transparent;
   border-radius: 4px;
-  padding: 6px 8px;
+  padding: 4px 8px;
   color: #667085;
   background: transparent;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-.dm-account-region-tabs button:hover,
-.dm-account-region-tabs button:focus-visible {
+.dm-region-options button:hover,
+.dm-region-options button:focus-visible {
   color: #155ebc;
   background: rgba(255, 255, 255, 0.72);
 }
 
-.dm-account-region-tabs button:focus-visible {
+.dm-region-options button:focus-visible {
   border-color: #7cb4ff;
   outline: 2px solid rgba(15, 107, 255, 0.18);
   outline-offset: 1px;
 }
 
-.dm-account-region-tabs button.active {
+.dm-region-options button.active {
   border-color: #b7d3fa;
   color: #0958d9;
   background: #fff;
   box-shadow: 0 1px 3px rgba(31, 64, 104, 0.12);
   font-weight: 600;
-}
-
-.dm-account-region-tabs small {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  padding: 0 5px;
-  color: #667085;
-  background: #e7ebf0;
-  font-size: 11px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  line-height: 20px;
-}
-
-.dm-account-region-tabs button.active small {
-  color: #fff;
-  background: #1677ff;
 }
 
 .dm-account-query-field {
@@ -18862,29 +18840,52 @@ button {
   color: #cf1322;
 }
 
-.dm-tabs {
+.dm-detail-navigation {
   display: flex;
-  gap: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
   border-bottom: 1px solid #d7e7ff;
   margin: -14px -14px 14px;
-  padding: 10px 12px;
-  background: linear-gradient(90deg, #ffffff, #f4f9ff);
+  padding: 0 14px;
+  background: #fff;
+}
+
+.dm-tabs {
+  display: flex;
+  gap: 24px;
+  min-width: 0;
 }
 
 .dm-tabs button {
-  border: 1px solid transparent;
-  border-radius: 5px;
-  padding: 7px 12px;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  padding: 13px 2px 11px;
   color: #294361;
   background: transparent;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .dm-tabs button.active {
-  border-color: #1267df;
-  color: #fff;
-  background: linear-gradient(180deg, #1c7df2, #0b5bd3);
-  box-shadow: 0 4px 10px rgba(22, 119, 255, 0.2);
+  border-bottom-color: #1267df;
+  color: #1267df;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dm-tabs button:hover {
+  color: #1267df;
+}
+
+.dm-tabs button:focus-visible {
+  outline: 2px solid rgba(15, 107, 255, 0.24);
+  outline-offset: 2px;
 }
 
 .dm-detail-tabs-card {
@@ -19545,14 +19546,26 @@ button {
     min-width: 0;
   }
 
-  .dm-account-region-tabs {
+  .dm-detail-navigation {
+    display: grid;
+    gap: 0;
+  }
+
+  .dm-region-scope {
+    align-items: center;
+    flex-direction: row;
+    gap: 7px;
+  }
+
+  .dm-region-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 1 1 auto;
     width: 100%;
     max-width: 100%;
     min-width: 0;
   }
 
-  .dm-account-region-tabs button {
-    gap: 4px;
+  .dm-region-options button {
     min-height: 40px;
     padding-right: 5px;
     padding-left: 5px;
@@ -19899,33 +19912,41 @@ button {
   border-color: #e5eaf3;
 }
 
-.dealer-console-shell .dm-tabs {
-  gap: 4px;
-  border-bottom: 1px solid #e5eaf3;
+.dealer-console-shell .dm-detail-navigation {
   margin: 0 -24px 16px;
   padding: 0 24px;
+  border-bottom-color: #e5eaf3;
+}
+
+.dealer-console-shell .dm-region-scope {
+  margin-left: auto;
+  padding-bottom: 8px;
+}
+
+.dealer-console-shell .dm-tabs {
+  gap: 28px;
   background: transparent;
 }
 
 .dealer-console-shell .dm-tabs button {
-  min-width: 118px;
-  border: 1px solid #e5eaf3;
-  border-bottom-color: transparent;
-  border-radius: 6px 6px 0 0;
+  min-width: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   margin-bottom: -1px;
-  padding: 12px 18px;
+  padding: 14px 2px 12px;
   color: #374151;
-  background: #fbfcff;
+  background: transparent;
   font-size: 15px;
   font-weight: 500;
 }
 
 .dealer-console-shell .dm-tabs button.active {
-  border-color: #0f6bff;
-  border-bottom-color: #fff;
+  border-bottom-color: #0f6bff;
   color: #0f6bff;
-  background: #fff;
-  box-shadow: inset 0 2px 0 #0f6bff;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 600;
 }
 
 .dealer-console-shell .dm-filter-grid.record {
@@ -20096,14 +20117,31 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .dealer-console-shell .dm-tabs {
+  .dealer-console-shell .dm-detail-navigation {
+    display: grid;
     margin: 0 -16px 16px;
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  .dealer-console-shell .dm-tabs {
+    order: 2;
+    margin: 0;
     padding: 0 16px;
+    border-bottom: 1px solid #e5eaf3;
     overflow-x: auto;
   }
 
   .dealer-console-shell .dm-tabs button {
     min-width: max-content;
+  }
+
+  .dealer-console-shell .dm-region-scope {
+    order: 1;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5eaf3;
+    background: #f8fafc;
   }
 
   .dealer-console-shell .dm-table {

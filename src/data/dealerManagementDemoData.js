@@ -447,6 +447,10 @@ export const initialTestAccounts = [
   ...account,
 }));
 
+const TEST_ACCOUNT_REGION_BY_ID = new Map(
+  initialTestAccounts.map((account) => [account.id, account.region]),
+);
+
 export const initialTestRecords = [
   {
     id: 'TR-1001',
@@ -664,7 +668,12 @@ export const initialTestRecords = [
     failReason: '测试关系未创建但激活残留',
     latestCleanAt: '2026-07-05 18:12:00',
   },
-];
+].map((record) => ({
+  ...record,
+  region: TEST_ACCOUNT_REGION_BY_ID.get(record.accountId)
+    || ACCOUNT_CLIENT_CONFIG_BY_DEALER[record.dealerId]?.region
+    || DEFAULT_ACCOUNT_CLIENT_CONFIG.region,
+}));
 
 export const initialOperationLogs = [
   ['LOG-021', 'DL-1001', '华东一级经销商', 'TA-1001', 'U100201', '华东测试员A', '', '重置App测试账号密码', '管理后台', '汤彦珊', '成功', '', '重置原因：经销商测试人员遗失初始密码；新密码仅本次展示', '2026-07-08 11:12:00'],
@@ -680,6 +689,9 @@ export const initialOperationLogs = [
   dealerId,
   dealerName,
   accountId,
+  region: TEST_ACCOUNT_REGION_BY_ID.get(accountId)
+    || ACCOUNT_CLIENT_CONFIG_BY_DEALER[dealerId]?.region
+    || DEFAULT_ACCOUNT_CLIENT_CONFIG.region,
   userId,
   accountName,
   deviceSn,

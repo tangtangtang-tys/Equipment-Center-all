@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Copy,
   FileText,
+  Globe2,
   KeyRound,
   Plus,
   RefreshCw,
@@ -82,10 +83,12 @@ const ANNOTATION_RULES = [
   {
     id: 'detailTabs',
     title: '详情模块切换',
-    summary: '右侧详情按高频查看顺序组织信息，减少在测试记录与账号之间来回查找。',
+    summary: '先按大区确定共享数据范围，再在测试记录、账号和日志之间切换。',
     flow: [
+      '大区顺序固定为：中国、亚洲、北美、欧洲。',
+      '切换大区后，设备测试记录、APP 测试账号和操作日志同步刷新为对应大区数据。',
       'Tab 顺序固定为：设备测试记录、APP 测试账号、操作日志。',
-      '切换 Tab 只刷新当前经销商下的数据，不改变左侧选中的经销商。',
+      '切换 Tab 保留当前大区和左侧选中的经销商。',
       '创建账号成功后自动切换到 APP 测试账号 Tab，便于立即查看新增账号。',
     ],
   },
@@ -94,6 +97,7 @@ const ANNOTATION_RULES = [
     title: '设备测试记录查询',
     summary: '设备测试记录按设备 ID 汇总，主表展示最近一次记录和累计添加次数。',
     fields: [
+      '查询范围：继承详情模块上方当前选中大区。',
       '设备 ID：非必填；按设备 ID 匹配测试记录。',
       'App测试账号 / 用户 ID：非必填；只匹配最近一次添加记录中的账号名称或用户 ID。',
       '添加时间：范围控件；开始时间不能晚于结束时间，只匹配最近一次添加记录的添加时间。',
@@ -120,12 +124,10 @@ const ANNOTATION_RULES = [
     title: 'APP 测试账号查询',
     summary: '账号列表用于查看当前经销商下已创建的 APP 测试账号，并支持跳转用户中心。',
     fields: [
-      '所属大区：固定为中国、亚洲、北美、欧洲四个 Tab；每个 Tab 展示当前经销商对应区域的账号总数。',
+      '查询范围：继承详情模块上方当前选中大区。',
       '账号名称 / 用户 ID：非必填；支持账号名称或用户 ID 匹配。',
     ],
     rules: [
-      '默认选中当前经销商最近创建账号所属大区；暂无账号时默认选中中国。',
-      '切换大区时保留关键词并在所选大区内继续筛选；无匹配记录时展示对应大区空状态。',
       '创建成功后自动切换到新账号所属大区并清空旧关键词，确保新增记录立即可见。',
       '第一阶段不提供账号权限状态和有效期的查询、展示或维护能力。',
       '账号是否允许测试由服务端结合经销商组织状态、用户中心账号状态和内部测试权限策略判断。',
@@ -190,6 +192,7 @@ const ANNOTATION_RULES = [
     title: '操作日志范围',
     summary: '操作日志采用时间节点形式，记录后台可审计的人为操作。',
     fields: [
+      '查询范围：继承详情模块上方当前选中大区。',
       '操作日期：单日期选择；默认选中今日并展示今日操作日志。',
     ],
     rules: [
@@ -494,6 +497,9 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const [logs, setLogs] = useState(initialOperationLogs);
   const [selectedDealerId, setSelectedDealerId] = useState(initialDealers[0].id);
   const [activeTab, setActiveTab] = useState('设备测试记录');
+  const [activeRegion, setActiveRegion] = useState(() => getDefaultTestAccountRegion(
+    initialTestAccounts.filter((account) => account.dealerId === initialDealers[0].id),
+  ));
   const [recordKeyword, setRecordKeyword] = useState('');
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
@@ -552,6 +558,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
         dealerId: dealer.id,
         dealerName: dealer.name,
         accountId: payload.accountId || '',
+        region: payload.region || accounts.find((account) => account.id === payload.accountId)?.region || TEST_ACCOUNT_REGIONS[0],
         userId: payload.userId || '',
         accountName: payload.accountName || '',
         deviceSn: payload.deviceSn || '',
@@ -570,6 +577,8 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
 
   const handleSelectDealer = (dealerId, options = {}) => {
     setSelectedDealerId(dealerId);
+    const dealerAccounts = accounts.filter((account) => account.dealerId === dealerId);
+    setActiveRegion(options.region || getDefaultTestAccountRegion(dealerAccounts));
     if (options.tab) setActiveTab(options.tab);
     setRecordKeyword(options.recordKeyword || '');
   };
@@ -641,6 +650,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     appendLog({
       dealerId: dealer.id,
       accountId: account.id,
+      region: account.region,
       userId: account.userId,
       accountName: account.accountName,
       actionType: '创建App测试账号',
@@ -648,6 +658,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       remark: `大区：${account.region}；客户端：${account.clientName} / ${account.clientId}；临时密码仅本次展示`,
     });
     setSelectedDealerId(dealer.id);
+    setActiveRegion(account.region);
     setActiveTab('APP测试账号');
     setModal({
       type: 'credential',
@@ -665,6 +676,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     appendLog({
       dealerId: dealer.id,
       accountId: account.id,
+      region: account.region,
       userId: account.userId,
       accountName: account.accountName,
       actionType: '重置App测试账号密码',
@@ -694,6 +706,8 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
         onSelectDealer={handleSelectDealer}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        activeRegion={activeRegion}
+        setActiveRegion={setActiveRegion}
         recordKeyword={recordKeyword}
         setRecordKeyword={setRecordKeyword}
         onOpenCreate={(dealerId) => setModal({ type: 'create', dealerId })}
@@ -709,6 +723,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
           dealers={dealers}
           accounts={accounts}
           defaultDealerId={modal.dealerId || selectedDealer.id}
+          defaultRegion={modal.region || activeRegion}
           onSubmit={handleCreateAccount}
           onValidationError={(message) => showToast(message, 'error')}
           onClose={() => setModal(null)}
@@ -750,6 +765,8 @@ function DealerWorkbenchView({
   onSelectDealer,
   activeTab,
   setActiveTab,
+  activeRegion,
+  setActiveRegion,
   recordKeyword,
   setRecordKeyword,
   onOpenCreate,
@@ -922,6 +939,8 @@ function DealerWorkbenchView({
               logs={logs}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              activeRegion={activeRegion}
+              setActiveRegion={setActiveRegion}
               recordKeyword={recordKeyword}
               setRecordKeyword={setRecordKeyword}
               hideBack
@@ -1434,6 +1453,8 @@ function DealerDetailView({
   logs = [],
   activeTab,
   setActiveTab,
+  activeRegion,
+  setActiveRegion,
   recordKeyword,
   setRecordKeyword,
   onBack,
@@ -1448,8 +1469,22 @@ function DealerDetailView({
   annotation,
 }) {
   const dealerAccounts = accounts.filter((account) => account.dealerId === dealer.id);
-  const dealerRecords = records.filter((record) => record.dealerId === dealer.id);
-  const dealerLogs = logs.filter((log) => log.dealerId === dealer.id);
+  const regionAccounts = dealerAccounts.filter((account) => account.region === activeRegion);
+  const dealerRecords = records.filter((record) => record.dealerId === dealer.id && record.region === activeRegion);
+  const dealerLogs = logs.filter((log) => log.dealerId === dealer.id && log.region === activeRegion);
+  const handleDetailTabKeyDown = (event, index) => {
+    const lastIndex = DETAIL_TABS.length - 1;
+    let nextIndex = index;
+    if (event.key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
+    else if (event.key === 'ArrowRight') nextIndex = index === lastIndex ? 0 : index + 1;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = lastIndex;
+    else return;
+
+    event.preventDefault();
+    setActiveTab(DETAIL_TABS[nextIndex]);
+    requestAnimationFrame(() => document.getElementById(`dm-detail-tab-${nextIndex}`)?.focus());
+  };
 
   return (
     <>
@@ -1495,18 +1530,33 @@ function DealerDetailView({
 
       <section className="dm-card dm-detail-tabs-card">
         <AnnotationArea id="detailTabs" annotation={annotation}>
-          <div className="dm-tabs">
-            {DETAIL_TABS.map((tab) => (
-              <button key={tab} className={cls(activeTab === tab && 'active')} type="button" onClick={() => setActiveTab(tab)}>
-                {tab}
-              </button>
-            ))}
+          <div className="dm-detail-navigation">
+            <div className="dm-tabs" role="tablist" aria-label="经销商详情分类">
+              {DETAIL_TABS.map((tab, index) => (
+                <button
+                  id={`dm-detail-tab-${index}`}
+                  key={tab}
+                  className={cls(activeTab === tab && 'active')}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  tabIndex={activeTab === tab ? 0 : -1}
+                  onClick={() => setActiveTab(tab)}
+                  onKeyDown={(event) => handleDetailTabKeyDown(event, index)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <RegionScopeSelector value={activeRegion} onChange={setActiveRegion} />
           </div>
         </AnnotationArea>
         {activeTab === 'APP测试账号' && (
           <TestAccountTab
             dealer={dealer}
-            accounts={dealerAccounts}
+            accounts={regionAccounts}
+            activeRegion={activeRegion}
+            totalAccountCount={dealerAccounts.length}
             onOpenCreate={onOpenCreate}
             onOpenUserDetail={onOpenUserDetail}
             onResetPassword={onResetPassword}
@@ -1516,6 +1566,7 @@ function DealerDetailView({
         {activeTab === '设备测试记录' && (
           <TestRecordTab
             records={dealerRecords}
+            activeRegion={activeRegion}
             keyword={recordKeyword}
             setKeyword={setRecordKeyword}
             onOpenDeviceDetail={onOpenDeviceDetail}
@@ -1526,7 +1577,7 @@ function DealerDetailView({
           <OperationLogTab
             logs={dealerLogs}
             showDealerColumn={false}
-            emptyTitle="所选日期暂无当前经销商操作日志"
+            emptyTitle={`${activeRegion}大区在所选日期暂无当前经销商操作日志`}
             annotation={annotation}
           />
         )}
@@ -1558,36 +1609,9 @@ function AppTestAccountUsageNote({ className }) {
   );
 }
 
-function getDefaultTestAccountRegion(accounts) {
-  const latestAccount = accounts.reduce((latest, account) => {
-    if (!latest || account.createdAt > latest.createdAt) return account;
-    return latest;
-  }, null);
-  return latestAccount?.region || TEST_ACCOUNT_REGIONS[0];
-}
-
-function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onResetPassword, annotation }) {
-  const [keyword, setKeyword] = useState('');
-  const preferredRegion = getDefaultTestAccountRegion(accounts);
-  const [activeRegion, setActiveRegion] = useState(preferredRegion);
-  const regionCounts = Object.fromEntries(TEST_ACCOUNT_REGIONS.map((region) => [region, 0]));
-  accounts.forEach((account) => {
-    if (regionCounts[account.region] !== undefined) regionCounts[account.region] += 1;
-  });
-
-  useEffect(() => {
-    setActiveRegion(preferredRegion);
-    setKeyword('');
-  }, [dealer.id, accounts.length, preferredRegion]);
-
-  const rows = accounts
-    .filter((account) => {
-      if (account.region !== activeRegion) return false;
-      if (keyword && !account.accountName.includes(keyword) && !account.userId.includes(keyword)) return false;
-      return true;
-    });
-  const activeRegionIndex = TEST_ACCOUNT_REGIONS.indexOf(activeRegion);
-  const handleRegionTabKeyDown = (event, index) => {
+function RegionScopeSelector({ value, onChange }) {
+  const activeIndex = TEST_ACCOUNT_REGIONS.indexOf(value);
+  const handleKeyDown = (event, index) => {
     const lastIndex = TEST_ACCOUNT_REGIONS.length - 1;
     let nextIndex = index;
     if (event.key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
@@ -1597,50 +1621,80 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
     else return;
 
     event.preventDefault();
-    setActiveRegion(TEST_ACCOUNT_REGIONS[nextIndex]);
-    requestAnimationFrame(() => document.getElementById(`dm-account-region-tab-${nextIndex}`)?.focus());
+    onChange(TEST_ACCOUNT_REGIONS[nextIndex]);
+    requestAnimationFrame(() => document.getElementById(`dm-region-option-${nextIndex}`)?.focus());
   };
+
+  return (
+    <div className="dm-region-scope">
+      <span className="dm-region-scope-icon" title="大区筛选" aria-hidden="true">
+        <Globe2 size={15} strokeWidth={1.8} />
+      </span>
+      <div className="dm-region-options" role="group" aria-label="大区筛选">
+        {TEST_ACCOUNT_REGIONS.map((region, index) => (
+          <button
+            id={`dm-region-option-${index}`}
+            key={region}
+            className={cls(value === region && 'active')}
+            type="button"
+            aria-pressed={value === region}
+            tabIndex={activeIndex === index ? 0 : -1}
+            onClick={() => onChange(region)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
+          >
+            {region}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getDefaultTestAccountRegion(accounts) {
+  const latestAccount = accounts.reduce((latest, account) => {
+    if (!latest || account.createdAt > latest.createdAt) return account;
+    return latest;
+  }, null);
+  return latestAccount?.region || TEST_ACCOUNT_REGIONS[0];
+}
+
+function TestAccountTab({
+  dealer,
+  accounts,
+  activeRegion,
+  totalAccountCount,
+  onOpenCreate,
+  onOpenUserDetail,
+  onResetPassword,
+  annotation,
+}) {
+  const [keyword, setKeyword] = useState('');
+
+  useEffect(() => {
+    setKeyword('');
+  }, [dealer.id, totalAccountCount]);
+
+  const rows = accounts
+    .filter((account) => {
+      if (keyword && !account.accountName.includes(keyword) && !account.userId.includes(keyword)) return false;
+      return true;
+    });
 
   return (
     <div>
       <div className="dm-account-query-row">
         <AnnotationArea id="accountSearch" annotation={annotation} className="dm-annotation-account-filters">
-          <div className="dm-account-filter-stack">
-            <div className="dm-account-region-field">
-              <span className="dm-account-region-label">账号所属大区</span>
-              <div className="dm-account-region-tabs" role="tablist" aria-label="账号所属大区">
-                {TEST_ACCOUNT_REGIONS.map((region, index) => (
-                  <button
-                    id={`dm-account-region-tab-${index}`}
-                    key={region}
-                    className={cls(activeRegion === region && 'active')}
-                    type="button"
-                    role="tab"
-                    aria-label={`${region}，${regionCounts[region]} 个账号`}
-                    aria-selected={activeRegion === region}
-                    aria-controls="dm-account-region-panel"
-                    tabIndex={activeRegion === region ? 0 : -1}
-                    onClick={() => setActiveRegion(region)}
-                    onKeyDown={(event) => handleRegionTabKeyDown(event, index)}
-                  >
-                    <span>{region}</span>
-                    <small>{regionCounts[region]}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="dm-account-query-field">
-              <span>账号名称 / 用户 ID</span>
-              <input
-                name="accountKeyword"
-                value={keyword}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="请输入账号名称或用户 ID…"
-              />
-            </label>
-          </div>
+          <label className="dm-account-query-field">
+            <span>账号名称 / 用户 ID</span>
+            <input
+              name="accountKeyword"
+              value={keyword}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="请输入账号名称或用户 ID…"
+            />
+          </label>
         </AnnotationArea>
         <AnnotationArea id="createEntry" annotation={annotation} className="dm-annotation-query-actions">
           <div className="dm-tab-actions dm-account-query-actions">
@@ -1656,11 +1710,7 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
           </div>
         </AnnotationArea>
       </div>
-      <div
-        id="dm-account-region-panel"
-        role="tabpanel"
-        aria-labelledby={`dm-account-region-tab-${activeRegionIndex}`}
-      >
+      <div>
         <TableShell
           empty={rows.length === 0}
           emptyTitle={keyword ? `${activeRegion}区域暂无匹配的App测试账号` : `${activeRegion}区域暂无App测试账号`}
@@ -1718,7 +1768,7 @@ function TestAccountTab({ dealer, accounts, onOpenCreate, onOpenUserDetail, onRe
   );
 }
 
-function TestRecordTab({ records, keyword, setKeyword, onOpenDeviceDetail, annotation }) {
+function TestRecordTab({ records, activeRegion, keyword, setKeyword, onOpenDeviceDetail, annotation }) {
   const [accountKeyword, setAccountKeyword] = useState('');
   const [bindingStartAt, setBindingStartAt] = useState('');
   const [bindingEndAt, setBindingEndAt] = useState('');
@@ -1776,7 +1826,7 @@ function TestRecordTab({ records, keyword, setKeyword, onOpenDeviceDetail, annot
       </AnnotationArea>
 
       <AnnotationArea id="deviceLink" annotation={annotation}>
-        <TableShell empty={rows.length === 0} emptyTitle="暂无设备测试记录">
+        <TableShell empty={rows.length === 0} emptyTitle={`${activeRegion}大区暂无设备测试记录`}>
           <table className="dm-table dm-record-latest-table">
             <thead>
               <tr>
@@ -2251,14 +2301,23 @@ function ResetPasswordModal({ account, dealer, onSubmit, onClose, annotation }) 
   );
 }
 
-function CreateAccountModal({ dealers, accounts, defaultDealerId, onSubmit, onValidationError, onClose, annotation }) {
+function CreateAccountModal({
+  dealers,
+  accounts,
+  defaultDealerId,
+  defaultRegion,
+  onSubmit,
+  onValidationError,
+  onClose,
+  annotation,
+}) {
   const currentDealer = dealers.find((dealer) => dealer.id === defaultDealerId) || dealers.find((dealer) => dealer.status === 'normal');
   const formRef = useRef(null);
   const [form, setForm] = useState({
     dealerId: currentDealer?.id || '',
     accountName: '',
     mobile: '',
-    region: '中国',
+    region: defaultRegion || TEST_ACCOUNT_REGIONS[0],
     clientName: DEFAULT_TEST_ACCOUNT_CLIENT.clientName,
     clientId: DEFAULT_TEST_ACCOUNT_CLIENT.clientId,
     applyReason: '',
