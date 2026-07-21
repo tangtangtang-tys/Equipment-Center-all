@@ -51,7 +51,7 @@ const ANNOTATION_RULES = [
       '重置：清空输入，恢复全部经销商，左侧树保持默认展开。',
     ],
     rules: [
-      '左侧树只展示经销商名称、层级标签和停用标签，不展示经销商 ID。',
+      '左侧树只展示经销商名称和层级标签，不展示经销商 ID 或启用、停用状态。',
       '查询条件为空时展示全部一级、二级、三级经销商。',
     ],
   },
@@ -205,11 +205,6 @@ const ANNOTATION_RULES = [
 ].map((rule, index) => ({ ...rule, number: String(index + 1).padStart(2, '0') }));
 
 const ANNOTATION_RULE_MAP = new Map(ANNOTATION_RULES.map((rule) => [rule.id, rule]));
-
-const DEALER_STATUS_MAP = {
-  normal: { label: '正常', tone: 'success' },
-  disabled: { label: '停用', tone: 'muted' },
-};
 
 const REGION_TAG_TONE = {
   中国: 'info',
@@ -895,7 +890,6 @@ function DealerWorkbenchView({
               {treeRows.length === 0 && <EmptyState title="暂无匹配经销商" desc="请调整筛选条件后重试。" />}
               {treeRows.map(({ id, node, dealer, depth, hasChildren, isMatched }) => {
                 const isSelected = dealer.id === selectedDealerId && isMatched;
-                const statusCfg = DEALER_STATUS_MAP[dealer.status] || DEALER_STATUS_MAP.normal;
                 return (
                   <div
                     className={cls('dm-dealer-nav-row', isSelected && 'active', !isMatched && 'context')}
@@ -920,7 +914,6 @@ function DealerWorkbenchView({
                       <span className="dm-dealer-nav-title">
                         <strong>{dealer.name}</strong>
                         <LevelTag level={dealer.level} />
-                        {dealer.status !== 'normal' && <Tag tone={statusCfg.tone}>{statusCfg.label}</Tag>}
                       </span>
                     </button>
                   </div>
