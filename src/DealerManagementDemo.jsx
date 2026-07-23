@@ -150,7 +150,6 @@ const ANNOTATION_RULES = [
     fields: [
       '经销商组织：必填，默认当前经销商，只读展示。',
       '账号名称：必填；同一经销商下不可重复，重复时阻止提交并提示用户。',
-      '手机号：可选；填写时必须为 11 位手机号。',
       '账号所属大区：必填；可选中国、亚洲、北美、欧洲，默认中国。',
       '客户端名称：必填；从客户端清单选择，并自动带出客户端 ID。',
       '客户端 ID：由客户端名称联动生成，以禁用态展示，不允许手动修改。',
@@ -632,7 +631,6 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       dealerId: dealer.id,
       userId: formData.userId || `U${Date.now().toString().slice(-6)}`,
       accountName,
-      mobile: formData.mobile,
       accountSource: '设备中心创建',
       region: formData.region,
       clientName: client.clientName,
@@ -1713,7 +1711,6 @@ function TestAccountTab({
               <tr>
                 <th>账号名称</th>
                 <th>用户 ID</th>
-                <th>手机号</th>
                 <th>所属大区</th>
                 <th>客户端</th>
                 <th>创建时间</th>
@@ -1729,7 +1726,6 @@ function TestAccountTab({
                     </div>
                   </td>
                   <td className="dm-mono">{account.userId}</td>
-                  <td>{account.mobile || '-'}</td>
                   <td><Tag tone={REGION_TAG_TONE[account.region] || 'muted'}>{account.region || '中国'}</Tag></td>
                   <td>
                     <div className="dm-cell-stack">
@@ -2309,7 +2305,6 @@ function CreateAccountModal({
   const [form, setForm] = useState({
     dealerId: currentDealer?.id || '',
     accountName: '',
-    mobile: '',
     region: defaultRegion || TEST_ACCOUNT_REGIONS[0],
     clientName: DEFAULT_TEST_ACCOUNT_CLIENT.clientName,
     clientId: DEFAULT_TEST_ACCOUNT_CLIENT.clientId,
@@ -2347,13 +2342,11 @@ function CreateAccountModal({
   const submit = () => {
     const nextErrors = {};
     const accountName = form.accountName.trim();
-    const hasMobile = Boolean(form.mobile.trim());
     if (!form.dealerId) nextErrors.dealerId = '请选择经销商';
     if (!accountName) nextErrors.accountName = '请输入账号名称';
     else if (accounts.some((account) => account.dealerId === form.dealerId && account.accountName === accountName)) {
       nextErrors.accountName = '该经销商下已存在同名App测试账号';
     }
-    if (hasMobile && !/^1\d{10}$/.test(form.mobile)) nextErrors.mobile = '请输入 11 位手机号';
     if (!form.region) nextErrors.region = '请选择账号所属大区';
     if (!form.clientName.trim()) nextErrors.clientName = '请输入客户端名称';
     if (!form.clientId.trim()) nextErrors.clientId = '请选择有效的客户端';
@@ -2397,18 +2390,6 @@ function CreateAccountModal({
               spellCheck={false}
               onChange={(event) => update('accountName', event.target.value)}
               placeholder="示例：华东经销商测试员 A…"
-            />
-          </Field>
-          <Field label="手机号（可选）" error={errors.mobile}>
-            <input
-              name="mobile"
-              type="tel"
-              inputMode="numeric"
-              value={form.mobile}
-              aria-invalid={Boolean(errors.mobile)}
-              autoComplete="off"
-              onChange={(event) => update('mobile', event.target.value)}
-              placeholder="请输入 11 位手机号…"
             />
           </Field>
           <div className="dm-form-section-title">使用范围</div>

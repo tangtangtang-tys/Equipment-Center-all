@@ -19,7 +19,6 @@ export type TestAccount = {
   dealerId: string;
   userId: string;
   accountName: string;
-  mobile: string;
   accountSource: '关联已有用户中心账号' | '创建新用户中心账号' | '设备中心创建';
   region: '中国' | '亚洲' | '北美' | '欧洲';
   clientName: string;
