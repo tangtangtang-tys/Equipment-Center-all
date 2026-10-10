@@ -12,6 +12,8 @@ import {
   Copy,
   FileText,
   Globe2,
+  History,
+  Info,
   KeyRound,
   Plus,
   RefreshCw,
@@ -22,6 +24,8 @@ import {
 import {
   initialDealers,
   initialDealerOrgNodes,
+  initialAutoWakeConfigs,
+  initialDeviceDefaultConfigHistories,
   initialOperationLogs,
   initialTestAccounts,
   initialTestRecords,
@@ -39,6 +43,38 @@ const DEFAULT_TEST_ACCOUNT_CLIENT = TEST_ACCOUNT_CLIENTS[0];
 const DEFAULT_DEALER_LIST_FILTERS = {
   keyword: '',
 };
+
+const AUTO_WAKE_VALUE_LABELS = {
+  on: '开启',
+  off: '关闭',
+};
+
+function getAutoWakeValueLabel(value) {
+  return AUTO_WAKE_VALUE_LABELS[value] || AUTO_WAKE_VALUE_LABELS.off;
+}
+
+function getAutoWakeConfig(configs, dealer) {
+  return configs?.[dealer?.id] || {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '',
+    updatedBy: '',
+    boundDeviceCount: dealer?.deviceTotalCount || 0,
+    userConfiguredDeviceCount: 0,
+    history: [],
+  };
+}
+
+function hasEffectiveDeviceDefaultParameterValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function getDeviceDefaultHistoryValueLabel(item, value) {
+  if (value === '-') return '-';
+  if (item.parameterKey === 'autoWakeDefaultValue') return getAutoWakeValueLabel(value);
+  if (typeof value === 'boolean') return value ? '开启' : '关闭';
+  return String(value);
+}
 
 const ANNOTATION_RULES = [
   {
@@ -78,6 +114,47 @@ const ANNOTATION_RULES = [
       '详情字段固定为经销商 ID、经销商简称、创建时间、设备总数，不重复展示名称字段。',
       '基础字段横向平铺，不使用独立指标卡，不提供折叠或编辑交互。',
       '设备总数展示单位“台”，其余字段保持组织中心数据格式。',
+    ],
+  },
+  {
+    id: 'deviceDefaultConfig',
+    title: '设备默认参数配置',
+    summary: '用于按当前经销商组织维护设备首次绑定时的默认参数，只定义初始值，不直接修改或控制任何已绑定设备。',
+    fields: [
+      '自动唤醒默认值：展示当前配置状态，支持在开启与关闭之间切换。',
+      '最近修改信息：展示最近一次成功修改的时间与操作人。',
+      '其他默认参数：有有效配置值时才展示对应参数卡片，无数据时不展示占位内容。',
+      '查看历史：查看当前经销商组织下整个“设备默认参数配置”的全部参数修改记录，不限于单个自动唤醒参数。',
+    ],
+    flow: [
+      '切换左侧经销商后，按当前选中组织加载对应的默认参数，组织之间独立配置。',
+      '切换自动唤醒开关后先打开确认弹窗，展示修改前后值、生效对象、影响范围及重新绑定规则。',
+      '一期确认后配置直接生效，同时写入参数历史和操作日志；后续再接入审批流程。',
+      '设备首次绑定时读取所属经销商组织当时有效的默认值进行初始化。',
+      '设备解绑后再次绑定，按新绑定处理，重新读取当前组织的最新默认值。',
+    ],
+    rules: [
+      '配置维度为单个经销商组织，不支持一级组织向二、三级组织批量覆盖或自动继承。',
+      '旧系统仅提供组织历史配置，由研发按现有组织 ID 一次性手动补齐；页面不建设迁移任务，也不区分新旧组织。',
+      '组织默认值修改仅影响未来新绑定设备，不覆盖当前已绑定设备，也不下发设备控制指令。',
+      '用户绑定后手动修改的设备配置优先级最高，后续组织默认值变更不得覆盖。',
+      '解绑后旧绑定配置不保留到新绑定，重新绑定以当前组织默认值为准。',
+      '本模块只维护设备默认值，不控制 APP 端自动唤醒入口是否展示。',
+      '仅有配置权限的账号可修改；无权账号只读展示，后端仍需校验组织范围与操作权限。',
+      '历史记录至少包含操作时间、参数项、操作人、修改前值、修改后值和操作结果。',
+    ],
+    acceptance: [
+      '切换任意经销商组织后，只展示该组织的默认参数；修改一家组织不得联动修改其上、下级或其他组织。',
+      '自动唤醒卡片必须正确展示当前默认值、开关状态、最近修改时间和操作人；其他参数有有效值才展示，无值不展示。',
+      '有权账号切换开关时必须先出现确认弹窗，且正确展示修改前后值、生效对象、影响范围与重新绑定规则。',
+      '点击取消或关闭确认弹窗后，配置值不变、不生成历史与操作日志；确认且服务端返回成功后，页面才更新当前值及最近修改信息。',
+      '修改成功后必须同时生成一条参数修改历史和一条平台操作日志，操作人、操作时间、修改前后值及结果一致。',
+      '组织默认值修改后，所有已绑定设备及用户已手动修改的设备配置必须保持不变，且不产生任何设备控制指令。',
+      '修改成功后新绑定的设备应采用新默认值；设备解绑后重新绑定时也应采用当前最新默认值，不继承旧绑定的用户配置。',
+      '修改该模块不得改变 APP 端入口展示参数；主账号与分享账号的入口权限仍由原权限链路处理。',
+      '无配置权限账号只能查看、不能修改；直接调用修改接口或跨组织修改时，服务端必须拒绝且不产生配置变更。',
+      '“查看历史”必须聚合当前组织下所有设备默认参数的修改记录，按操作时间倒序展示，且字段与实际变更一致。',
+      '研发手动补齐的旧系统组织历史配置必须能在对应现有组织下正确查看，页面不出现迁移任务或新旧组织区分入口。',
     ],
   },
   {
@@ -221,6 +298,12 @@ const LEVEL_TAG_TONE = {
 
 function nowText() {
   return '2026-07-08 11:30:00';
+}
+
+function currentDateTimeText() {
+  const date = new Date();
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 function createId(prefix) {
@@ -466,6 +549,7 @@ function AnnotationRulePopover({ rule, onClose }) {
         {renderList('字段规则', rule.fields)}
         {renderList('流转规则', rule.flow)}
         {renderList('处理规则', rule.rules)}
+        {renderList('验收标准', rule.acceptance)}
       </div>
     </aside>
   );
@@ -489,6 +573,8 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const [accounts, setAccounts] = useState(initialTestAccounts);
   const [records] = useState(initialTestRecords);
   const [logs, setLogs] = useState(initialOperationLogs);
+  const [autoWakeConfigs, setAutoWakeConfigs] = useState(initialAutoWakeConfigs);
+  const [deviceDefaultConfigHistories, setDeviceDefaultConfigHistories] = useState(initialDeviceDefaultConfigHistories);
   const [selectedDealerId, setSelectedDealerId] = useState(initialDealers[0].id);
   const [activeTab, setActiveTab] = useState('设备测试记录');
   const [activeRegion, setActiveRegion] = useState(() => getDefaultTestAccountRegion(
@@ -499,6 +585,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const [toast, setToast] = useState(null);
   const [annotationEnabled, setAnnotationEnabled] = useState(true);
   const [activeAnnotationId, setActiveAnnotationId] = useState('');
+  const canEditAutoWake = new URLSearchParams(window.location.search).get('readOnly') !== '1';
 
   const selectedDealer = dealers.find((dealer) => dealer.id === selectedDealerId) || dealers[0];
   const annotation = {
@@ -687,6 +774,70 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     showToast('密码已重置，新密码仅本次展示');
   };
 
+  const handleRequestAutoWakeChange = ({ dealerId, nextValue }) => {
+    const dealer = dealers.find((item) => item.id === dealerId) || selectedDealer;
+    const currentConfig = getAutoWakeConfig(autoWakeConfigs, dealer);
+    if (!dealer || !nextValue || nextValue === currentConfig.defaultValue || !canEditAutoWake) return;
+    setModal({
+      type: 'autoWakeConfirm',
+      dealerId,
+      dealer,
+      currentConfig,
+      nextValue,
+    });
+  };
+
+  const handleOpenDeviceDefaultConfigHistory = (dealerId) => {
+    setModal({ type: 'deviceDefaultConfigHistory', dealerId });
+  };
+
+  const handleConfirmAutoWakeSave = () => {
+    const dealer = modal?.dealer || dealers.find((item) => item.id === modal?.dealerId) || selectedDealer;
+    const currentConfig = modal?.currentConfig || getAutoWakeConfig(autoWakeConfigs, dealer);
+    const nextValue = modal?.nextValue;
+    if (!dealer || !nextValue) {
+      setModal(null);
+      showToast('自动唤醒默认值更新失败，请稍后重试', 'error');
+      return;
+    }
+
+    const updatedAt = currentDateTimeText();
+    const updatedBy = '汤彦珊';
+    const historyItem = {
+      id: createId('AW'),
+      parameterKey: 'autoWakeDefaultValue',
+      parameterName: '自动唤醒默认值',
+      time: updatedAt,
+      operator: updatedBy,
+      before: currentConfig.defaultValue || '-',
+      after: nextValue,
+      result: '成功',
+      remark: '仅影响未来新绑定设备',
+    };
+    const nextConfig = {
+      ...currentConfig,
+      status: 'configured',
+      defaultValue: nextValue,
+      updatedAt,
+      updatedBy,
+      history: [historyItem, ...(currentConfig.history || [])],
+    };
+    setAutoWakeConfigs((prev) => ({ ...prev, [dealer.id]: nextConfig }));
+    setDeviceDefaultConfigHistories((prev) => ({
+      ...prev,
+      [dealer.id]: [historyItem, ...(prev[dealer.id] || [])],
+    }));
+    appendLog({
+      dealerId: dealer.id,
+      actionType: '修改自动唤醒默认值',
+      operator: updatedBy,
+      result: '成功',
+      remark: `修改前：${getAutoWakeValueLabel(currentConfig.defaultValue)}；修改后：${getAutoWakeValueLabel(nextValue)}；仅影响未来新绑定设备`,
+    });
+    setModal(null);
+    showToast(`自动唤醒默认值已更新为「${getAutoWakeValueLabel(nextValue)}」`);
+  };
+
   return (
     <section className="dm-page">
       <DealerWorkbenchView
@@ -695,6 +846,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
         accounts={accounts}
         records={records}
         logs={logs}
+        autoWakeConfigs={autoWakeConfigs}
         selectedDealerId={selectedDealerId}
         onSelectDealer={handleSelectDealer}
         activeTab={activeTab}
@@ -708,6 +860,9 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
         onOpenUserDetail={handleOpenUserCenterDetail}
         onOpenDeviceDetail={handleOpenDeviceCenterDetail}
         onResetPassword={(account) => setModal({ type: 'resetPassword', account })}
+        onAutoWakeChange={handleRequestAutoWakeChange}
+        onOpenDeviceDefaultConfigHistory={handleOpenDeviceDefaultConfigHistory}
+        canEditAutoWake={canEditAutoWake}
         annotation={annotation}
       />
 
@@ -743,6 +898,22 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
           annotation={annotation}
         />
       )}
+      {modal?.type === 'autoWakeConfirm' && (
+        <AutoWakeConfirmModal
+          dealer={modal.dealer}
+          config={modal.currentConfig}
+          nextValue={modal.nextValue}
+          onConfirm={handleConfirmAutoWakeSave}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal?.type === 'deviceDefaultConfigHistory' && modal.dealerId && (
+        <DeviceDefaultConfigHistoryDrawer
+          dealer={dealers.find((item) => item.id === modal.dealerId) || selectedDealer}
+          history={deviceDefaultConfigHistories[modal.dealerId] || []}
+          onClose={() => setModal(null)}
+        />
+      )}
       <Toast message={toast?.message} tone={toast?.tone} />
     </section>
   );
@@ -754,6 +925,7 @@ function DealerWorkbenchView({
   accounts,
   records,
   logs,
+  autoWakeConfigs,
   selectedDealerId,
   onSelectDealer,
   activeTab,
@@ -767,6 +939,9 @@ function DealerWorkbenchView({
   onOpenUserDetail,
   onOpenDeviceDetail,
   onResetPassword,
+  onAutoWakeChange,
+  onOpenDeviceDefaultConfigHistory,
+  canEditAutoWake,
   annotation,
 }) {
   const [draftFilters, setDraftFilters] = useState(DEFAULT_DEALER_LIST_FILTERS);
@@ -937,6 +1112,10 @@ function DealerWorkbenchView({
               hideBack
               hideToolbar
               onOpenCreate={() => onOpenCreate(selectedDealer.id)}
+              autoWakeConfig={getAutoWakeConfig(autoWakeConfigs, selectedDealer)}
+              onAutoWakeChange={(nextValue) => onAutoWakeChange({ dealerId: selectedDealer.id, nextValue })}
+              onOpenDeviceDefaultConfigHistory={() => onOpenDeviceDefaultConfigHistory(selectedDealer.id)}
+              canEditAutoWake={canEditAutoWake}
               onRefresh={onRefresh}
               onOpenUserDetail={onOpenUserDetail}
               onOpenDeviceDetail={onOpenDeviceDetail}
@@ -1442,6 +1621,7 @@ function DealerDetailView({
   accounts,
   records,
   logs = [],
+  autoWakeConfig,
   activeTab,
   setActiveTab,
   activeRegion,
@@ -1450,6 +1630,9 @@ function DealerDetailView({
   setRecordKeyword,
   onBack,
   onOpenCreate,
+  onAutoWakeChange,
+  onOpenDeviceDefaultConfigHistory,
+  canEditAutoWake = true,
   onRefresh,
   onOpenUserDetail,
   onOpenDeviceDetail,
@@ -1519,6 +1702,16 @@ function DealerDetailView({
         </section>
       </AnnotationArea>
 
+      <AnnotationArea id="deviceDefaultConfig" annotation={annotation}>
+        <DeviceDefaultConfigSection
+          config={autoWakeConfig}
+          parameters={autoWakeConfig?.additionalParameters || []}
+          canEdit={canEditAutoWake}
+          onChange={onAutoWakeChange}
+          onOpenHistory={onOpenDeviceDefaultConfigHistory}
+        />
+      </AnnotationArea>
+
       <section className="dm-card dm-detail-tabs-card">
         <AnnotationArea id="detailTabs" annotation={annotation}>
           <div className="dm-detail-navigation">
@@ -1582,6 +1775,220 @@ function DealerSummaryField({ label, value, mono = false, time = false, accent =
     <div className={cls('dm-dealer-summary-field', accent && 'accent')}>
       <dt>{label}</dt>
       <dd className={cls(mono && 'dm-mono', time && 'dm-time')}>{value}</dd>
+    </div>
+  );
+}
+
+function AutoWakeSwitch({ checked, disabled, onChange }) {
+  return (
+    <label className={cls('dm-auto-wake-switch', checked && 'checked', disabled && 'disabled')}>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        disabled={disabled}
+        aria-label="自动唤醒默认值"
+        onChange={(event) => onChange?.(event.target.checked ? 'on' : 'off')}
+      />
+      <span className="dm-auto-wake-switch-track" aria-hidden="true"><i /></span>
+      <strong>{checked ? '开启' : '关闭'}</strong>
+    </label>
+  );
+}
+
+function DeviceDefaultConfigSection({ config, parameters = [], canEdit = true, onChange, onOpenHistory }) {
+  const hasAutoWakeConfig = config?.status === 'configured'
+    && hasEffectiveDeviceDefaultParameterValue(config?.defaultValue);
+  const visibleAdditionalParameters = parameters.filter((parameter) => (
+    parameter
+    && parameter.status !== 'unconfigured'
+    && hasEffectiveDeviceDefaultParameterValue(parameter.defaultValue)
+  ));
+
+  return (
+    <section className="dm-card dm-device-default-config-section" aria-labelledby="dm-device-default-config-title">
+      <div className="dm-device-default-config-heading">
+        <div className="dm-device-default-config-title-wrap">
+          <i aria-hidden="true" />
+          <h2 id="dm-device-default-config-title">设备默认参数配置</h2>
+        </div>
+        <button className="dm-link-btn dm-device-default-history-link" type="button" onClick={onOpenHistory}>
+          <History size={14} />查看历史<ChevronRight size={14} />
+        </button>
+      </div>
+      <div className="dm-device-default-parameter-list">
+        {hasAutoWakeConfig ? (
+          <AutoWakeSummaryCard config={config} canEdit={canEdit} onChange={onChange} />
+        ) : null}
+        {visibleAdditionalParameters.map((parameter) => (
+          <DeviceDefaultParameterCard key={parameter.parameterKey || parameter.key || parameter.parameterName} parameter={parameter} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DeviceDefaultParameterCard({ parameter }) {
+  const value = parameter.displayValue ?? (
+    typeof parameter.defaultValue === 'boolean'
+      ? (parameter.defaultValue ? '开启' : '关闭')
+      : String(parameter.defaultValue)
+  );
+
+  return (
+    <section className="dm-card dm-device-default-parameter-card">
+      <div className="dm-device-default-parameter-card-head">
+        <div>
+          <h3>{parameter.parameterName || parameter.name || '设备默认参数'}</h3>
+          {parameter.description && <p>{parameter.description}</p>}
+        </div>
+      </div>
+      <div className="dm-device-default-parameter-card-meta">
+        <span>当前默认值</span>
+        <strong>{value}</strong>
+        {parameter.updatedAt && <span>最近修改：{parameter.updatedAt}</span>}
+        {parameter.updatedBy && <span>{parameter.updatedBy}</span>}
+      </div>
+    </section>
+  );
+}
+
+function AutoWakeSummaryCard({ config, canEdit = true, onChange }) {
+  const currentValue = getAutoWakeValueLabel(config?.defaultValue);
+  const checked = config?.defaultValue === 'on';
+
+  return (
+    <section className="dm-card dm-auto-wake-card">
+      <div className="dm-auto-wake-head">
+        <div className="dm-auto-wake-main">
+          <div className="dm-auto-wake-title-row">
+            <div className="dm-auto-wake-title">
+              <h2>自动唤醒默认值</h2>
+              <strong className={cls('dm-auto-wake-current-tag', `value-${config?.defaultValue}`)}>当前配置：{currentValue}</strong>
+            </div>
+            <p>新绑定设备首次配置时，将使用该组织默认值。</p>
+          </div>
+        </div>
+        <AutoWakeSwitch checked={checked} disabled={!canEdit} onChange={onChange} />
+      </div>
+      <div className="dm-auto-wake-last-change">
+        <span>最近修改时间：</span>
+        <strong className="dm-time">{config?.updatedAt || '-'}</strong>
+        <span>操作人：</span>
+        <strong>{config?.updatedBy || '-'}</strong>
+      </div>
+      {!canEdit && <div className="dm-auto-wake-readonly"><Info size={14} />当前账号无权修改组织设备默认配置</div>}
+    </section>
+  );
+}
+
+function AutoWakeConfirmModal({ dealer, config, nextValue, onConfirm, onClose }) {
+  const nextLabel = getAutoWakeValueLabel(nextValue);
+  const currentLabel = getAutoWakeValueLabel(config?.defaultValue);
+  const boundDeviceCount = config?.boundDeviceCount || dealer.deviceTotalCount || 0;
+  const userConfiguredDeviceCount = config?.userConfiguredDeviceCount || 0;
+  return (
+    <BaseModal
+      title={`确认${nextLabel}自动唤醒默认值？`}
+      width={640}
+      className="dm-auto-wake-confirm-modal"
+      onClose={onClose}
+      footer={(
+        <>
+          <button className="dm-btn" type="button" onClick={onClose}>取消</button>
+          <button className="dm-btn dm-btn-primary" type="button" onClick={onConfirm}>确认{nextLabel}</button>
+        </>
+      )}
+    >
+      <div className="dm-auto-wake-confirm-org">{dealer.name}<span>{dealer.id}</span></div>
+      <dl className="dm-auto-wake-confirm-grid">
+        <div><dt>当前默认值</dt><dd className={`value-${config?.defaultValue}`}>{currentLabel}</dd></div>
+        <div><dt>修改后默认值</dt><dd className={`value-${nextValue}`}>{nextLabel}</dd></div>
+      </dl>
+      <section className="dm-auto-wake-confirm-section dm-auto-wake-confirm-impact">
+        <h4><Info size={15} />影响范围</h4>
+        <dl>
+          <div><dt>生效对象</dt><dd>未来在「{dealer.name}」下新绑定的设备</dd></div>
+          <div><dt>预计影响数量</dt><dd>无法预估，以实际新绑定数量为准</dd></div>
+          <div><dt>当前已绑定设备</dt><dd>{boundDeviceCount} 台；本次修改影响：<strong>0 台</strong></dd></div>
+          <div><dt>用户已手动配置设备</dt><dd>{userConfiguredDeviceCount} 台；本次修改影响：<strong>0 台</strong></dd></div>
+          <div><dt>生效时机</dt><dd>设备首次绑定时</dd></div>
+          <div><dt>应用方式</dt><dd>使用新的组织默认值初始化自动唤醒配置</dd></div>
+        </dl>
+      </section>
+      <section className="dm-auto-wake-confirm-section dm-auto-wake-confirm-safe">
+        <h4><CheckCircle2 size={15} />不会影响</h4>
+        <ul>
+          <li>当前已经绑定的设备</li>
+          <li>当前设备正在使用的自动唤醒状态</li>
+          <li>用户已经手动修改过的设备配置</li>
+          <li>不会向现有设备下发控制指令</li>
+          <li>不会立即改变任何已绑定设备</li>
+        </ul>
+      </section>
+      <section className="dm-auto-wake-rebind-rule">
+        <strong>重新绑定规则</strong>
+        <p>设备解绑后再次绑定时，将按照当前经销商组织最新的默认值重新初始化。</p>
+      </section>
+      <div className="dm-auto-wake-warning"><AlertTriangle size={15} /><span><strong>配置变更提示</strong>修改后，仅影响未来新绑定设备的默认初始化行为，不会覆盖现有设备配置，也不会向现有设备执行控制指令。</span></div>
+    </BaseModal>
+  );
+}
+
+function DeviceDefaultConfigHistoryDrawer({ dealer, history = [], onClose }) {
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(history.length / pageSize));
+  const pageHistory = history.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handlePageSizeChange = (event) => {
+    setPageSize(Number(event.target.value));
+    setCurrentPage(1);
+  };
+
+  return (
+    <div className="dm-drawer-mask" onClick={onClose}>
+      <aside className="dm-drawer dm-auto-wake-history dm-device-default-history" role="dialog" aria-modal="true" aria-label="设备默认参数配置历史" onClick={(event) => event.stopPropagation()}>
+        <div className="dm-drawer-head">
+          <div><h3>设备默认参数配置历史</h3><span>{dealer.name}（{dealer.id}）</span></div>
+          <button type="button" onClick={onClose} aria-label="关闭"><X size={18} /></button>
+        </div>
+        <div className="dm-drawer-body">
+          {history.length === 0 ? (
+            <div className="dm-empty dm-device-default-history-empty"><History size={22} /><strong>暂无历史记录</strong><span>该组织尚未产生设备默认参数修改记录。</span></div>
+          ) : (
+            <>
+              <div className="dm-auto-wake-history-table-wrap dm-device-default-history-table-wrap">
+                <table className="dm-table dm-auto-wake-history-table dm-device-default-history-table">
+                  <thead><tr><th>操作时间</th><th>参数项</th><th>操作人</th><th>修改前</th><th>修改后</th><th>操作结果</th></tr></thead>
+                  <tbody>{pageHistory.map((item) => (
+                    <tr key={item.id}>
+                      <td className="dm-time">{item.time}</td>
+                      <td>{item.parameterName}</td>
+                      <td>{item.operator}</td>
+                      <td><span className={cls('dm-history-value', `value-${item.before}`)}>{getDeviceDefaultHistoryValueLabel(item, item.before)}</span></td>
+                      <td><span className={cls('dm-history-value', `value-${item.after}`)}>{getDeviceDefaultHistoryValueLabel(item, item.after)}</span></td>
+                      <td><span className="dm-history-result">{item.result}</span></td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+              <footer className="dm-auto-wake-history-pagination dm-device-default-history-pagination">
+                <span>共 {history.length} 条</span>
+                <label>
+                  <select value={pageSize} onChange={handlePageSizeChange} aria-label="每页条数">
+                    <option value={10}>10条/页</option>
+                    <option value={20}>20条/页</option>
+                  </select>
+                </label>
+                <button type="button" disabled={currentPage === 1} aria-label="上一页" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}><ChevronLeft size={14} /></button>
+                <button className="active" type="button" aria-current="page">{currentPage}</button>
+                <button type="button" disabled={currentPage === totalPages} aria-label="下一页" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}><ChevronRight size={14} /></button>
+              </footer>
+            </>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }

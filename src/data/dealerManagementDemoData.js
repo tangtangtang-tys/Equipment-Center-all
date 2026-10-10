@@ -242,6 +242,147 @@ export const initialDealers = [
   },
 ];
 
+export const initialAutoWakeConfigs = {
+  'DL-1001': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-09-28 11:26:08',
+    updatedBy: '汤彦珊',
+    boundDeviceCount: 1286,
+    userConfiguredDeviceCount: 734,
+    history: [
+      { id: 'AW-1001', time: '2026-09-28 11:26:08', operator: '汤彦珊', before: 'off', after: 'on', result: '成功', remark: '-' },
+      { id: 'AW-1002', time: '2026-09-24 18:08:07', operator: '汤彦珊', before: 'on', after: 'off', result: '成功', remark: '-' },
+      { id: 'AW-1003', time: '2026-09-20 10:32:15', operator: '李运营', before: 'off', after: 'on', result: '成功', remark: '-' },
+      { id: 'AW-1004', time: '2026-08-10 09:12:33', operator: '张运营', before: 'on', after: 'off', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1002': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-08-12 13:20:10',
+    updatedBy: '李运营',
+    boundDeviceCount: 942,
+    userConfiguredDeviceCount: 312,
+    history: [
+      { id: 'AW-2001', time: '2026-08-12 13:20:10', operator: '李运营', before: '-', after: 'on', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1003': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-14 10:18:42',
+    updatedBy: '张运营',
+    boundDeviceCount: 188,
+    userConfiguredDeviceCount: 64,
+    history: [],
+  },
+  'DL-1004': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-18 10:08:41',
+    updatedBy: '张运营',
+    boundDeviceCount: 486,
+    userConfiguredDeviceCount: 177,
+    history: [
+      { id: 'AW-4001', time: '2026-08-18 10:08:41', operator: '张运营', before: 'on', after: 'off', result: '成功', remark: '-' },
+    ],
+  },
+  'DL-1005': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-08-16 11:22:04',
+    updatedBy: '王运营',
+    boundDeviceCount: 256,
+    userConfiguredDeviceCount: 91,
+    history: [
+      { id: 'AW-5001', time: '2026-08-16 11:22:04', operator: '王运营', before: '-', after: 'on', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1006': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-13 15:26:09',
+    updatedBy: '李运营',
+    boundDeviceCount: 144,
+    userConfiguredDeviceCount: 28,
+    history: [],
+  },
+  'DL-1007': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-11 09:42:56',
+    updatedBy: '张运营',
+    boundDeviceCount: 338,
+    userConfiguredDeviceCount: 125,
+    history: [
+      { id: 'AW-7001', time: '2026-08-11 09:42:56', operator: '张运营', before: '-', after: 'off', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1008': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-08-09 15:10:18',
+    updatedBy: '李运营',
+    boundDeviceCount: 612,
+    userConfiguredDeviceCount: 208,
+    history: [
+      { id: 'AW-8001', time: '2026-08-09 15:10:18', operator: '李运营', before: '-', after: 'on', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1009': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-08-10 11:42:18',
+    updatedBy: '王运营',
+    boundDeviceCount: 376,
+    userConfiguredDeviceCount: 101,
+    history: [],
+  },
+  'DL-1010': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-07 17:48:29',
+    updatedBy: '王运营',
+    boundDeviceCount: 295,
+    userConfiguredDeviceCount: 86,
+    history: [
+      { id: 'AW-10001', time: '2026-08-07 17:48:29', operator: '王运营', before: '-', after: 'off', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+  'DL-1011': {
+    status: 'configured',
+    defaultValue: 'off',
+    updatedAt: '2026-08-08 09:15:37',
+    updatedBy: '张运营',
+    boundDeviceCount: 218,
+    userConfiguredDeviceCount: 77,
+    history: [],
+  },
+  'DL-1012': {
+    status: 'configured',
+    defaultValue: 'on',
+    updatedAt: '2026-08-05 14:06:12',
+    updatedBy: '张运营',
+    boundDeviceCount: 402,
+    userConfiguredDeviceCount: 152,
+    history: [
+      { id: 'AW-12001', time: '2026-08-05 14:06:12', operator: '张运营', before: '-', after: 'on', result: '成功', remark: '初始化历史配置' },
+    ],
+  },
+};
+
+export const initialDeviceDefaultConfigHistories = Object.fromEntries(
+  Object.entries(initialAutoWakeConfigs).map(([dealerId, config]) => [
+    dealerId,
+    (config.history || []).map((item) => ({
+      ...item,
+      parameterKey: 'autoWakeDefaultValue',
+      parameterName: '自动唤醒默认值',
+    })),
+  ]),
+);
+
 export const initialDealerOrgNodes = [
   { id: 'ORG-ROOT', name: '全部经销商', level: '全部', parentId: '', nodeType: 'root' },
   { id: 'DL-1001', name: '华东一级经销商', level: '一级', parentId: 'ORG-ROOT', dealerId: 'DL-1001', nodeType: 'dealer' },

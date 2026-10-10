@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="经销商列表 APP 测试账号操作指南，适用于跟单管理人员。">
+  <link rel="icon" href="data:,">
+  <title>经销商列表：APP 测试账号操作指南</title>
+  <style>
+    :root {
+      --canvas: #eef2f4;
+      --paper: #ffffff;
+      --ink: #1f2a37;
+      --muted: #667585;
+      --line: #d9e2e9;
+      --blue: #1769e0;
+      --blue-soft: #edf5ff;
+      --green: #14804a;
+      --green-soft: #edf9f2;
+      --amber: #a84d08;
+      --amber-soft: #fff5e8;
+      --header-height: 64px;
+      --toc-width: 244px;
+      --rail-width: 224px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + 22px); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      letter-spacing: 0;
+    }
+    button, a { font: inherit; }
+    a { color: var(--blue); }
+    code {
+      padding: 2px 6px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #f6f8fa;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .9em;
+    }
+    :focus-visible { outline: 3px solid rgba(23, 105, 224, .28); outline-offset: 2px; }
+
+    .skip-link {
+      position: fixed;
+      z-index: 1000;
+      top: 8px;
+      left: 8px;
+      padding: 8px 12px;
+      transform: translateY(-160%);
+      border-radius: 4px;
+      background: var(--ink);
+      color: #fff;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .topbar {
+      position: sticky;
+      z-index: 50;
+      top: 0;
+      display: flex;
+      min-height: var(--header-height);
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .96);
+    }
+    .brand {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border: 2px solid var(--blue);
+      border-radius: 7px;
+      color: var(--blue);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .brand-text { min-width: 0; }
+    .brand-text strong,
+    .brand-text span { display: block; }
+    .brand-text strong { font-size: 15px; line-height: 1.35; }
+    .brand-text span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .action {
+      min-height: 38px;
+      padding: 7px 12px;
+      border: 1px solid #cdd8e1;
+      border-radius: 6px;
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .action:hover { border-color: var(--blue); color: var(--blue); }
+    .action.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .action.primary:hover { background: #0f58c3; color: #fff; }
+    .menu-button { display: none; }
+
+    .page-shell {
+      display: grid;
+      width: min(1520px, 100%);
+      min-height: calc(100vh - var(--header-height));
+      margin: 0 auto;
+      grid-template-columns: var(--toc-width) minmax(0, 1fr) var(--rail-width);
+    }
+    .toc {
+      position: sticky;
+      top: var(--header-height);
+      height: calc(100vh - var(--header-height));
+      overflow: auto;
+      padding: 28px 18px 40px 24px;
+      border-right: 1px solid var(--line);
+      background: #f7f9fa;
+    }
+    .toc-head {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .toc ol { margin: 0; padding: 0; list-style: none; }
+    .toc li + li { margin-top: 2px; }
+    .toc a {
+      display: block;
+      padding: 7px 9px;
+      border-left: 3px solid transparent;
+      color: #465565;
+      font-size: 13px;
+      line-height: 1.45;
+      text-decoration: none;
+    }
+    .toc a:hover { color: var(--blue); }
+    .toc a.active {
+      border-left-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 700;
+    }
+    .toc-note {
+      margin-top: 20px;
+      padding: 12px 0 0 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    main {
+      min-width: 0;
+      padding: 0 44px 80px;
+      background: var(--paper);
+    }
+    .doc-header {
+      padding: 50px 0 38px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h1, h2, h3 { letter-spacing: 0; }
+    h1 {
+      max-width: 820px;
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+    .doc-lead {
+      max-width: 760px;
+      margin: 16px 0 22px;
+      color: #475666;
+      font-size: 17px;
+    }
+    .metadata {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .metadata div { display: flex; gap: 6px; }
+    .metadata dt { font-weight: 700; }
+    .metadata dd { margin: 0; }
+
+    .guide-section {
+      padding: 42px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .guide-section:last-child { border-bottom: 0; }
+    .section-heading {
+      display: grid;
+      align-items: start;
+      gap: 14px;
+      grid-template-columns: 42px minmax(0, 1fr);
+      margin-bottom: 22px;
+    }
+    .section-number {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid #b8d3f7;
+      border-radius: 6px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h2 { margin: 0; font-size: 25px; line-height: 1.4; }
+    h3 { margin: 28px 0 12px; font-size: 18px; line-height: 1.5; }
+    p { margin: 12px 0; }
+    ul, ol { padding-left: 24px; }
+    li + li { margin-top: 7px; }
+
+    .callout {
+      margin: 20px 0;
+      padding: 15px 17px;
+      border-left: 4px solid var(--blue);
+      background: var(--blue-soft);
+    }
+    .callout strong { display: block; margin-bottom: 4px; color: #1254af; }
+    .callout.warning { border-left-color: var(--amber); background: var(--amber-soft); }
+    .callout.warning strong { color: var(--amber); }
+    .callout.success { border-left-color: var(--green); background: var(--green-soft); }
+    .callout.success strong { color: var(--green); }
+
+    .table-scroll {
+      width: 100%;
+      margin: 18px 0;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 580px; }
+    th, td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f5f7f9; color: #384655; font-size: 13px; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+
+    .flow-list {
+      display: grid;
+      margin: 20px 0;
+      padding: 0;
+      counter-reset: flow;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      list-style: none;
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .flow-list li {
+      position: relative;
+      min-height: 94px;
+      margin: 0;
+      padding: 18px 16px 16px 48px;
+      counter-increment: flow;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .flow-list li::before {
+      position: absolute;
+      top: 17px;
+      left: 15px;
+      content: counter(flow, decimal-leading-zero);
+      color: var(--blue);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .flow-list strong { display: block; font-size: 14px; }
+    .flow-list span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    figure {
+      margin: 24px 0 30px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      overflow: hidden;
+      background: #f8fafb;
+    }
+    figure img { display: block; width: 100%; height: auto; }
+    figcaption {
+      padding: 9px 13px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .compact-shot { max-width: 760px; }
+
+    .step-list { padding: 0; counter-reset: step; list-style: none; }
+    .step-list > li {
+      position: relative;
+      min-height: 38px;
+      margin: 0;
+      padding: 5px 0 16px 46px;
+      counter-increment: step;
+    }
+    .step-list > li::before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: grid;
+      width: 30px;
+      height: 30px;
+      content: counter(step);
+      place-items: center;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    details {
+      border-top: 1px solid var(--line);
+    }
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary {
+      padding: 15px 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    details > div { padding: 0 4px 16px; color: #475666; }
+
+    .checklist { min-width: 620px; }
+    .check-cell { width: 68px; text-align: center; font-size: 20px; line-height: 1; }
+
+    .quick-rail {
+      position: sticky;
+      top: var(--header-height);
+      height: calc(100vh - var(--header-height));
+      padding: 28px 20px 40px;
+      overflow: auto;
+      border-left: 1px solid var(--line);
+      background: #f7f9fa;
+    }
+    .quick-rail h2 { margin-bottom: 16px; font-size: 15px; }
+    .rail-track { margin: 0; padding: 0; list-style: none; }
+    .rail-track li {
+      position: relative;
+      margin: 0 0 0 7px;
+      padding: 0 0 18px 23px;
+      border-left: 2px solid #cbd6df;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .rail-track li::before {
+      position: absolute;
+      top: 2px;
+      left: -6px;
+      width: 10px;
+      height: 10px;
+      content: "";
+      border: 2px solid #f7f9fa;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    .rail-track li:last-child {
+      padding-bottom: 0;
+      border-left-color: transparent;
+    }
+    .rail-track strong, .rail-track span { display: block; }
+    .rail-track span { margin-top: 3px; color: var(--muted); }
+    .rail-track .must::before { background: var(--green); }
+    .rail-track .must strong { color: var(--green); }
+    .rail-warning {
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid #f0c693;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: #704014;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .back-top {
+      position: fixed;
+      z-index: 40;
+      right: 24px;
+      bottom: 24px;
+      display: none;
+      min-height: 38px;
+      padding: 7px 12px;
+      border: 1px solid #cdd8e1;
+      border-radius: 6px;
+      background: var(--paper);
+      box-shadow: 0 4px 16px rgba(31, 42, 55, .12);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .back-top.visible { display: block; }
+    .mobile-overlay { display: none; }
+
+    @media (max-width: 1180px) {
+      .page-shell { grid-template-columns: var(--toc-width) minmax(0, 1fr); }
+      .quick-rail { display: none; }
+      main { padding-right: 34px; padding-left: 34px; }
+    }
+
+    @media (max-width: 820px) {
+      :root { --header-height: 60px; }
+      .topbar { padding: 9px 14px; }
+      .brand-text span { display: none; }
+      .toolbar .system-link { display: none; }
+      .menu-button { display: inline-block; }
+      .page-shell { display: block; }
+      .toc {
+        position: fixed;
+        z-index: 80;
+        top: var(--header-height);
+        bottom: 0;
+        left: 0;
+        width: min(84vw, 320px);
+        height: auto;
+        transform: translateX(-105%);
+        border-right: 1px solid var(--line);
+        box-shadow: 8px 0 24px rgba(31, 42, 55, .15);
+        transition: transform .2s ease;
+      }
+      body.menu-open { overflow: hidden; }
+      body.menu-open .toc { transform: translateX(0); }
+      .mobile-overlay {
+        position: fixed;
+        z-index: 70;
+        inset: var(--header-height) 0 0;
+        background: rgba(20, 29, 39, .4);
+      }
+      body.menu-open .mobile-overlay { display: block; }
+      main { padding: 0 20px 60px; }
+      .doc-header { padding: 36px 0 30px; }
+      h1 { font-size: 29px; }
+      .doc-lead { font-size: 16px; }
+      .guide-section { padding: 34px 0; }
+      .section-heading { grid-template-columns: 36px minmax(0, 1fr); gap: 11px; }
+      .section-number { width: 34px; height: 34px; }
+      h2 { font-size: 22px; }
+      .flow-list { grid-template-columns: 1fr 1fr; }
+      .back-top { right: 14px; bottom: 14px; }
+    }
+
+    @media (max-width: 540px) {
+      body { font-size: 15px; }
+      .brand-mark { width: 32px; height: 32px; flex-basis: 32px; }
+      .brand-text { display: none; }
+      .toolbar { gap: 5px; }
+      .action { min-height: 36px; padding: 6px 9px; font-size: 13px; }
+      .toolbar .copy-link { display: none; }
+      main { padding-right: 16px; padding-left: 16px; }
+      h1 { font-size: 26px; }
+      .metadata { display: grid; gap: 4px; }
+      .flow-list { grid-template-columns: 1fr; }
+      figure { margin-right: -8px; margin-left: -8px; }
+      .compact-shot { max-width: none; }
+      .table-scroll { border-radius: 4px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .toc { transition: none; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 14mm 12mm 16mm; }
+      :root { --canvas: #fff; }
+      body { color: #111; background: #fff; font-size: 10.5pt; line-height: 1.55; }
+      .topbar, .toc, .quick-rail, .back-top, .mobile-overlay { display: none !important; }
+      .page-shell { display: block; width: 100%; }
+      main { padding: 0; }
+      .doc-header { padding: 0 0 18px; }
+      h1 { font-size: 24pt; }
+      .guide-section { padding: 22px 0; break-inside: auto; }
+      .section-heading { break-after: avoid; }
+      h2 { font-size: 17pt; }
+      h3 { font-size: 13pt; break-after: avoid; }
+      figure, .table-scroll, .callout, details { break-inside: avoid; }
+      figure { margin: 14px 0 18px; }
+      .compact-shot { max-width: 100%; }
+      details > div { display: block; }
+      summary { list-style: none; }
+      .flow-list { grid-template-columns: repeat(3, 1fr); }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">册</div>
+      <div class="brand-text">
+        <strong>设备中心操作手册</strong>
+        <span>经销商列表 / APP 测试账号</span>
+      </div>
+    </div>
+    <div class="toolbar" aria-label="文档工具">
+      <button class="action menu-button" id="menuButton" type="button" aria-controls="toc" aria-expanded="false">章节目录</button>
+      <a class="action system-link" id="systemLink" href="#">打开系统</a>
+      <button class="action copy-link" id="copyLink" type="button">复制访问地址</button>
+      <button class="action" id="copyDocument" type="button">复制到钉钉</button>
+      <button class="action primary" id="printButton" type="button">打印 / 导出 PDF</button>
+    </div>
+  </header>
+
+  <div class="mobile-overlay" id="mobileOverlay" aria-hidden="true"></div>
+  <div class="page-shell">
+    <nav class="toc" id="toc" aria-label="章节目录">
+      <p class="toc-head">章节目录</p>
+      <ol>
+        <li><a href="#purpose">01 账号目的与业务问题</a></li>
+        <li><a href="#roles">02 人员分工</a></li>
+        <li><a href="#workflow">03 完整使用流程</a></li>
+        <li><a href="#layout">04 页面布局</a></li>
+        <li><a href="#dealer">05 查询经销商</a></li>
+        <li><a href="#accounts">06 查询测试账号</a></li>
+        <li><a href="#create">07 创建测试账号</a></li>
+        <li><a href="#reset">08 重置密码</a></li>
+        <li><a href="#records">09 设备测试记录</a></li>
+        <li><a href="#logs">10 操作日志</a></li>
+        <li><a href="#demo">11 完整场景演示</a></li>
+        <li><a href="#faq">12 常见问题</a></li>
+        <li><a href="#notices">13 注意事项</a></li>
+        <li><a href="#checklist">14 完成检查清单</a></li>
+      </ol>
+      <p class="toc-note">截图使用演示数据。实际账号、用户 ID、时间和临时密码以系统页面为准。</p>
+    </nav>
+
+    <main id="main-content">
+      <header class="doc-header">
+        <p class="eyebrow">跟单管理人员 · 实操版</p>
+        <h1>经销商列表：APP 测试账号操作指南</h1>
+        <p class="doc-lead">用于完成经销商测试账号创建、密码交付、设备测试记录查询和后台操作追溯。</p>
+        <dl class="metadata">
+          <div><dt>适用人员</dt><dd>跟单管理人员、平台运营人员</dd></div>
+          <div><dt>功能路径</dt><dd>设备中心 &gt; 经销商列表</dd></div>
+          <div><dt>文档版本</dt><dd>2026-08</dd></div>
+        </dl>
+      </header>
+
+      <section class="guide-section" id="purpose" data-nav="purpose">
+        <div class="section-heading"><span class="section-number">01</span><h2>APP 测试账号是做什么的</h2></div>
+        <p>APP 测试账号是提供给经销商测试人员使用的专用账号，主要用于设备抽检、样机交付前验证和设备异常复测。测试人员可在 APP 中完成扫码添加、配网、上线检查、音视频、基础控制和 4G 通信测试。</p>
+        <h3>它解决了什么问题</h3>
+        <p>普通账号添加设备可能被系统当成真实用户首次激活，导致激活时间被提前写入、正式权益被提前消耗，并影响真实激活统计。使用 APP 测试账号后，系统只建立临时测试关系，不把抽检行为当成正式销售和正式激活。</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>经销商测试行为</th><th>系统处理结果</th></tr></thead>
+            <tbody>
+              <tr><td>扫码添加设备</td><td>建立测试关系，可完成约定的基础测试</td></tr>
+              <tr><td>设备正式激活</td><td>不触发</td></tr>
+              <tr><td>首次激活时间</td><td>不写入</td></tr>
+              <tr><td>正式云存权益</td><td>不生效、不提前消耗</td></tr>
+              <tr><td>正式流量套餐</td><td>不生效、不提前消耗</td></tr>
+              <tr><td>真实激活统计</td><td>不计入</td></tr>
+              <tr><td>测试结束</td><td>经销商测试人员在 APP 端解绑设备</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><strong>“设备反激活”的准确含义</strong>不是先激活再回退，而是在正式激活发生前识别测试账号并阻止正式激活。</div>
+      </section>
+
+      <section class="guide-section" id="roles" data-nav="roles">
+        <div class="section-heading"><span class="section-number">02</span><h2>跟单人员与测试人员的分工</h2></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>角色</th><th>主要工作</th></tr></thead>
+            <tbody>
+              <tr><td><strong>跟单管理人员</strong></td><td>查找经销商、创建账号、安全交付临时密码、重置密码、查询设备测试记录和操作日志</td></tr>
+              <tr><td><strong>经销商测试人员</strong></td><td>使用测试账号登录 APP、扫码添加设备、完成设备测试、测试结束后在 APP 端解绑设备</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout success"><strong>记住这条分工</strong>跟单人员负责“账号和记录”，经销商测试人员负责“实际测试和解绑”。</div>
+      </section>
+
+      <section class="guide-section" id="workflow" data-nav="workflow">
+        <div class="section-heading"><span class="section-number">03</span><h2>完整使用流程</h2></div>
+        <ol class="flow-list">
+          <li><strong>确认信息</strong><span>经销商、所属大区、APP 客户端</span></li>
+          <li><strong>选择经销商</strong><span>在左侧查询并核对经销商 ID</span></li>
+          <li><strong>检查现有账号</strong><span>避免同一用途重复创建</span></li>
+          <li><strong>创建并交付</strong><span>创建账号，安全交付临时密码</span></li>
+          <li><strong>设备测试</strong><span>测试人员登录 APP 并扫码测试</span></li>
+          <li><strong>查询记录</strong><span>跟单人员核对设备添加情况</span></li>
+          <li><strong>APP 端解绑</strong><span>测试结束后解除临时测试关系</span></li>
+          <li><strong>日志追溯</strong><span>按日期查询后台操作记录</span></li>
+        </ol>
+      </section>
+
+      <section class="guide-section" id="layout" data-nav="layout">
+        <div class="section-heading"><span class="section-number">04</span><h2>进入页面并认识页面布局</h2></div>
+        <p>进入路径：<strong>设备中心 &gt; 经销商列表</strong>。左侧用于查询和选择经销商，右侧用于查看设备测试记录、APP 测试账号和操作日志。</p>
+        <figure>
+          <img src="assets/01-经销商列表页面总览.png" alt="经销商列表页面总览，左侧为经销商信息，右侧为经销商详情" width="1440" height="1102">
+          <figcaption>页面总览：左侧选择经销商，右侧查看当前经销商业务数据。</figcaption>
+        </figure>
+        <div class="callout warning"><strong>先检查大区</strong>中国、亚洲、北美、欧洲四个大区会同时影响设备测试记录、APP 测试账号和操作日志。查询不到数据时，先检查大区是否正确。</div>
+      </section>
+
+      <section class="guide-section" id="dealer" data-nav="dealer">
+        <div class="section-heading"><span class="section-number">05</span><h2>操作一：查询并选择经销商</h2></div>
+        <ol class="step-list">
+          <li>在左侧“经销商名称 / ID”输入框中输入经销商名称或经销商 ID。</li>
+          <li>点击“查询”。</li>
+          <li>在查询结果中点击目标经销商。</li>
+          <li>核对右侧经销商名称、经销商 ID、简称、创建时间和设备总数。</li>
+        </ol>
+        <figure>
+          <img src="assets/02-查询并选择经销商.png" loading="lazy" alt="查询并选择华东一级经销商的页面" width="1212" height="961">
+          <figcaption>输入名称或 ID 查询，经销商详情会显示在右侧。</figcaption>
+        </figure>
+        <p>经销商名称支持模糊查询；经销商 ID 可直接查询，例如 <code>DL-1001</code>。点击“重置”可清空条件并恢复全部经销商。</p>
+      </section>
+
+      <section class="guide-section" id="accounts" data-nav="accounts">
+        <div class="section-heading"><span class="section-number">06</span><h2>操作二：查看和查询 APP 测试账号</h2></div>
+        <ol class="step-list">
+          <li>在右上方选择正确的大区。</li>
+          <li>点击“APP 测试账号”标签。</li>
+          <li>在“账号名称 / 用户 ID”中输入关键词筛选账号。</li>
+          <li>核对账号名称、用户 ID、所属大区、客户端和创建时间。</li>
+        </ol>
+        <figure>
+          <img src="assets/04-APP测试账号列表与大区.png" loading="lazy" alt="APP 测试账号列表以及大区筛选" width="1148" height="557">
+          <figcaption>账号列表提供“查看”和“重置密码”操作。</figcaption>
+        </figure>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>操作</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td>查看</td><td>打开用户中心详情，进一步核对账号信息</td></tr>
+              <tr><td>重置密码</td><td>密码遗失或需要重新交付时生成新密码</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout"><strong>当前页面功能边界</strong>暂不提供账号有效期、权限状态、启用、停用、延期和审批操作。</div>
+      </section>
+
+      <section class="guide-section" id="create" data-nav="create">
+        <div class="section-heading"><span class="section-number">07</span><h2>操作三：创建 APP 测试账号</h2></div>
+        <h3>创建前先确认</h3>
+        <ul>
+          <li>经销商和所属大区正确。</li>
+          <li>经销商当前允许创建账号；停用经销商只能查看。</li>
+          <li>已确认需要使用“小鹰看看”还是“小鹰视界”。</li>
+          <li>现有账号中没有合适账号，避免重复创建。</li>
+        </ul>
+        <h3>创建步骤</h3>
+        <ol class="step-list">
+          <li>在“APP 测试账号”标签中点击“创建账号”。</li>
+          <li>核对系统自动带入的经销商组织。</li>
+          <li>填写账号名称并选择账号所属大区。</li>
+          <li>选择客户端名称，客户端 ID 会自动带出。</li>
+          <li>填写创建原因，例如“用于到货设备抽检和异常复测”。</li>
+          <li>点击“创建账号”。</li>
+        </ol>
+        <figure class="compact-shot">
+          <img src="assets/05-创建APP测试账号.png" loading="lazy" alt="创建 APP 测试账号表单" width="760" height="704">
+          <figcaption>经销商组织只读；客户端 ID 由客户端名称自动带出。</figcaption>
+        </figure>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>字段</th><th>必填</th><th>填写要求</th></tr></thead>
+            <tbody>
+              <tr><td>经销商组织</td><td>是</td><td>自动带入当前经销商，只读</td></tr>
+              <tr><td>账号名称</td><td>是</td><td>建议包含经销商或场景；同一经销商下不能重名</td></tr>
+              <tr><td>账号所属大区</td><td>是</td><td>中国、亚洲、北美、欧洲</td></tr>
+              <tr><td>客户端名称</td><td>是</td><td>选择“小鹰看看”或“小鹰视界”</td></tr>
+              <tr><td>客户端 ID</td><td>是</td><td>系统自动带出，不可编辑</td></tr>
+              <tr><td>创建原因</td><td>是</td><td>说明抽检、样机验证或异常复测用途，最多 200 字</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>创建成功后如何处理临时密码</h3>
+        <figure class="compact-shot">
+          <img src="assets/06-创建成功与临时密码.png" loading="lazy" alt="账号创建成功并显示一次性临时密码" width="620" height="482">
+          <figcaption>截图密码仅用于演示，不可用于实际登录。</figcaption>
+        </figure>
+        <ul>
+          <li>临时密码共 10 位，只包含大写字母、小写字母和数字，三类字符至少各有 1 位。</li>
+          <li>密码只在成功弹窗中展示一次，关闭后不能再次查看。</li>
+          <li>点击“复制密码”，将账号名称、客户端和密码通过一对一安全方式交付指定人员。</li>
+          <li>建议留存用户 ID，便于后台查询；不要在公开群聊、工单备注或共享表格中记录真实密码。</li>
+        </ul>
+        <div class="callout warning"><strong>关闭前必须确认</strong>临时密码已经正确、安全地交付。密码遗失后只能重置，不能找回。</div>
+      </section>
+
+      <section class="guide-section" id="reset" data-nav="reset">
+        <div class="section-heading"><span class="section-number">08</span><h2>操作四：重置 APP 测试账号密码</h2></div>
+        <p>适用于临时密码遗失、测试人员无法登录，或需要重新交付账号的情况。</p>
+        <ol class="step-list">
+          <li>进入目标经销商的“APP 测试账号”标签并选择正确大区。</li>
+          <li>找到目标账号，点击“重置密码”。</li>
+          <li>核对经销商、账号名称和用户 ID。</li>
+          <li>填写重置原因并点击“确认重置”。</li>
+          <li>安全交付新密码；旧密码会立即失效。</li>
+        </ol>
+        <figure class="compact-shot">
+          <img src="assets/07-重置APP测试账号密码.png" loading="lazy" alt="重置 APP 测试账号密码并填写重置原因" width="600" height="506">
+          <figcaption>重置原因必填，用于后续审计追溯。</figcaption>
+        </figure>
+        <div class="callout"><strong>重置的影响</strong>只处理登录凭证，不改变经销商组织或账号可用状态；重置操作和原因会写入操作日志。</div>
+      </section>
+
+      <section class="guide-section" id="records" data-nav="records">
+        <div class="section-heading"><span class="section-number">09</span><h2>操作五：查看设备测试记录</h2></div>
+        <ol class="step-list">
+          <li>选择正确大区，进入“设备测试记录”。</li>
+          <li>按设备 ID、APP 测试账号、用户 ID 或添加时间范围查询。</li>
+          <li>点击设备 ID 或“查看设备详情”继续核对。</li>
+          <li>添加次数大于 1 时，点击次数或展开按钮查看历史添加记录。</li>
+        </ol>
+        <figure>
+          <img src="assets/03-查看设备测试记录.png" loading="lazy" alt="设备测试记录列表及展开的历史添加记录" width="868" height="788">
+          <figcaption>每个设备 ID 主表显示一行，展开后可查看历次添加记录。</figcaption>
+        </figure>
+        <p>主表显示最近添加账号、最近添加时间和累计添加次数。账号和时间筛选以设备最近一次添加记录为准。</p>
+      </section>
+
+      <section class="guide-section" id="logs" data-nav="logs">
+        <div class="section-heading"><span class="section-number">10</span><h2>操作六：查看操作日志</h2></div>
+        <ol class="step-list">
+          <li>选择正确大区并进入“操作日志”。</li>
+          <li>点击“操作日期”，选择需要查询的日期。</li>
+          <li>查看操作类型、对象、来源、创建人、操作人、结果和备注。</li>
+        </ol>
+        <figure>
+          <img src="assets/08-查看操作日志.png" loading="lazy" alt="APP 测试账号创建和重置密码操作日志" width="868" height="820">
+          <figcaption>日历中仅有日志的日期可选；日志按时间展示。</figcaption>
+        </figure>
+        <ul>
+          <li>可记录创建账号、重置密码、手动清理和重试清理等后台操作。</li>
+          <li>复制临时密码不会写入操作日志。</li>
+          <li>APP 端测试绑定和主动解绑不在此后台操作日志中记录。</li>
+        </ul>
+      </section>
+
+      <section class="guide-section" id="demo" data-nav="demo">
+        <div class="section-heading"><span class="section-number">11</span><h2>完整场景演示</h2></div>
+        <p>示例：华东一级经销商需要新增一个到货抽检账号。</p>
+        <ol class="step-list">
+          <li>查询“华东一级经销商”，点击结果并核对经销商 ID。</li>
+          <li>选择“中国”大区，进入“APP 测试账号”，先搜索现有账号。</li>
+          <li>点击“创建账号”，账号名称填写“华东经销商抽检账号”。</li>
+          <li>客户端选择“小鹰看看”，创建原因填写“用于到货设备抽检及异常复测”。</li>
+          <li>提交后复制临时密码，与账号名称和客户端一起安全交付指定测试人员。</li>
+          <li>测试人员登录 APP，扫码添加设备并完成配网、上线、音视频、控制或 4G 通信测试。</li>
+          <li>跟单人员在“设备测试记录”中按设备 ID 或账号查询添加情况。</li>
+          <li>测试结束后，提醒测试人员在 APP 端解绑设备。</li>
+          <li>进入“操作日志”确认账号创建记录；发生重置时，同时核对重置原因和结果。</li>
+        </ol>
+        <div class="callout success"><strong>完成标准</strong>形成“账号创建 → 密码交付 → 设备测试 → APP 解绑 → 后台追溯”的完整闭环。</div>
+      </section>
+
+      <section class="guide-section" id="faq" data-nav="faq">
+        <div class="section-heading"><span class="section-number">12</span><h2>常见问题</h2></div>
+        <details open><summary>“创建账号”按钮是灰色，不能点击</summary><div>该经销商可能已停用。停用经销商仍可查看详情，但不能创建 APP 测试账号。请核对经销商状态并联系对应管理人员。</div></details>
+        <details><summary>提示“该经销商下已存在同名 APP 测试账号”</summary><div>先在账号列表中查询现有账号。如确需新建，请修改账号名称，保证同一经销商下名称不重复。</div></details>
+        <details><summary>创建后在列表中找不到账号</summary><div>依次检查当前大区、账号查询条件和当前经销商。创建成功后，页面会自动切换到新账号所属大区和“APP 测试账号”标签。</div></details>
+        <details><summary>临时密码忘记保存或交付失败</summary><div>临时密码关闭后无法再次查看。请点击“重置密码”，填写原因并生成新密码，不要尝试找回旧密码。</div></details>
+        <details><summary>设备测试记录查询不到</summary><div>检查经销商、大区、设备 ID、账号关键词和添加时间范围。账号与时间条件只匹配设备最近一次添加记录。</div></details>
+        <details><summary>测试账号无法添加某台设备</summary><div>已正式激活或已有正式用户关系的设备不能再建立测试绑定。请核对设备状态，避免影响真实用户关系。</div></details>
+        <details><summary>测试结束后为什么还要在 APP 端解绑</summary><div>解绑用于结束临时测试关系，确保真实用户后续能够正常绑定并正式激活。后台查看记录不能代替 APP 端解绑。</div></details>
+      </section>
+
+      <section class="guide-section" id="notices" data-nav="notices">
+        <div class="section-heading"><span class="section-number">13</span><h2>重要注意事项</h2></div>
+        <ol>
+          <li>APP 测试账号只用于设备抽检、样机验证和异常复测，不作为真实消费者账号使用。</li>
+          <li>测试账号禁止分享或转移设备，也不能兑换正式云存权益。</li>
+          <li><strong>测试完成后必须在 APP 端解绑设备。</strong></li>
+          <li>临时密码只展示一次，交付前不要关闭弹窗。</li>
+          <li>真实密码不得写入共享文档、公开群聊或工单备注。</li>
+          <li>账号创建和密码重置需填写真实、清楚的原因，便于审计。</li>
+          <li>查询账号、设备记录和日志前，先确认经销商与大区。</li>
+          <li>当前页面没有账号审批、有效期、启停或延期功能。</li>
+        </ol>
+      </section>
+
+      <section class="guide-section" id="checklist" data-nav="checklist">
+        <div class="section-heading"><span class="section-number">14</span><h2>操作完成检查清单</h2></div>
+        <div class="table-scroll">
+          <table class="checklist">
+            <thead><tr><th>检查项</th><th class="check-cell">完成</th></tr></thead>
+            <tbody>
+              <tr><td>已确认目标经销商和经销商 ID</td><td class="check-cell">□</td></tr>
+              <tr><td>已确认账号所属大区</td><td class="check-cell">□</td></tr>
+              <tr><td>已确认 APP 客户端</td><td class="check-cell">□</td></tr>
+              <tr><td>已检查现有账号，避免重复创建</td><td class="check-cell">□</td></tr>
+              <tr><td>账号名称符合要求且未重名</td><td class="check-cell">□</td></tr>
+              <tr><td>创建原因填写清楚</td><td class="check-cell">□</td></tr>
+              <tr><td>临时密码已通过安全方式交付指定人员</td><td class="check-cell">□</td></tr>
+              <tr><td>用户 ID 已留存，便于后续查询</td><td class="check-cell">□</td></tr>
+              <tr><td>已告知测试人员测试完成后在 APP 端解绑</td><td class="check-cell">□</td></tr>
+              <tr><td>如有密码重置，已核对操作日志</td><td class="check-cell">□</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <aside class="quick-rail" aria-label="完整闭环速查">
+      <h2>完整闭环速查</h2>
+      <ol class="rail-track">
+        <li><strong>确认经销商</strong><span>名称、ID、大区、客户端</span></li>
+        <li><strong>检查现有账号</strong><span>避免重复创建</span></li>
+        <li><strong>创建并交付</strong><span>密码只展示一次</span></li>
+        <li><strong>执行设备测试</strong><span>扫码、配网、基础能力</span></li>
+        <li class="must"><strong>APP 端解绑</strong><span>测试结束必须完成</span></li>
+        <li><strong>后台追溯</strong><span>记录与操作日志</span></li>
+      </ol>
+      <div class="rail-warning">真实密码不要写入公开群聊、共享表格或工单备注。</div>
+    </aside>
+  </div>
+
+  <button class="back-top" id="backTop" type="button">返回顶部</button>
+
+  <script>
+    const body = document.body;
+    const menuButton = document.getElementById('menuButton');
+    const overlay = document.getElementById('mobileOverlay');
+    const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+    const sections = Array.from(document.querySelectorAll('[data-nav]'));
+    const backTop = document.getElementById('backTop');
+    const copyLink = document.getElementById('copyLink');
+    const copyDocument = document.getElementById('copyDocument');
+    const systemLink = document.getElementById('systemLink');
+
+    function setMenu(open) {
+      body.classList.toggle('menu-open', open);
+      menuButton.setAttribute('aria-expanded', String(open));
+    }
+
+    menuButton.addEventListener('click', () => setMenu(!body.classList.contains('menu-open')));
+    overlay.addEventListener('click', () => setMenu(false));
+    tocLinks.forEach((link) => link.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setMenu(false);
+    });
+
+    document.getElementById('printButton').addEventListener('click', () => window.print());
+    backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    window.addEventListener('scroll', () => backTop.classList.toggle('visible', window.scrollY > 720), { passive: true });
+
+    copyLink.addEventListener('click', async () => {
+      const original = copyLink.textContent;
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        copyLink.textContent = '地址已复制';
+      } catch (error) {
+        copyLink.textContent = '请复制浏览器地址';
+      }
+      window.setTimeout(() => { copyLink.textContent = original; }, 1800);
+    });
+
+    function buildDingTalkCopy() {
+      const source = document.getElementById('main-content');
+      const clone = source.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.querySelectorAll('img').forEach((image) => {
+        image.src = new URL(image.getAttribute('src'), window.location.href).href;
+        image.removeAttribute('loading');
+        image.style.maxWidth = '100%';
+        image.style.height = 'auto';
+      });
+      clone.querySelectorAll('details').forEach((details) => details.setAttribute('open', ''));
+      clone.querySelectorAll('table').forEach((table) => {
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+      });
+      clone.querySelectorAll('th, td').forEach((cell) => {
+        cell.style.padding = '8px 10px';
+        cell.style.border = '1px solid #d9e2e9';
+        cell.style.textAlign = 'left';
+        cell.style.verticalAlign = 'top';
+      });
+      clone.querySelectorAll('figcaption').forEach((caption) => {
+        caption.style.color = '#667585';
+        caption.style.fontSize = '12px';
+      });
+      clone.querySelectorAll('.back-top').forEach((element) => element.remove());
+      const wrapper = document.createElement('article');
+      wrapper.setAttribute('data-document', '经销商APP测试账号操作指南');
+      wrapper.style.fontFamily = 'PingFang SC, Microsoft YaHei, sans-serif';
+      wrapper.style.color = '#1f2a37';
+      wrapper.style.lineHeight = '1.7';
+      wrapper.appendChild(clone);
+      return wrapper;
+    }
+
+    async function copyForDingTalk() {
+      const original = copyDocument.textContent;
+      const wrapper = buildDingTalkCopy();
+      const html = wrapper.outerHTML;
+      const text = wrapper.innerText;
+      let copied = false;
+
+      try {
+        if (!navigator.clipboard || !window.ClipboardItem) throw new Error('Rich clipboard unavailable');
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        })]);
+        copied = true;
+      } catch (error) {
+        const holder = document.createElement('div');
+        holder.style.position = 'fixed';
+        holder.style.left = '-10000px';
+        holder.style.top = '0';
+        holder.appendChild(wrapper);
+        document.body.appendChild(holder);
+        const range = document.createRange();
+        range.selectNodeContents(wrapper);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        copied = document.execCommand('copy');
+        selection.removeAllRanges();
+        holder.remove();
+      }
+
+      copyDocument.textContent = copied ? '正文已复制' : '请手动复制正文';
+      window.setTimeout(() => { copyDocument.textContent = original; }, 2000);
+    }
+
+    copyDocument.addEventListener('click', copyForDingTalk);
+
+    const localHostnames = new Set(['127.0.0.1', 'localhost', '::1']);
+    if (localHostnames.has(window.location.hostname)) {
+      systemLink.href = `${window.location.protocol}//${window.location.hostname}:5173/Equipment-Center-all/`;
+    } else {
+      systemLink.hidden = true;
+    }
+
+    function updateActiveNav() {
+      const marker = window.scrollY + 180;
+      let current = sections[0];
+      sections.forEach((section) => {
+        if (section.offsetTop <= marker) current = section;
+      });
+      const id = current.dataset.nav;
+      tocLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${id}`));
+    }
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('hashchange', () => window.setTimeout(updateActiveNav, 80));
+    updateActiveNav();
+  </script>
+</body>
+</html>
