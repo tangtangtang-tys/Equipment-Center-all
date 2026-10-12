@@ -49,13 +49,30 @@ const AUTO_WAKE_VALUE_LABELS = {
   off: '关闭',
 };
 
+const AUTO_WAKE_ENTRY_LABELS = {
+  visible: '显示',
+  hidden: '隐藏',
+};
+
 function getAutoWakeValueLabel(value) {
   return AUTO_WAKE_VALUE_LABELS[value] || AUTO_WAKE_VALUE_LABELS.off;
 }
 
+function getAutoWakeEntryLabel(value) {
+  return AUTO_WAKE_ENTRY_LABELS[value] || AUTO_WAKE_ENTRY_LABELS.visible;
+}
+
 function getAutoWakeConfig(configs, dealer) {
-  return configs?.[dealer?.id] || {
+  const existingConfig = configs?.[dealer?.id];
+  if (existingConfig) {
+    return {
+      ...existingConfig,
+      entryVisible: existingConfig.entryVisible !== false,
+    };
+  }
+  return {
     status: 'configured',
+    entryVisible: true,
     defaultValue: 'off',
     updatedAt: '',
     updatedBy: '',
@@ -71,6 +88,7 @@ function hasEffectiveDeviceDefaultParameterValue(value) {
 
 function getDeviceDefaultHistoryValueLabel(item, value) {
   if (value === '-') return '-';
+  if (item.parameterKey === 'autoWakeEntryVisible') return getAutoWakeEntryLabel(value);
   if (item.parameterKey === 'autoWakeDefaultValue') return getAutoWakeValueLabel(value);
   if (typeof value === 'boolean') return value ? '开启' : '关闭';
   return String(value);
@@ -119,17 +137,19 @@ const ANNOTATION_RULES = [
   {
     id: 'deviceDefaultConfig',
     title: '设备默认参数配置',
-    summary: '用于按当前经销商组织维护设备首次绑定时的默认参数，只定义初始值，不直接修改或控制任何已绑定设备。',
+    summary: '按当前经销商组织维护设备默认参数；自动唤醒作为一个功能卡片统一承载入口展示和首次绑定默认状态。',
     fields: [
-      '自动唤醒默认值：展示当前配置状态，支持在开启与关闭之间切换。',
+      '自动唤醒：仅展示一张功能配置卡，不按配置维度拆成两张卡片。',
+      'APP端入口展示：在自动唤醒卡片内控制主账号是否展示入口，分享账号始终隐藏。',
+      '首次绑定默认状态：在同一卡片内配置新绑定设备默认开启或关闭自动唤醒。',
       '最近修改信息：展示最近一次成功修改的时间与操作人。',
       '其他默认参数：有有效配置值时才展示对应参数卡片，无数据时不展示占位内容。',
       '查看历史：查看当前经销商组织下整个“设备默认参数配置”的全部参数修改记录，不限于单个自动唤醒参数。',
     ],
     flow: [
       '切换左侧经销商后，按当前选中组织加载对应的默认参数，组织之间独立配置。',
-      '切换自动唤醒开关后先打开确认弹窗，展示修改前后值、生效对象、影响范围及重新绑定规则。',
-      '一期确认后配置直接生效，同时写入参数历史和操作日志；后续再接入审批流程。',
+      '切换自动唤醒卡片中的任一配置后先打开确认弹窗，展示修改前后值与对应生效范围。',
+      '一期确认后配置直接生效并写入设备默认参数配置历史，不写入平台操作日志；后续再接入审批流程。',
       '设备首次绑定时读取所属经销商组织当时有效的默认值进行初始化。',
       '设备解绑后再次绑定，按新绑定处理，重新读取当前组织的最新默认值。',
     ],
@@ -139,19 +159,19 @@ const ANNOTATION_RULES = [
       '组织默认值修改仅影响未来新绑定设备，不覆盖当前已绑定设备，也不下发设备控制指令。',
       '用户绑定后手动修改的设备配置优先级最高，后续组织默认值变更不得覆盖。',
       '解绑后旧绑定配置不保留到新绑定，重新绑定以当前组织默认值为准。',
-      '本模块只维护设备默认值，不控制 APP 端自动唤醒入口是否展示。',
+      '自动唤醒作为一个功能配置统一展示，入口展示与首次绑定默认状态在同一张卡片内独立配置。',
       '仅有配置权限的账号可修改；无权账号只读展示，后端仍需校验组织范围与操作权限。',
       '历史记录至少包含操作时间、参数项、操作人、修改前值、修改后值和操作结果。',
     ],
     acceptance: [
       '切换任意经销商组织后，只展示该组织的默认参数；修改一家组织不得联动修改其上、下级或其他组织。',
-      '自动唤醒卡片必须正确展示当前默认值、开关状态、最近修改时间和操作人；其他参数有有效值才展示，无值不展示。',
+      '自动唤醒必须只展示一张卡片，卡内同时展示入口策略、首次绑定默认状态、最近修改时间和操作人。',
       '有权账号切换开关时必须先出现确认弹窗，且正确展示修改前后值、生效对象、影响范围与重新绑定规则。',
       '点击取消或关闭确认弹窗后，配置值不变、不生成历史与操作日志；确认且服务端返回成功后，页面才更新当前值及最近修改信息。',
-      '修改成功后必须同时生成一条参数修改历史和一条平台操作日志，操作人、操作时间、修改前后值及结果一致。',
+      '修改成功后必须生成一条设备默认参数配置历史，不得写入平台操作日志模块。',
       '组织默认值修改后，所有已绑定设备及用户已手动修改的设备配置必须保持不变，且不产生任何设备控制指令。',
       '修改成功后新绑定的设备应采用新默认值；设备解绑后重新绑定时也应采用当前最新默认值，不继承旧绑定的用户配置。',
-      '修改该模块不得改变 APP 端入口展示参数；主账号与分享账号的入口权限仍由原权限链路处理。',
+      '修改入口展示策略不得改变设备默认状态；修改设备默认状态不得改变 APP 入口展示策略。',
       '无配置权限账号只能查看、不能修改；直接调用修改接口或跨组织修改时，服务端必须拒绝且不产生配置变更。',
       '“查看历史”必须聚合当前组织下所有设备默认参数的修改记录，按操作时间倒序展示，且字段与实际变更一致。',
       '研发手动补齐的旧系统组织历史配置必须能在对应现有组织下正确查看，页面不出现迁移任务或新旧组织区分入口。',
@@ -774,15 +794,17 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
     showToast('密码已重置，新密码仅本次展示');
   };
 
-  const handleRequestAutoWakeChange = ({ dealerId, nextValue }) => {
+  const handleRequestAutoWakeChange = ({ dealerId, setting = 'defaultValue', nextValue }) => {
     const dealer = dealers.find((item) => item.id === dealerId) || selectedDealer;
     const currentConfig = getAutoWakeConfig(autoWakeConfigs, dealer);
-    if (!dealer || !nextValue || nextValue === currentConfig.defaultValue || !canEditAutoWake) return;
+    const currentValue = currentConfig[setting];
+    if (!dealer || nextValue === undefined || nextValue === currentValue || !canEditAutoWake) return;
     setModal({
       type: 'autoWakeConfirm',
       dealerId,
       dealer,
       currentConfig,
+      setting,
       nextValue,
     });
   };
@@ -794,30 +816,36 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
   const handleConfirmAutoWakeSave = () => {
     const dealer = modal?.dealer || dealers.find((item) => item.id === modal?.dealerId) || selectedDealer;
     const currentConfig = modal?.currentConfig || getAutoWakeConfig(autoWakeConfigs, dealer);
+    const setting = modal?.setting || 'defaultValue';
     const nextValue = modal?.nextValue;
-    if (!dealer || !nextValue) {
+    if (!dealer || nextValue === undefined) {
       setModal(null);
-      showToast('自动唤醒默认值更新失败，请稍后重试', 'error');
+      showToast('自动唤醒配置更新失败，请稍后重试', 'error');
       return;
     }
 
     const updatedAt = currentDateTimeText();
     const updatedBy = '汤彦珊';
+    const isEntrySetting = setting === 'entryVisible';
+    const parameterKey = isEntrySetting ? 'autoWakeEntryVisible' : 'autoWakeDefaultValue';
+    const parameterName = isEntrySetting ? 'APP端自动唤醒入口展示' : '自动唤醒首次绑定默认状态';
+    const beforeValue = isEntrySetting ? (currentConfig.entryVisible ? 'visible' : 'hidden') : currentConfig.defaultValue;
+    const afterValue = isEntrySetting ? (nextValue ? 'visible' : 'hidden') : nextValue;
     const historyItem = {
       id: createId('AW'),
-      parameterKey: 'autoWakeDefaultValue',
-      parameterName: '自动唤醒默认值',
+      parameterKey,
+      parameterName,
       time: updatedAt,
       operator: updatedBy,
-      before: currentConfig.defaultValue || '-',
-      after: nextValue,
+      before: beforeValue || '-',
+      after: afterValue,
       result: '成功',
-      remark: '仅影响未来新绑定设备',
+      remark: isEntrySetting ? '仅影响APP入口展示，不改变设备状态' : '仅影响未来新绑定设备',
     };
     const nextConfig = {
       ...currentConfig,
       status: 'configured',
-      defaultValue: nextValue,
+      [setting]: nextValue,
       updatedAt,
       updatedBy,
       history: [historyItem, ...(currentConfig.history || [])],
@@ -827,15 +855,10 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
       ...prev,
       [dealer.id]: [historyItem, ...(prev[dealer.id] || [])],
     }));
-    appendLog({
-      dealerId: dealer.id,
-      actionType: '修改自动唤醒默认值',
-      operator: updatedBy,
-      result: '成功',
-      remark: `修改前：${getAutoWakeValueLabel(currentConfig.defaultValue)}；修改后：${getAutoWakeValueLabel(nextValue)}；仅影响未来新绑定设备`,
-    });
     setModal(null);
-    showToast(`自动唤醒默认值已更新为「${getAutoWakeValueLabel(nextValue)}」`);
+    showToast(isEntrySetting
+      ? `自动唤醒入口已设置为「${getAutoWakeEntryLabel(afterValue)}」`
+      : `自动唤醒默认状态已更新为「${getAutoWakeValueLabel(nextValue)}」`);
   };
 
   return (
@@ -902,6 +925,7 @@ export default function DealerManagementDemo({ onOpenDeviceDetail } = {}) {
         <AutoWakeConfirmModal
           dealer={modal.dealer}
           config={modal.currentConfig}
+          setting={modal.setting}
           nextValue={modal.nextValue}
           onConfirm={handleConfirmAutoWakeSave}
           onClose={() => setModal(null)}
@@ -1113,7 +1137,7 @@ function DealerWorkbenchView({
               hideToolbar
               onOpenCreate={() => onOpenCreate(selectedDealer.id)}
               autoWakeConfig={getAutoWakeConfig(autoWakeConfigs, selectedDealer)}
-              onAutoWakeChange={(nextValue) => onAutoWakeChange({ dealerId: selectedDealer.id, nextValue })}
+              onAutoWakeChange={(change) => onAutoWakeChange({ dealerId: selectedDealer.id, ...change })}
               onOpenDeviceDefaultConfigHistory={() => onOpenDeviceDefaultConfigHistory(selectedDealer.id)}
               canEditAutoWake={canEditAutoWake}
               onRefresh={onRefresh}
@@ -1779,7 +1803,7 @@ function DealerSummaryField({ label, value, mono = false, time = false, accent =
   );
 }
 
-function AutoWakeSwitch({ checked, disabled, onChange }) {
+function AutoWakeSwitch({ checked, disabled, onChange, ariaLabel = '自动唤醒首次绑定默认状态', onLabel = '开启', offLabel = '关闭' }) {
   return (
     <label className={cls('dm-auto-wake-switch', checked && 'checked', disabled && 'disabled')}>
       <input
@@ -1787,11 +1811,11 @@ function AutoWakeSwitch({ checked, disabled, onChange }) {
         role="switch"
         checked={checked}
         disabled={disabled}
-        aria-label="自动唤醒默认值"
-        onChange={(event) => onChange?.(event.target.checked ? 'on' : 'off')}
+        aria-label={ariaLabel}
+        onChange={(event) => onChange?.(event.target.checked)}
       />
       <span className="dm-auto-wake-switch-track" aria-hidden="true"><i /></span>
-      <strong>{checked ? '开启' : '关闭'}</strong>
+      <strong>{checked ? onLabel : offLabel}</strong>
     </label>
   );
 }
@@ -1856,40 +1880,71 @@ function DeviceDefaultParameterCard({ parameter }) {
 function AutoWakeSummaryCard({ config, canEdit = true, onChange }) {
   const currentValue = getAutoWakeValueLabel(config?.defaultValue);
   const checked = config?.defaultValue === 'on';
+  const entryVisible = config?.entryVisible !== false;
 
   return (
     <section className="dm-card dm-auto-wake-card">
-      <div className="dm-auto-wake-head">
-        <div className="dm-auto-wake-main">
-          <div className="dm-auto-wake-title-row">
-            <div className="dm-auto-wake-title">
-              <h2>自动唤醒默认值</h2>
-              <strong className={cls('dm-auto-wake-current-tag', `value-${config?.defaultValue}`)}>当前配置：{currentValue}</strong>
-            </div>
-            <p>新绑定设备首次配置时，将使用该组织默认值。</p>
+      <div className="dm-auto-wake-card-title">
+        <div>
+          <h2>自动唤醒</h2>
+          <p>统一配置 APP 入口权限与新绑定设备的默认状态。</p>
+        </div>
+        {!canEdit && <span className="dm-auto-wake-readonly"><Info size={14} />仅可查看</span>}
+      </div>
+      <div className="dm-auto-wake-settings">
+        <div className="dm-auto-wake-setting-row">
+          <div className="dm-auto-wake-setting-copy">
+            <strong>APP 端入口展示</strong>
+            <span>控制主账号是否展示自动唤醒入口，分享账号始终隐藏。</span>
+          </div>
+          <div className="dm-auto-wake-setting-control">
+            <strong className={cls('dm-auto-wake-current-tag', entryVisible ? 'value-on' : 'value-off')}>当前：{getAutoWakeEntryLabel(entryVisible ? 'visible' : 'hidden')}</strong>
+            <AutoWakeSwitch
+              checked={entryVisible}
+              disabled={!canEdit}
+              ariaLabel="APP端自动唤醒入口展示"
+              onLabel="显示"
+              offLabel="隐藏"
+              onChange={(value) => onChange?.({ setting: 'entryVisible', nextValue: value })}
+            />
           </div>
         </div>
-        <AutoWakeSwitch checked={checked} disabled={!canEdit} onChange={onChange} />
+        <div className="dm-auto-wake-setting-row">
+          <div className="dm-auto-wake-setting-copy">
+            <strong>首次绑定默认状态</strong>
+            <span>控制设备首次绑定或解绑后重新绑定时的自动唤醒初始状态。</span>
+          </div>
+          <div className="dm-auto-wake-setting-control">
+            <strong className={cls('dm-auto-wake-current-tag', `value-${config?.defaultValue}`)}>当前：{currentValue}</strong>
+            <AutoWakeSwitch
+              checked={checked}
+              disabled={!canEdit}
+              onChange={(value) => onChange?.({ setting: 'defaultValue', nextValue: value ? 'on' : 'off' })}
+            />
+          </div>
+        </div>
       </div>
+      {entryVisible && checked === false && (
+        <div className="dm-auto-wake-combination-note"><Info size={14} />当前配置为“入口显示、首次绑定默认关闭”，主账号可在 APP 中手动开启。</div>
+      )}
       <div className="dm-auto-wake-last-change">
-        <span>最近修改时间：</span>
-        <strong className="dm-time">{config?.updatedAt || '-'}</strong>
-        <span>操作人：</span>
-        <strong>{config?.updatedBy || '-'}</strong>
+        <span>最近修改时间：</span><strong className="dm-time">{config?.updatedAt || '-'}</strong>
+        <span>操作人：</span><strong>{config?.updatedBy || '-'}</strong>
       </div>
-      {!canEdit && <div className="dm-auto-wake-readonly"><Info size={14} />当前账号无权修改组织设备默认配置</div>}
     </section>
   );
 }
 
-function AutoWakeConfirmModal({ dealer, config, nextValue, onConfirm, onClose }) {
-  const nextLabel = getAutoWakeValueLabel(nextValue);
-  const currentLabel = getAutoWakeValueLabel(config?.defaultValue);
+function AutoWakeConfirmModal({ dealer, config, setting = 'defaultValue', nextValue, onConfirm, onClose }) {
+  const isEntrySetting = setting === 'entryVisible';
+  const currentRawValue = isEntrySetting ? config?.entryVisible !== false : config?.defaultValue;
+  const nextLabel = isEntrySetting ? getAutoWakeEntryLabel(nextValue ? 'visible' : 'hidden') : getAutoWakeValueLabel(nextValue);
+  const currentLabel = isEntrySetting ? getAutoWakeEntryLabel(currentRawValue ? 'visible' : 'hidden') : getAutoWakeValueLabel(currentRawValue);
   const boundDeviceCount = config?.boundDeviceCount || dealer.deviceTotalCount || 0;
   const userConfiguredDeviceCount = config?.userConfiguredDeviceCount || 0;
   return (
     <BaseModal
-      title={`确认${nextLabel}自动唤醒默认值？`}
+      title={`确认${isEntrySetting ? '修改自动唤醒入口展示' : '修改自动唤醒首次绑定默认状态'}？`}
       width={640}
       className="dm-auto-wake-confirm-modal"
       onClose={onClose}
@@ -1902,35 +1957,41 @@ function AutoWakeConfirmModal({ dealer, config, nextValue, onConfirm, onClose })
     >
       <div className="dm-auto-wake-confirm-org">{dealer.name}<span>{dealer.id}</span></div>
       <dl className="dm-auto-wake-confirm-grid">
-        <div><dt>当前默认值</dt><dd className={`value-${config?.defaultValue}`}>{currentLabel}</dd></div>
-        <div><dt>修改后默认值</dt><dd className={`value-${nextValue}`}>{nextLabel}</dd></div>
+        <div><dt>{isEntrySetting ? '当前入口策略' : '当前默认状态'}</dt><dd className={`value-${isEntrySetting ? (currentRawValue ? 'on' : 'off') : config?.defaultValue}`}>{currentLabel}</dd></div>
+        <div><dt>{isEntrySetting ? '修改后入口策略' : '修改后默认状态'}</dt><dd className={`value-${isEntrySetting ? (nextValue ? 'on' : 'off') : nextValue}`}>{nextLabel}</dd></div>
       </dl>
       <section className="dm-auto-wake-confirm-section dm-auto-wake-confirm-impact">
         <h4><Info size={15} />影响范围</h4>
         <dl>
-          <div><dt>生效对象</dt><dd>未来在「{dealer.name}」下新绑定的设备</dd></div>
-          <div><dt>预计影响数量</dt><dd>无法预估，以实际新绑定数量为准</dd></div>
-          <div><dt>当前已绑定设备</dt><dd>{boundDeviceCount} 台；本次修改影响：<strong>0 台</strong></dd></div>
-          <div><dt>用户已手动配置设备</dt><dd>{userConfiguredDeviceCount} 台；本次修改影响：<strong>0 台</strong></dd></div>
-          <div><dt>生效时机</dt><dd>设备首次绑定时</dd></div>
-          <div><dt>应用方式</dt><dd>使用新的组织默认值初始化自动唤醒配置</dd></div>
+          {isEntrySetting ? (
+            <>
+              <div><dt>生效对象</dt><dd>「{dealer.name}」下 APP 主账号</dd></div>
+              <div><dt>生效时机</dt><dd>APP 下次获取组织配置时</dd></div>
+              <div><dt>分享账号</dt><dd>始终隐藏自动唤醒入口</dd></div>
+            </>
+          ) : (
+            <>
+              <div><dt>生效对象</dt><dd>未来在「{dealer.name}」下新绑定的设备</dd></div>
+              <div><dt>预计影响数量</dt><dd>无法预估，以实际新绑定数量为准</dd></div>
+              <div><dt>当前已绑定设备</dt><dd>{boundDeviceCount} 台</dd></div>
+              <div><dt>用户已手动配置设备</dt><dd>{userConfiguredDeviceCount} 台</dd></div>
+              <div><dt>生效时机</dt><dd>设备首次绑定时</dd></div>
+              <div><dt>应用方式</dt><dd>使用新的组织默认值初始化自动唤醒配置</dd></div>
+            </>
+          )}
         </dl>
       </section>
       <section className="dm-auto-wake-confirm-section dm-auto-wake-confirm-safe">
         <h4><CheckCircle2 size={15} />不会影响</h4>
         <ul>
-          <li>当前已经绑定的设备</li>
-          <li>当前设备正在使用的自动唤醒状态</li>
-          <li>用户已经手动修改过的设备配置</li>
-          <li>不会向现有设备下发控制指令</li>
-          <li>不会立即改变任何已绑定设备</li>
+          {isEntrySetting ? <li>不会改变设备当前自动唤醒状态</li> : <><li>当前已经绑定的设备</li><li>当前设备正在使用的自动唤醒状态</li><li>用户已经手动修改过的设备配置</li><li>不会向现有设备下发控制指令</li><li>不会立即改变任何已绑定设备</li></>}
         </ul>
       </section>
       <section className="dm-auto-wake-rebind-rule">
         <strong>重新绑定规则</strong>
-        <p>设备解绑后再次绑定时，将按照当前经销商组织最新的默认值重新初始化。</p>
+        <p>{isEntrySetting ? '入口展示策略与设备首次绑定默认状态独立保存，本次修改不会联动另一项配置。' : '设备解绑后再次绑定时，将按照当前经销商组织最新的默认值重新初始化。'}</p>
       </section>
-      <div className="dm-auto-wake-warning"><AlertTriangle size={15} /><span><strong>配置变更提示</strong>修改后，仅影响未来新绑定设备的默认初始化行为，不会覆盖现有设备配置，也不会向现有设备执行控制指令。</span></div>
+      <div className="dm-auto-wake-warning"><AlertTriangle size={15} /><span><strong>配置变更提示</strong>{isEntrySetting ? '入口隐藏后，主账号将无法在 APP 中看到或修改自动唤醒入口；分享账号始终隐藏。' : '修改后，仅影响未来新绑定设备的默认初始化行为，不会覆盖现有设备配置，也不会向现有设备执行控制指令。'}</span></div>
     </BaseModal>
   );
 }

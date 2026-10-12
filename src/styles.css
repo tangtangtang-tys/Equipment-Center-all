@@ -16819,7 +16819,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .platform-log-custom-dates label {
@@ -21611,6 +21611,96 @@ button {
   padding: 18px 18px 0;
 }
 
+.dealer-console-shell .dm-auto-wake-card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #edf1f6;
+  padding: 0 0 14px;
+}
+
+.dealer-console-shell .dm-auto-wake-card-title h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.dealer-console-shell .dm-auto-wake-card-title p {
+  margin: 3px 0 0;
+  color: #73839d;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dealer-console-shell .dm-auto-wake-card-title .dm-auto-wake-readonly {
+  margin: 1px 0 0;
+  color: #98a2b3;
+  white-space: nowrap;
+}
+
+.dealer-console-shell .dm-auto-wake-settings {
+  display: grid;
+  gap: 0;
+}
+
+.dealer-console-shell .dm-auto-wake-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 0;
+  border-bottom: 1px solid #edf1f6;
+  padding: 14px 0;
+}
+
+.dealer-console-shell .dm-auto-wake-setting-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dealer-console-shell .dm-auto-wake-setting-copy > strong {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
+.dealer-console-shell .dm-auto-wake-setting-copy > span {
+  color: #73839d;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dealer-console-shell .dm-auto-wake-setting-control {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 12px;
+}
+
+.dealer-console-shell .dm-auto-wake-combination-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 0 0;
+  border: 1px solid #dbeafe;
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: #38658f;
+  background: #f5f9ff;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dealer-console-shell .dm-auto-wake-combination-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
 .dealer-console-shell .dm-auto-wake-head {
   align-items: flex-start;
   gap: 18px;
@@ -21739,6 +21829,21 @@ button {
 
   .dealer-console-shell .dm-auto-wake-card {
     padding: 16px 14px 0;
+  }
+
+  .dealer-console-shell .dm-auto-wake-card-title {
+    gap: 10px;
+  }
+
+  .dealer-console-shell .dm-auto-wake-setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dealer-console-shell .dm-auto-wake-setting-control {
+    align-self: stretch;
+    justify-content: space-between;
   }
 
   .dealer-console-shell .dm-auto-wake-head {

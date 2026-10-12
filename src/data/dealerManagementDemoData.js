@@ -378,7 +378,7 @@ export const initialDeviceDefaultConfigHistories = Object.fromEntries(
     (config.history || []).map((item) => ({
       ...item,
       parameterKey: 'autoWakeDefaultValue',
-      parameterName: '自动唤醒默认值',
+      parameterName: '自动唤醒首次绑定默认状态',
     })),
   ]),
 );
