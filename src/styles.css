@@ -16786,12 +16786,15 @@ button {
   align-items: flex-start;
 }
 
-.platform-logs-topline-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.platform-logs-topline h1 {
+  margin-top: 0;
+}
+
+.platform-log-description {
+  margin: 7px 0 0;
+  color: var(--iter-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .platform-logs-topline h1 .annotation-anchor,
@@ -16804,16 +16807,6 @@ button {
 
 .platform-logs-topline h1 .annotation-anchor .annotation-dot {
   transform: translateY(-2px);
-}
-
-.platform-log-scope-note {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: -2px 0 14px;
-  padding: 0 2px;
-  color: #365b7d;
-  font-size: 11px;
 }
 
 .platform-log-time-toolbar {
@@ -17039,11 +17032,6 @@ button {
   height: 1px;
   margin: 11px 0;
   background: var(--iter-border-soft);
-}
-
-.platform-log-result-scope {
-  color: var(--iter-text-faint);
-  font-size: 11px;
 }
 
 .platform-log-filter-row {
@@ -17451,11 +17439,6 @@ button {
   .platform-logs-topline {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .platform-logs-topline-actions {
-    width: 100%;
-    justify-content: flex-start;
   }
 
   .platform-log-time-toolbar {

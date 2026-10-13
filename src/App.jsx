@@ -5403,7 +5403,6 @@ function PlatformOperationLogsPage() {
     })
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
-  const totalCount = timeScopedLogs.length;
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pageStartIndex = (safeCurrentPage - 1) * pageSize;
@@ -5482,30 +5481,22 @@ function PlatformOperationLogsPage() {
     <section className="iteration-page dealer-page platform-logs-page">
       <div className="iteration-topline platform-logs-topline">
         <div>
-          <span className="iteration-kicker">平台运维审计</span>
           <h1>
             平台操作日志
             {annotationMode && <AnnotationDot id="P01" {...annotationProps} />}
           </h1>
+          <p className="platform-log-description">记录设备详情和经销商列表中的关键业务操作，支持按条件查询并查看操作详情。</p>
         </div>
-        <div className="platform-logs-topline-actions">
-          <span className="iteration-stage">按操作时间倒序</span>
-          <button
-            type="button"
-            className={cls('annotation-toggle', annotationMode && 'active')}
-            onClick={() => {
-              setAnnotationMode((enabled) => !enabled);
-              setActiveAnnotation(null);
-            }}
-          >
-            需求批注：{annotationMode ? '开启' : '关闭'}
-          </button>
-        </div>
-      </div>
-
-      <div className="platform-log-scope-note">
-        <Info size={15} />
-        <span>仅展示当前账号授权范围内的业务操作记录。</span>
+        <button
+          type="button"
+          className={cls('annotation-toggle', annotationMode && 'active')}
+          onClick={() => {
+            setAnnotationMode((enabled) => !enabled);
+            setActiveAnnotation(null);
+          }}
+        >
+          需求批注：{annotationMode ? '开启' : '关闭'}
+        </button>
       </div>
 
       <div className="platform-log-filter-panel platform-log-query-panel" aria-label="日志查询条件">
@@ -5537,7 +5528,7 @@ function PlatformOperationLogsPage() {
             <option value="all">全部操作类型</option>
             {PLATFORM_LOG_ACTIONS.map((action) => <option key={action} value={action}>{action}</option>)}
           </select>
-          <input className="dealer-search-input platform-log-keyword" placeholder="设备 ID、APP 测试账号、经销商名称或操作类型" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <input className="dealer-search-input platform-log-keyword" placeholder="搜索设备、APP 测试账号或经销商" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
           <button type="button" className="dealer-btn-secondary platform-log-reset" onClick={resetFilters}><RefreshCw size={14} />重置</button>
         </div>
       </div>
@@ -5545,7 +5536,6 @@ function PlatformOperationLogsPage() {
       <div className="platform-log-result-bar">
         <span>
           {filteredLogs.length > 0 ? `显示第 ${pageStartIndex + 1}-${Math.min(pageStartIndex + pageSize, filteredLogs.length)} 条记录` : '显示 0 条记录'}
-          <span className="platform-log-result-scope">（筛选结果共 {filteredLogs.length} 条，时间范围内共 {totalCount} 条）</span>
           {annotationMode && <AnnotationDot id="P03" {...annotationProps} />}
         </span>
       </div>
