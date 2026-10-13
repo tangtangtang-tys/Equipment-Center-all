@@ -726,95 +726,175 @@ export const testOperationLogs = [
   },
 ];
 
-// 平台操作日志（独立于经销商详情日志、App 测试日志和设备默认参数专项历史）
-// 本数据集仅记录有业务意义的操作，不包含自动唤醒默认值修改、登录等安全行为。
+// 平台操作日志：只记录平台用户实际提交的 5 类业务操作。
+// 不包含页面浏览、查询、筛选、安全行为或批量设备操作。
 const platformOperationLogSeed = [
   {
-    operationId: 'OP-20261009-002', occurredAt: '2026-10-09 15:17:06',
-    operatorId: 'OP-003', operatorName: '陈运营', operatorRole: '运营专员',
-    organizationId: 'DL-1002', organizationName: '华南经销商-安视电子', module: 'App测试管理',
-    actionType: '创建APP测试账号', targetType: 'App测试账号', targetId: 'TP-011',
-    targetName: '132****4567', result: '成功', beforeValue: '无',
-    afterValue: '有效期：2026-10-09 至 2026-11-08', reason: '季度抽检账号申请',
-    failureReason: '', source: 'Web 管理后台', createdAt: '2026-10-09 15:17:06',
+    occurredAt: '2026-10-12 11:26:34', operatorId: 'OP-003', operatorName: '陈运营',
+    module: '设备详情', actionType: '设备禁用开启', targetType: '设备', targetId: 'DEV-00202',
+    targetName: '异常设备-00202', result: '成功', beforeValue: '设备状态：正常', afterValue: '设备状态：已禁用',
+    operationDetail: '在设备详情页将设备禁用状态开启。', reason: '售后风险排查', failureReason: '',
   },
   {
-    operationId: 'OP-20261009-003', occurredAt: '2026-10-09 14:56:34',
-    operatorId: 'OP-004', operatorName: '赵德胜', operatorRole: '经销商运营',
-    organizationId: 'DL-1003', organizationName: '西部经销商-通达安防', module: '设备管理',
-    actionType: '设备禁用关闭', targetType: '设备批次', targetId: 'BATCH-20261009-03',
-    targetName: '售后纠纷设备（12 台）', result: '失败', beforeValue: '设备状态：已禁用',
-    afterValue: '未变更', reason: '售后工单批量处理',
-    failureReason: '设备状态服务响应超时，已阻止本次批量变更', source: 'Web 管理后台',
-    createdAt: '2026-10-09 14:56:34',
+    occurredAt: '2026-10-12 10:13:17', operatorId: 'OP-002', operatorName: '李审批',
+    module: '经销商列表', actionType: '重置APP测试密码', targetType: 'APP测试账号', targetId: 'TP-00201',
+    targetName: '测试账号 130****1001', result: '成功', beforeValue: '密码：已设置', afterValue: '密码：已重置',
+    operationDetail: '重置 APP 测试账号登录密码，不展示新密码内容。', reason: '账号维护', failureReason: '',
   },
   {
-    operationId: 'OP-20261009-004', occurredAt: '2026-10-09 14:28:51',
-    operatorId: 'OP-002', operatorName: '李审批', operatorRole: '业务审批员',
-    organizationId: 'DL-1001', organizationName: '华东经销商-智联科技', module: 'App测试管理',
-    actionType: '重置APP测试密码', targetType: 'App测试账号', targetId: 'TP-003',
-    targetName: '138****1234', result: '权限拒绝', beforeValue: '密码：已设置',
-    afterValue: '未变更', reason: '',
-    failureReason: '当前账号没有重置 APP 测试密码权限', source: 'Web 管理后台',
-    createdAt: '2026-10-09 14:28:51',
+    occurredAt: '2026-10-12 09:00:00', operatorId: 'OP-004', operatorName: '汤彦珊',
+    module: '经销商列表', actionType: '创建APP测试账号', targetType: 'APP测试账号', targetId: 'TP-00200',
+    targetName: '抽检账号 130****1000', result: '权限拒绝', beforeValue: '无', afterValue: '未创建',
+    operationDetail: '创建经销商 APP 测试账号。', reason: '', failureReason: '当前账号没有创建 APP 测试账号权限',
   },
   {
-    operationId: 'OP-20261009-006', occurredAt: '2026-10-09 11:09:47',
-    operatorId: 'OP-006', operatorName: '何敏', operatorRole: '经销商运营',
-    organizationId: 'DL-1004', organizationName: '华北经销商-恒信数码', module: '设备管理',
-    actionType: '设备禁用开启', targetType: '设备批次', targetId: 'BATCH-20261009-01',
-    targetName: '异常设备（8 台）', result: '权限拒绝', beforeValue: '设备状态：已启用',
-    afterValue: '未变更', reason: '',
-    failureReason: '当前角色没有开启设备禁用权限', source: 'Web 管理后台',
-    createdAt: '2026-10-09 11:09:47',
+    occurredAt: '2026-10-11 14:05:25', operatorId: 'OP-007', operatorName: '林涛',
+    module: '设备详情', actionType: '设备禁用关闭', targetType: '设备', targetId: 'DEV-00203',
+    targetName: '巡检设备-00203', result: '成功', beforeValue: '设备状态：已禁用', afterValue: '设备状态：正常',
+    operationDetail: '在设备详情页将设备禁用状态关闭。', reason: '售后处理完成', failureReason: '',
   },
   {
-    operationId: 'OP-20261009-007', occurredAt: '2026-10-09 10:36:25',
-    operatorId: 'OP-001', operatorName: '汤彦珊', operatorRole: '平台管理员',
-    organizationId: 'PLATFORM', organizationName: '平台总部', module: '经销商管理',
-    actionType: '暂停经销商组织', targetType: '经销商组织', targetId: 'DL-1005',
-    targetName: '东北经销商-鑫达科技', result: '成功', beforeValue: '正常',
-    afterValue: '已暂停', reason: '组织资质复核中',
-    failureReason: '', source: 'Web 管理后台', createdAt: '2026-10-09 10:36:25',
+    occurredAt: '2026-10-10 16:31:59', operatorId: 'OP-001', operatorName: '何敏',
+    module: '经销商列表', actionType: '修改设备默认参数配置', targetType: '经销商', targetId: 'DL-1001',
+    targetName: '华东经销商-智联科技', result: '成功', beforeValue: '自动唤醒入口：隐藏；默认状态：关闭',
+    afterValue: '自动唤醒入口：显示；默认状态：开启',
+    operationDetail: '更新自动唤醒默认配置，仅影响后续新绑定设备，不覆盖已有设备的用户设置。',
+    changeItems: [
+      { name: '自动唤醒入口', before: '隐藏', after: '显示' },
+      { name: '自动唤醒默认状态', before: '关闭', after: '开启' },
+    ],
+    reason: '经销商出厂策略调整', failureReason: '',
   },
   {
-    operationId: 'OP-20261009-010', occurredAt: '2026-10-09 08:48:19',
-    operatorId: 'OP-002', operatorName: '李审批', operatorRole: '业务审批员',
-    organizationId: 'DL-1004', organizationName: '华北经销商-恒信数码', module: 'App测试管理',
-    actionType: '重置APP测试密码', targetType: 'App测试账号', targetId: 'TP-007',
-    targetName: '131****6789', result: '成功', beforeValue: '密码：已设置',
-    afterValue: '密码：已重置', reason: '账号安全维护',
-    failureReason: '', source: 'Web 管理后台', createdAt: '2026-10-09 08:48:19',
+    occurredAt: '2026-10-09 14:28:51', operatorId: 'OP-002', operatorName: '李审批',
+    module: '经销商列表', actionType: '修改设备默认参数配置', targetType: '经销商', targetId: 'DL-1002',
+    targetName: '华南经销商-安视电子', result: '失败', beforeValue: '自动唤醒入口：显示；默认状态：关闭',
+    afterValue: '未变更', operationDetail: '保存自动唤醒默认配置。',
+    changeItems: [{ name: '自动唤醒默认状态', before: '关闭', after: '开启' }],
+    reason: '', failureReason: '默认参数配置服务响应超时，未完成保存',
   },
   {
-    operationId: 'OP-20261008-012', occurredAt: '2026-10-08 16:05:44',
-    operatorId: 'OP-006', operatorName: '何敏', operatorRole: '经销商运营',
-    organizationId: 'DL-1001', organizationName: '华东经销商-智联科技', module: 'App测试管理',
-    actionType: '创建APP测试账号', targetType: 'App测试账号', targetId: 'TP-012',
-    targetName: '136****7712', result: '失败', beforeValue: '无',
-    afterValue: '未创建', reason: '新品批次抽检',
-    failureReason: '该手机号已存在有效测试权限', source: 'Web 管理后台',
-    createdAt: '2026-10-08 16:05:44',
+    occurredAt: '2026-10-08 16:05:44', operatorId: 'OP-006', operatorName: '何敏',
+    module: '经销商列表', actionType: '创建APP测试账号', targetType: 'APP测试账号', targetId: 'TP-00207',
+    targetName: '测试账号 130****1007', result: '失败', beforeValue: '无', afterValue: '未创建',
+    operationDetail: '创建经销商 APP 测试账号。', reason: '新品批次抽检', failureReason: '该手机号已存在有效测试权限',
   },
   {
-    operationId: 'OP-20260918-014', occurredAt: '2026-09-18 11:24:08',
-    operatorId: 'OP-001', operatorName: '汤彦珊', operatorRole: '平台管理员',
-    organizationId: 'PLATFORM', organizationName: '平台总部', module: '经销商管理',
-    actionType: '恢复经销商组织', targetType: '经销商组织', targetId: 'DL-1005',
-    targetName: '东北经销商-鑫达科技', result: '成功', beforeValue: '已暂停',
-    afterValue: '正常', reason: '资质复核完成',
-    failureReason: '', source: 'Web 管理后台', createdAt: '2026-09-18 11:24:08',
+    occurredAt: '2026-10-08 14:02:58', operatorId: 'OP-004', operatorName: '何敏',
+    module: '设备详情', actionType: '设备禁用关闭', targetType: '设备', targetId: 'DEV-00208',
+    targetName: '售后设备-00208', result: '权限拒绝', beforeValue: '设备状态：已禁用', afterValue: '未变更',
+    operationDetail: '在设备详情页将设备禁用状态关闭。', reason: '', failureReason: '当前账号没有关闭设备禁用权限',
   },
   {
-    operationId: 'OP-20260816-016', occurredAt: '2026-08-16 14:02:19',
-    operatorId: 'OP-007', operatorName: '林涛', operatorRole: '经销商运营',
-    organizationId: 'DL-1003', organizationName: '西部经销商-通达安防', module: 'App测试管理',
-    actionType: '审批APP测试权限', targetType: 'App测试账号', targetId: 'TP-006',
-    targetName: '136****2345', result: '权限拒绝', beforeValue: '待审批',
-    afterValue: '未变更', reason: '',
-    failureReason: '当前账号没有该组织的审批权限', source: 'Web 管理后台',
-    createdAt: '2026-08-16 14:02:19',
+    occurredAt: '2026-10-07 09:42:10', operatorId: 'OP-003', operatorName: '陈运营',
+    module: '经销商列表', actionType: '重置APP测试密码', targetType: 'APP测试账号', targetId: 'TP-00214',
+    targetName: '抽检账号 130****1014', result: '成功', beforeValue: '密码：已设置', afterValue: '密码：已重置',
+    operationDetail: '重置 APP 测试账号登录密码，不展示新密码内容。', reason: '账号维护', failureReason: '',
   },
-].map(({ operationId, operatorRole, organizationId, organizationName, source, createdAt, ...log }) => log);
+].map((log) => ({ ...log, changeItems: log.changeItems || [] }));
 
-export const platformOperationLogs = platformOperationLogSeed;
+// 补充近 30 天的演示数据，用于验证日志列表的滚动、筛选和详情交互。
+const platformOperationLogSupplement = Array.from({ length: 90 }, (_, index) => {
+  const operators = [
+    { id: 'OP-001', name: '汤彦珊' },
+    { id: 'OP-002', name: '李审批' },
+    { id: 'OP-003', name: '陈运营' },
+    { id: 'OP-004', name: '赵德胜' },
+    { id: 'OP-006', name: '何敏' },
+    { id: 'OP-007', name: '林涛' },
+  ];
+  const actions = [
+    { module: '经销商列表', actionType: '创建APP测试账号', targetType: 'APP测试账号', targetPrefix: 'TP' },
+    { module: '经销商列表', actionType: '重置APP测试密码', targetType: 'APP测试账号', targetPrefix: 'TP' },
+    { module: '设备详情', actionType: '设备禁用开启', targetType: '设备', targetPrefix: 'DEV' },
+    { module: '设备详情', actionType: '设备禁用关闭', targetType: '设备', targetPrefix: 'DEV' },
+    { module: '经销商列表', actionType: '修改设备默认参数配置', targetType: '经销商', targetPrefix: 'DL' },
+  ];
+  const organizations = [
+    { id: 'DL-1001', name: '华东经销商-智联科技' },
+    { id: 'DL-1002', name: '华南经销商-安视电子' },
+    { id: 'DL-1003', name: '西部经销商-通达安防' },
+    { id: 'DL-1004', name: '华北经销商-恒信数码' },
+  ];
+  const operator = operators[index % operators.length];
+  const action = actions[index % actions.length];
+  const organization = organizations[index % organizations.length];
+  const date = new Date(2026, 9, 12);
+  date.setDate(date.getDate() - Math.floor(index / 3));
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(8 + (index % 9)).padStart(2, '0');
+  const minute = String((index * 13) % 60).padStart(2, '0');
+  const second = String((index * 17) % 60).padStart(2, '0');
+  const occurredAt = `2026-${month}-${day} ${hour}:${minute}:${second}`;
+  const isDenied = index % 11 === 0;
+  const isFailed = !isDenied && index % 13 === 0;
+  const result = isDenied ? '权限拒绝' : (isFailed ? '失败' : '成功');
+  const targetNumber = String(200 + index).padStart(5, '0');
+  const targetId = action.targetPrefix === 'DL'
+    ? `DL-${String(1001 + (index % 4)).padStart(4, '0')}`
+    : `${action.targetPrefix}-${targetNumber}`;
+  const targetName = action.targetType === '设备'
+    ? `${index % 2 ? '巡检' : '异常'}设备-${targetNumber}`
+    : action.targetType === '经销商'
+      ? organization.name
+      : action.targetType === 'APP测试账号'
+        ? `${index % 2 ? '测试账号' : '抽检账号'} ${String(13000000000 + index).slice(0, 3)}****${String(1000 + index).slice(-4)}`
+        : organization.name;
+  const beforeValue = action.actionType === '设备禁用开启'
+    ? '设备状态：正常'
+    : action.actionType === '设备禁用关闭'
+      ? '设备状态：已禁用'
+      : action.actionType === '重置APP测试密码'
+        ? '密码：已设置'
+        : action.actionType === '修改设备默认参数配置'
+          ? `自动唤醒入口：${index % 2 ? '显示' : '隐藏'}；默认状态：${index % 3 ? '关闭' : '开启'}`
+          : '无';
+  const afterValue = result === '成功'
+    ? (action.actionType === '设备禁用开启'
+      ? '设备状态：已禁用'
+      : action.actionType === '设备禁用关闭'
+        ? '设备状态：正常'
+        : action.actionType === '重置APP测试密码'
+          ? '密码：已重置'
+          : action.actionType === '修改设备默认参数配置'
+            ? `自动唤醒入口：${index % 2 ? '隐藏' : '显示'}；默认状态：${index % 3 ? '开启' : '关闭'}`
+            : '有效')
+    : '未变更';
+
+  const changeItems = action.actionType === '修改设备默认参数配置'
+    ? [
+      { name: '自动唤醒入口', before: index % 2 ? '显示' : '隐藏', after: result === '成功' ? (index % 2 ? '隐藏' : '显示') : '未变更' },
+      { name: '自动唤醒默认状态', before: index % 3 ? '关闭' : '开启', after: result === '成功' ? (index % 3 ? '开启' : '关闭') : '未变更' },
+    ]
+    : [];
+  const operationDetail = action.actionType === '设备禁用开启'
+    ? '在设备详情页将设备禁用状态开启。'
+    : action.actionType === '设备禁用关闭'
+      ? '在设备详情页将设备禁用状态关闭。'
+      : action.actionType === '创建APP测试账号'
+        ? '创建经销商 APP 测试账号。'
+        : action.actionType === '重置APP测试密码'
+          ? '重置 APP 测试账号登录密码，不展示新密码内容。'
+          : '更新自动唤醒默认配置，仅影响后续新绑定设备，不覆盖已有设备的用户设置。';
+
+  return {
+    occurredAt,
+    operatorId: operator.id,
+    operatorName: operator.name,
+    module: action.module,
+    actionType: action.actionType,
+    targetType: action.targetType,
+    targetId,
+    targetName,
+    result,
+    beforeValue,
+    afterValue,
+    operationDetail,
+    changeItems,
+    reason: result === '成功' ? (action.actionType === '修改设备默认参数配置' ? '经销商出厂策略调整' : '日常运营处理') : '',
+    failureReason: result === '权限拒绝' ? '当前账号没有该操作权限' : result === '失败' ? '业务服务响应异常，已阻止本次变更' : '',
+  };
+});
+
+export const platformOperationLogs = [...platformOperationLogSeed, ...platformOperationLogSupplement];

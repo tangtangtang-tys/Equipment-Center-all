@@ -424,6 +424,118 @@ const detailAnnotationItems = [
   },
 ];
 
+const platformLogAnnotationItems = [
+  {
+    id: 'P01',
+    title: '平台操作日志记录范围',
+    summary: [
+      '本页面统一查询平台用户在设备详情、经销商列表中的真实业务操作。',
+      '平台操作日志与 APP 测试操作日志、设备默认参数专项历史记录保持独立。',
+    ],
+    logic: [
+      '本期记录：创建 APP 测试账号、重置 APP 测试密码、设备禁用开启、设备禁用关闭、修改设备默认参数配置。',
+      '不记录页面访问、查询、筛选、分页等非业务动作；安全行为不纳入本期范围。',
+      '设备默认参数配置的修改统一记录在这里，专项历史页仍保留用于查看配置历史。',
+    ],
+    fields: [
+      '功能模块仅支持：设备详情、经销商列表。',
+      '不增加所属组织、操作来源、操作 ID、角色信息等独立字段。',
+    ],
+    acceptance: [
+      '执行页面访问、查询、筛选或分页，不新增平台操作日志。',
+      '执行上述 5 类真实业务操作后，可在列表中查询到对应记录。',
+    ],
+  },
+  {
+    id: 'P02',
+    title: '日志查询条件',
+    summary: [
+      '时间范围与其他查询条件处于同一个查询区域，默认展示近 30 天日志。',
+      '查询条件只服务于定位业务操作，不扩展操作人、SN 或操作结果筛选。',
+    ],
+    logic: [
+      '时间范围下拉支持：今日、近 7 天、近 30 天、自定义、全部时间。',
+      '选择自定义时，在同一色块区域内展示开始日期和结束日期；开始日期不能晚于结束日期。',
+      '支持按功能模块、操作类型和关键词查询；筛选变化后自动回到第 1 页。',
+      '关键词支持匹配设备 ID、APP 测试账号、经销商名称或操作类型。',
+    ],
+    fields: [
+      '查询字段：时间范围、功能模块、操作类型、关键词。',
+      '不提供操作人、SN、操作结果查询项。',
+    ],
+    acceptance: [
+      '首次进入页面默认选中“近 30 天”，并显示对应结果数量。',
+      '自定义日期非法时阻止产生有效结果，并展示明确错误提示。',
+      '点击重置后恢复近 30 天、全部模块、全部类型和空关键词。',
+    ],
+  },
+  {
+    id: 'P03',
+    title: '日志列表字段与记录口径',
+    summary: [
+      '列表用于快速确认当天或指定时间范围内谁执行了什么业务操作。',
+      '操作时间按倒序展示，单设备操作按一条日志记录。',
+    ],
+    logic: [
+      '设备禁用开启、设备禁用关闭目前只记录单设备操作，不支持批量操作记录。',
+      '以下当前不存在或不在本期范围内：绑定/解绑 APP 测试设备、修改设备备注、设备归属转移、修改经销商联系人。',
+      '操作结果展示成功、失败或权限拒绝；失败和拒绝原因在详情中查看。',
+    ],
+    fields: [
+      '列表字段：操作时间、操作人、功能模块、操作类型、操作对象、操作结果、操作。',
+      '操作对象展示对象名称和对象标识，详情按钮打开完整内容。',
+    ],
+    acceptance: [
+      '列表仅出现已确认的 5 种操作类型和 2 个功能模块。',
+      '同一条日志的时间、操作人、模块、类型、对象和结果可在详情中对应核对。',
+    ],
+  },
+  {
+    id: 'P04',
+    title: '操作详情抽屉',
+    summary: [
+      '详情通过右侧抽屉呈现，保留当前列表上下文，便于排查和核对。',
+      '修改设备默认参数配置时，必须能看清具体修改动作及前后值。',
+    ],
+    logic: [
+      '点击列表“详情”打开侧边抽屉，点击关闭、遮罩或按 Esc 返回列表。',
+      '抽屉展示操作主体、操作内容、具体操作内容、变更信息和操作结果。',
+      '修改设备默认参数配置时，变更信息展示自动唤醒入口和自动唤醒默认状态的修改前后值。',
+      '失败或权限拒绝时，详情中展示失败 / 拒绝原因。',
+    ],
+    fields: [
+      '操作主体：操作人、操作时间。',
+      '操作内容：功能模块、操作类型、对象类型、对象标识、对象名称。',
+      '具体操作内容：业务动作说明；变更信息：修改前 → 修改后。',
+    ],
+    acceptance: [
+      '详情抽屉不改变筛选条件、分页位置或列表排序。',
+      '关闭详情后可继续查看原列表，键盘 Esc 和遮罩关闭均可用。',
+    ],
+  },
+  {
+    id: 'P05',
+    title: '分页与结果数量',
+    summary: [
+      '日志数量较多时分页展示，避免一次加载和浏览过多记录。',
+      '默认每页 20 条，同时允许用户切换每页数量。',
+    ],
+    logic: [
+      '首次进入和重置后默认每页 20 条；可切换 10、20、50 条。',
+      '页码、上一页、下一页和总记录数跟随筛选结果更新。',
+      '切换筛选条件或每页条数后回到第 1 页；当前页超出范围时自动回退到最后一页。',
+    ],
+    fields: [
+      '结果区展示当前记录区间、筛选结果总数和时间范围内总数。',
+      '分页区展示总条数、每页条数和页码控制。',
+    ],
+    acceptance: [
+      '模拟超过 20 条日志时，列表分页且默认每页正好展示 20 条。',
+      '切换页码或每页条数后，记录区间和表格内容同步更新。',
+    ],
+  },
+];
+
 const iterationOperationLogs = [
   {
     time: '2026-06-13 15:06:32',
@@ -1591,7 +1703,7 @@ function ScenarioIllustration({ tone }) {
   );
 }
 
-function AnnotationDot({ id, markerKey = id, activeId, onToggle }) {
+function AnnotationDot({ id, markerKey = id, activeId, onToggle, items = detailAnnotationItems, labelPrefix = '原型批注' }) {
   const active = activeId === markerKey;
   const anchorRef = useRef(null);
   const [popoverStyle, setPopoverStyle] = useState({});
@@ -1631,21 +1743,33 @@ function AnnotationDot({ id, markerKey = id, activeId, onToggle }) {
         ref={anchorRef}
         className={cls('annotation-dot', active && 'active')}
         type="button"
-        aria-label={`查看原型批注 ${id}`}
+        aria-label={`查看${labelPrefix} ${id}`}
         aria-expanded={active}
         onClick={handleClick}
       >
         {id}
       </button>
-      {active && <AnnotationPopover id={id} style={popoverStyle} />}
+      {active && <AnnotationPopover id={id} style={popoverStyle} items={items} />}
     </span>
   );
 }
 
-function AnnotationPopover({ id, style }) {
-  const item = detailAnnotationItems.find((annotation) => annotation.id === id);
+function AnnotationPopover({ id, style, items = detailAnnotationItems }) {
+  const item = items.find((annotation) => annotation.id === id);
 
   if (!item) return null;
+
+  const renderSection = (title, lines) => {
+    if (!lines?.length) return null;
+    return (
+      <section>
+        <b>{title}</b>
+        <ul>
+          {lines.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      </section>
+    );
+  };
 
   return (
     <article className="annotation-popover" style={style} onClick={(event) => event.stopPropagation()}>
@@ -1653,18 +1777,10 @@ function AnnotationPopover({ id, style }) {
         <span>{item.id}</span>
         <strong>{item.title}</strong>
       </div>
-      <section>
-        <b>交互逻辑</b>
-        <ul>
-          {item.logic.map((line) => <li key={line}>{line}</li>)}
-        </ul>
-      </section>
-      <section>
-        <b>字段格式</b>
-        <ul>
-          {item.fields.map((line) => <li key={line}>{line}</li>)}
-        </ul>
-      </section>
+      {renderSection('需求说明', item.summary)}
+      {renderSection('交互逻辑', item.logic)}
+      {renderSection(item.fieldTitle || (item.acceptance ? '字段规则' : '字段格式'), item.fields)}
+      {renderSection('验收标准', item.acceptance)}
     </article>
   );
 }
@@ -5186,6 +5302,15 @@ function GlobalTestLogsPage() {
   );
 }
 
+const PLATFORM_LOG_MODULES = ['设备详情', '经销商列表'];
+const PLATFORM_LOG_ACTIONS = [
+  '创建APP测试账号',
+  '重置APP测试密码',
+  '设备禁用关闭',
+  '设备禁用开启',
+  '修改设备默认参数配置',
+];
+
 function PlatformOperationLogsPage() {
   const getLocalDate = () => {
     const now = new Date();
@@ -5201,19 +5326,49 @@ function PlatformOperationLogsPage() {
     return `${date.getFullYear()}-${month}-${day}`;
   };
   const today = getLocalDate();
-  const [timePreset, setTimePreset] = useState('today');
-  const [dateStart, setDateStart] = useState(today);
+  const [timePreset, setTimePreset] = useState('thirtyDays');
+  const [dateStart, setDateStart] = useState(() => shiftDate(today, -29));
   const [dateEnd, setDateEnd] = useState(today);
-  const [operatorFilter, setOperatorFilter] = useState('all');
   const [moduleFilter, setModuleFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [annotationMode, setAnnotationMode] = useState(true);
+  const [activeAnnotation, setActiveAnnotation] = useState(null);
   const detailCloseButtonRef = useRef(null);
 
-  const operators = [...new Map(platformOperationLogs.map((log) => [log.operatorId, log])).values()];
-  const modules = [...new Set(platformOperationLogs.map((log) => log.module))];
-  const actions = [...new Set(platformOperationLogs.map((log) => log.actionType))];
+  const annotationProps = {
+    activeId: activeAnnotation,
+    onToggle: (id) => setActiveAnnotation((current) => (current === id ? null : id)),
+    items: platformLogAnnotationItems,
+    labelPrefix: '需求批注',
+  };
+
+  useEffect(() => {
+    if (!annotationMode || !activeAnnotation) return undefined;
+
+    const closeActiveAnnotation = (event) => {
+      const target = event.target;
+      if (target?.closest?.('.annotation-dot, .annotation-popover')) return;
+      setActiveAnnotation(null);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setActiveAnnotation(null);
+    };
+
+    document.addEventListener('mousedown', closeActiveAnnotation);
+    document.addEventListener('touchstart', closeActiveAnnotation);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', closeActiveAnnotation);
+      document.removeEventListener('touchstart', closeActiveAnnotation);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [annotationMode, activeAnnotation]);
+
   const timePresetLabels = {
     today: '今日',
     sevenDays: '近7天',
@@ -5233,14 +5388,12 @@ function PlatformOperationLogsPage() {
   const timeScopedLogs = platformOperationLogs.filter((log) => isInDateRange(log.occurredAt));
   const filteredLogs = timeScopedLogs
     .filter((log) => {
-      if (operatorFilter !== 'all' && log.operatorId !== operatorFilter) return false;
       if (moduleFilter !== 'all' && log.module !== moduleFilter) return false;
       if (actionFilter !== 'all' && log.actionType !== actionFilter) return false;
       if (keyword) {
         const searchSource = [
           log.targetId,
           log.targetName,
-          log.operatorName,
           log.module,
           log.actionType,
         ].join(' ').toLowerCase();
@@ -5251,6 +5404,25 @@ function PlatformOperationLogsPage() {
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 
   const totalCount = timeScopedLogs.length;
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
+  const pageLogs = filteredLogs.slice(pageStartIndex, pageStartIndex + pageSize);
+  const pageItems = totalPages <= 7
+    ? Array.from({ length: totalPages }, (_, index) => index + 1)
+    : safeCurrentPage <= 4
+      ? [1, 2, 3, 4, 5, 'ellipsis-right', totalPages]
+      : safeCurrentPage >= totalPages - 3
+        ? [1, 'ellipsis-left', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+        : [1, 'ellipsis-left', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, 'ellipsis-right', totalPages];
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timePreset, dateStart, dateEnd, moduleFilter, actionFilter, keyword]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const selectTimePreset = (preset) => {
     setTimePreset(preset);
@@ -5279,11 +5451,11 @@ function PlatformOperationLogsPage() {
   };
 
   const resetFilters = () => {
-    selectTimePreset('today');
-    setOperatorFilter('all');
+    selectTimePreset('thirtyDays');
     setModuleFilter('all');
     setActionFilter('all');
     setKeyword('');
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -5311,9 +5483,24 @@ function PlatformOperationLogsPage() {
       <div className="iteration-topline platform-logs-topline">
         <div>
           <span className="iteration-kicker">平台运维审计</span>
-          <h1>平台操作日志</h1>
+          <h1>
+            平台操作日志
+            {annotationMode && <AnnotationDot id="P01" {...annotationProps} />}
+          </h1>
         </div>
-        <span className="iteration-stage">按操作时间倒序</span>
+        <div className="platform-logs-topline-actions">
+          <span className="iteration-stage">按操作时间倒序</span>
+          <button
+            type="button"
+            className={cls('annotation-toggle', annotationMode && 'active')}
+            onClick={() => {
+              setAnnotationMode((enabled) => !enabled);
+              setActiveAnnotation(null);
+            }}
+          >
+            需求批注：{annotationMode ? '开启' : '关闭'}
+          </button>
+        </div>
       </div>
 
       <div className="platform-log-scope-note">
@@ -5323,7 +5510,11 @@ function PlatformOperationLogsPage() {
 
       <div className="platform-log-filter-panel platform-log-query-panel" aria-label="日志查询条件">
         <div className="platform-log-time-toolbar">
-          <div className="platform-log-time-label"><Clock size={15} /><strong>时间范围</strong></div>
+          <div className="platform-log-time-label">
+            <Clock size={15} />
+            <strong>时间范围</strong>
+            {annotationMode && <AnnotationDot id="P02" {...annotationProps} />}
+          </div>
           <select className="dealer-filter-select platform-log-time-select" value={timePreset} onChange={(event) => selectTimePreset(event.target.value)} aria-label="时间范围">
             {Object.entries(timePresetLabels).map(([preset, label]) => <option key={preset} value={preset}>{label}</option>)}
           </select>
@@ -5338,25 +5529,25 @@ function PlatformOperationLogsPage() {
         {hasInvalidDateRange && <div className="platform-log-date-error"><AlertCircle size={14} />开始日期不能晚于结束日期</div>}
         <div className="platform-log-query-divider" />
         <div className="platform-log-filter-row">
-          <select className="dealer-filter-select" value={operatorFilter} onChange={(event) => setOperatorFilter(event.target.value)} aria-label="操作人">
-            <option value="all">全部操作人</option>
-            {operators.map((operator) => <option key={operator.operatorId} value={operator.operatorId}>{operator.operatorName}</option>)}
-          </select>
           <select className="dealer-filter-select" value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} aria-label="功能模块">
             <option value="all">全部功能模块</option>
-            {modules.map((module) => <option key={module} value={module}>{module}</option>)}
+            {PLATFORM_LOG_MODULES.map((module) => <option key={module} value={module}>{module}</option>)}
           </select>
           <select className="dealer-filter-select" value={actionFilter} onChange={(event) => setActionFilter(event.target.value)} aria-label="操作类型">
             <option value="all">全部操作类型</option>
-            {actions.map((action) => <option key={action} value={action}>{action}</option>)}
+            {PLATFORM_LOG_ACTIONS.map((action) => <option key={action} value={action}>{action}</option>)}
           </select>
-          <input className="dealer-search-input platform-log-keyword" placeholder="对象、设备 ID / SN、操作人、模块或操作类型" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          <input className="dealer-search-input platform-log-keyword" placeholder="设备 ID、APP 测试账号、经销商名称或操作类型" value={keyword} onChange={(event) => setKeyword(event.target.value)} />
           <button type="button" className="dealer-btn-secondary platform-log-reset" onClick={resetFilters}><RefreshCw size={14} />重置</button>
         </div>
       </div>
 
       <div className="platform-log-result-bar">
-        <span>显示 <strong>{filteredLogs.length}</strong> 条记录<span className="platform-log-result-scope">（时间范围内共 {totalCount} 条）</span></span>
+        <span>
+          {filteredLogs.length > 0 ? `显示第 ${pageStartIndex + 1}-${Math.min(pageStartIndex + pageSize, filteredLogs.length)} 条记录` : '显示 0 条记录'}
+          <span className="platform-log-result-scope">（筛选结果共 {filteredLogs.length} 条，时间范围内共 {totalCount} 条）</span>
+          {annotationMode && <AnnotationDot id="P03" {...annotationProps} />}
+        </span>
       </div>
 
       {filteredLogs.length > 0 ? (
@@ -5369,8 +5560,8 @@ function PlatformOperationLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => (
-                <tr key={`${log.occurredAt}-${log.operatorId}`} className="dealer-table-row platform-log-row">
+              {pageLogs.map((log, rowIndex) => (
+                <tr key={`${log.occurredAt}-${log.operatorId}-${log.actionType}-${log.targetId}-${pageStartIndex + rowIndex}`} className="dealer-table-row platform-log-row">
                   <td className="dealer-time">{log.occurredAt}</td>
                   <td><strong className="platform-log-operator">{log.operatorName}</strong></td>
                   <td>{log.module}</td>
@@ -5387,18 +5578,44 @@ function PlatformOperationLogsPage() {
         <div className="dealer-empty platform-log-empty"><ClipboardList size={22} /><strong>暂无匹配的操作日志</strong><span>可调整日期范围或筛选条件后重试</span></div>
       )}
 
+      {filteredLogs.length > 0 && (
+        <footer className="platform-log-pagination" aria-label="日志分页">
+          <span className="platform-log-pagination-total">
+            共 {filteredLogs.length} 条
+            {annotationMode && <AnnotationDot id="P05" {...annotationProps} />}
+          </span>
+          <div className="platform-log-pagination-controls">
+            <label className="platform-log-page-size">每页
+              <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setCurrentPage(1); }} aria-label="每页条数">
+                {[10, 20, 50].map((size) => <option key={size} value={size}>{size} 条</option>)}
+              </select>
+            </label>
+            <button type="button" className="platform-log-page-button" aria-label="上一页" disabled={safeCurrentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}><ChevronLeft size={15} /></button>
+            {pageItems.map((item) => typeof item === 'string' ? <span className="platform-log-page-ellipsis" key={item}>...</span> : <button type="button" className={cls('platform-log-page-button', item === safeCurrentPage && 'active')} key={item} aria-current={item === safeCurrentPage ? 'page' : undefined} onClick={() => setCurrentPage(item)}>{item}</button>)}
+            <button type="button" className="platform-log-page-button" aria-label="下一页" disabled={safeCurrentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}><ChevronRight size={15} /></button>
+          </div>
+        </footer>
+      )}
+
       {selectedLog && (
         <div className="platform-log-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedLog(null); }}>
           <aside className="platform-log-drawer" role="dialog" aria-modal="true" aria-labelledby="platform-log-drawer-title">
             <div className="platform-log-drawer-head">
-              <div><span className="iteration-kicker">操作详情</span><h2 id="platform-log-drawer-title">{selectedLog.actionType}</h2></div>
+              <div>
+                <span className="iteration-kicker">
+                  操作详情
+                  {annotationMode && <AnnotationDot id="P04" {...annotationProps} />}
+                </span>
+                <h2 id="platform-log-drawer-title">{selectedLog.actionType}</h2>
+              </div>
               <button ref={detailCloseButtonRef} type="button" className="dealer-modal-close" aria-label="关闭详情" onClick={() => setSelectedLog(null)}><X size={18} /></button>
             </div>
             <div className="platform-log-drawer-body">
               <div className="platform-log-detail-status"><span>操作结果</span><span className={cls('dealer-badge', resultClass(selectedLog.result))}>{selectedLog.result}</span></div>
               <div className="platform-log-detail-section"><h3>操作主体</h3><div className="platform-log-detail-grid"><div><span>操作人</span><strong>{selectedLog.operatorName}</strong></div><div><span>操作时间</span><strong>{selectedLog.occurredAt}</strong></div></div></div>
               <div className="platform-log-detail-section"><h3>操作内容</h3><div className="platform-log-detail-grid"><div><span>功能模块</span><strong>{selectedLog.module}</strong></div><div><span>操作类型</span><strong>{selectedLog.actionType}</strong></div><div><span>对象类型</span><strong>{selectedLog.targetType}</strong></div><div><span>对象标识</span><strong>{selectedLog.targetId}</strong></div><div className="platform-log-detail-wide"><span>对象名称</span><strong>{selectedLog.targetName}</strong></div></div></div>
-              <div className="platform-log-detail-section"><h3>变更信息</h3><div className="platform-log-value-change"><div><span>修改前</span><strong>{selectedLog.beforeValue || '—'}</strong></div><div className="platform-log-change-arrow">→</div><div><span>修改后</span><strong>{selectedLog.afterValue || '—'}</strong></div></div></div>
+              <div className="platform-log-detail-section"><h3>具体操作内容</h3><p className="platform-log-detail-note">{selectedLog.operationDetail || '—'}</p></div>
+              <div className="platform-log-detail-section"><h3>变更信息</h3>{selectedLog.changeItems?.length > 0 ? <div className="platform-log-change-list">{selectedLog.changeItems.map((change) => <div className="platform-log-change-row" key={change.name}><strong>{change.name}</strong><span>{change.before || '—'}</span><span className="platform-log-change-arrow">→</span><span>{change.after || '—'}</span></div>)}</div> : <div className="platform-log-value-change"><div><span>修改前</span><strong>{selectedLog.beforeValue || '—'}</strong></div><div className="platform-log-change-arrow">→</div><div><span>修改后</span><strong>{selectedLog.afterValue || '—'}</strong></div></div>}</div>
               {(selectedLog.reason || selectedLog.failureReason) && <div className="platform-log-detail-section"><h3>{selectedLog.result === '成功' ? '操作说明' : '失败 / 拒绝原因'}</h3><p className={cls('platform-log-detail-note', selectedLog.result !== '成功' && 'platform-log-detail-note-danger')}>{selectedLog.failureReason || selectedLog.reason}</p></div>}
             </div>
           </aside>
