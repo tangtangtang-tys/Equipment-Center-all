@@ -1940,7 +1940,6 @@ function AutoWakeConfirmModal({ dealer, config, setting = 'defaultValue', nextVa
   const currentRawValue = isEntrySetting ? config?.entryVisible !== false : config?.defaultValue;
   const nextLabel = isEntrySetting ? getAutoWakeEntryLabel(nextValue ? 'visible' : 'hidden') : getAutoWakeValueLabel(nextValue);
   const currentLabel = isEntrySetting ? getAutoWakeEntryLabel(currentRawValue ? 'visible' : 'hidden') : getAutoWakeValueLabel(currentRawValue);
-  const boundDeviceCount = config?.boundDeviceCount || dealer.deviceTotalCount || 0;
   const userConfiguredDeviceCount = config?.userConfiguredDeviceCount || 0;
   return (
     <BaseModal
@@ -1972,8 +1971,6 @@ function AutoWakeConfirmModal({ dealer, config, setting = 'defaultValue', nextVa
           ) : (
             <>
               <div><dt>生效对象</dt><dd>未来在「{dealer.name}」下新绑定的设备</dd></div>
-              <div><dt>预计影响数量</dt><dd>无法预估，以实际新绑定数量为准</dd></div>
-              <div><dt>当前已绑定设备</dt><dd>{boundDeviceCount} 台</dd></div>
               <div><dt>用户已手动配置设备</dt><dd>{userConfiguredDeviceCount} 台</dd></div>
               <div><dt>生效时机</dt><dd>设备首次绑定时</dd></div>
               <div><dt>应用方式</dt><dd>使用新的组织默认值初始化自动唤醒配置</dd></div>
