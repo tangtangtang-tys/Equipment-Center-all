@@ -246,15 +246,27 @@ export const initialAutoWakeConfigs = {
   'DL-1001': {
     status: 'configured',
     defaultValue: 'on',
-    updatedAt: '2026-09-28 11:26:08',
+    baselineDefaultValue: 'on',
+    entryVisible: true,
+    autoWakeStrategy: {
+      defaultValue: 'off',
+      countryCodes: ['CN', 'JP'],
+      languageCodes: ['zh-CN', 'ja-JP'],
+      updatedAt: '2026-10-16 10:46:05',
+      updatedBy: '汤彦珊',
+    },
+    updatedAt: '2026-10-16 10:46:05',
     updatedBy: '汤彦珊',
     boundDeviceCount: 1286,
     userConfiguredDeviceCount: 734,
     history: [
-      { id: 'AW-1001', time: '2026-09-28 11:26:08', operator: '汤彦珊', before: 'off', after: 'on', result: '成功', remark: '-' },
-      { id: 'AW-1002', time: '2026-09-24 18:08:07', operator: '汤彦珊', before: 'on', after: 'off', result: '成功', remark: '-' },
-      { id: 'AW-1003', time: '2026-09-20 10:32:15', operator: '李运营', before: 'off', after: 'on', result: '成功', remark: '-' },
-      { id: 'AW-1004', time: '2026-08-10 09:12:33', operator: '张运营', before: 'on', after: 'off', result: '成功', remark: '初始化历史配置' },
+      { id: 'AW-1000', time: '2026-10-16 10:46:05', operator: '汤彦珊', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'on', strategy: { defaultValue: 'off', countryCodes: ['CN', 'JP'], languageCodes: ['zh-CN', 'ja-JP'] } }, remark: '整套方案保存' },
+      { id: 'AW-1001', time: '2026-09-28 14:20:11', operator: '李四', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'on', strategy: { defaultValue: 'off', countryCodes: ['CN', 'JP'], languageCodes: ['zh-CN', 'ja-JP'] } }, remark: '替换当前唯一有效策略' },
+      { id: 'AW-1002', time: '2026-08-21 11:32:18', operator: '王五', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'off', strategy: { defaultValue: 'off', countryCodes: ['CN', 'JP'], languageCodes: ['zh-CN', 'ja-JP'] } }, remark: '-' },
+      { id: 'AW-1003', time: '2026-07-18 16:05:09', operator: '张三', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'on', strategy: { defaultValue: 'off', countryCodes: ['CN', 'JP'], languageCodes: ['zh-CN', 'ja-JP'] } }, remark: '-' },
+      { id: 'AW-1004', time: '2026-06-10 09:42:33', operator: '刘洋', result: '成功', snapshot: { entryVisible: false, baselineDefaultValue: 'on', strategy: { defaultValue: 'off', countryCodes: [], languageCodes: [] } }, remark: '-' },
+      { id: 'AW-1005', time: '2026-05-12 14:21:26', operator: '陈晨', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'off', strategy: { defaultValue: 'off', countryCodes: [], languageCodes: [] } }, remark: '-' },
+      { id: 'AW-1006', time: '2026-04-01 10:15:07', operator: '系统创建', result: '成功', snapshot: { entryVisible: true, baselineDefaultValue: 'off', strategy: { defaultValue: 'off', countryCodes: [], languageCodes: [] } }, remark: '初始化历史配置' },
     ],
   },
   'DL-1002': {
@@ -377,8 +389,8 @@ export const initialDeviceDefaultConfigHistories = Object.fromEntries(
     dealerId,
     (config.history || []).map((item) => ({
       ...item,
-      parameterKey: 'autoWakeDefaultValue',
-      parameterName: '自动唤醒首次绑定默认状态',
+      parameterKey: item.parameterKey || ((item.beforeScope || item.afterScope) ? 'autoWakeStrategy' : 'autoWakeDefaultValue'),
+      parameterName: item.parameterName || ((item.parameterKey === 'autoWakeStrategy' || item.beforeScope || item.afterScope) ? '自动唤醒定制策略' : '自动唤醒基础默认状态'),
     })),
   ]),
 );
