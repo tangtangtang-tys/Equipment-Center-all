@@ -37,6 +37,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Include training microsite
+        run: |
+          training_src='docs/training/设备中心平台与经销商模块培训'
+          mkdir -p dist/training
+          cp "$training_src/设备中心平台与经销商模块培训.html" dist/training/index.html
+          cp -R "$training_src/assets" dist/training/assets
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

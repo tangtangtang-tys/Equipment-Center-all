@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>设备中心平台与经销商模块培训</title>
+  <meta name="description" content="设备中心平台与经销商模块的企业内部培训网页，帮助跨部门成员理解产品定义、核心价值、业务流程和线上功能操作。">
+  <style>
+    :root {
+      --ink: #10232b;
+      --ink-soft: #49626a;
+      --paper: #f3f7f5;
+      --paper-deep: #e4efeb;
+      --panel: #ffffff;
+      --night: #0b2029;
+      --night-2: #12343e;
+      --aqua: #42d5c6;
+      --aqua-deep: #139b94;
+      --sky: #a9e8f2;
+      --amber: #f6b95c;
+      --coral: #f07f6c;
+      --line: rgba(16, 35, 43, .12);
+      --shadow: 0 20px 55px rgba(23, 59, 65, .10);
+      --shadow-soft: 0 10px 24px rgba(23, 59, 65, .08);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --max: 1440px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+      line-height: 1.65;
+      letter-spacing: .01em;
+    }
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--aqua); outline-offset: 4px; }
+
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+    .rail {
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+      padding: 30px 20px 22px;
+      background: var(--night); color: #d5e8e5;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+    .brand { display:flex; align-items:center; gap: 12px; padding: 0 10px 28px; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 14px; position: relative;
+      background: linear-gradient(140deg, var(--aqua), var(--sky));
+      box-shadow: 0 0 0 6px rgba(66,213,198,.10);
+    }
+    .brand-mark::before, .brand-mark::after { content:""; position:absolute; border:2px solid var(--night); border-radius: 50%; }
+    .brand-mark::before { inset: 10px; }
+    .brand-mark::after { inset: 16px; background: var(--night); }
+    .brand-title { font-size: 14px; font-weight: 700; line-height: 1.25; }
+    .brand-sub { display:block; margin-top:4px; color: #83a8ad; font-size: 11px; font-weight: 500; }
+    .rail-label { padding: 0 10px; color: #6f9298; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+    .nav { display:grid; gap: 5px; margin-top: 10px; }
+    .nav a {
+      display:flex; align-items:center; gap: 11px; padding: 10px 11px; border-radius: 11px;
+      color: #9dbdc0; text-decoration:none; font-size: 13px; transition: .2s ease;
+    }
+    .nav a:hover, .nav a.active { color: #f2fffb; background: rgba(66,213,198,.14); }
+    .nav-num { width: 22px; color: var(--aqua); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+    .rail-footer { margin: 36px 10px 0; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.10); color: #76979d; font-size: 11px; }
+    .rail-footer strong { display:block; margin-bottom: 7px; color: #c9e0dc; font-size: 12px; }
+
+    .main { min-width: 0; }
+    .topbar {
+      position: sticky; top: 0; z-index: 10; display:flex; justify-content:space-between; align-items:center;
+      gap: 16px; padding: 13px 42px; background: rgba(243,247,245,.88); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line);
+    }
+    .crumb { color: var(--ink-soft); font-size: 12px; }
+    .crumb b { color: var(--ink); }
+    .top-actions { display:flex; gap: 8px; align-items:center; }
+    .top-btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 7px 11px; border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; }
+    .top-btn:hover { border-color: var(--aqua-deep); color: var(--aqua-deep); }
+
+    .content { width: min(var(--max), calc(100% - 72px)); margin: 0 auto; padding: 42px 0 90px; }
+    .hero {
+      position: relative; overflow: hidden; display:grid; grid-template-columns: 1.15fr .85fr; gap: 32px; align-items: stretch;
+      min-height: 420px; padding: 48px; border-radius: var(--radius-lg); background: var(--night); color: #eefbf8; box-shadow: var(--shadow);
+    }
+    .hero::after { content:""; position:absolute; width: 420px; height: 420px; right: -150px; top: -190px; border-radius:50%; border: 1px solid rgba(169,232,242,.22); box-shadow: 0 0 0 34px rgba(169,232,242,.04), 0 0 0 74px rgba(169,232,242,.025); }
+    .hero-kicker { display:inline-flex; align-items:center; gap: 8px; margin-bottom: 20px; color: var(--sky); font-size: 12px; letter-spacing: .16em; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 0 5px rgba(66,213,198,.14); }
+    h1, h2, h3, p { margin-top:0; }
+    h1 { max-width: 680px; margin-bottom: 18px; font-size: clamp(34px, 4.6vw, 66px); line-height: 1.08; letter-spacing: -.045em; font-weight: 700; }
+    .hero-copy { max-width: 600px; color: #b8d3d0; font-size: 16px; }
+    .hero-cta { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap: 8px; min-height: 40px; padding: 9px 15px; border-radius: 999px; text-decoration:none; font-size: 13px; font-weight: 700; cursor:pointer; }
+    .btn-primary { background: var(--aqua); color: var(--night); }
+    .btn-primary:hover { background: #7ce6dc; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,.2); color: #d5e8e5; }
+    .btn-ghost:hover { border-color: var(--aqua); color: #fff; }
+    .hero-meta { display:flex; flex-wrap:wrap; gap: 18px; margin-top: 30px; color: #8eb3b2; font-size: 12px; }
+    .hero-meta b { display:block; color: #e2f4f0; font-size: 17px; font-weight: 700; }
+    .hero-board { position:relative; z-index:1; align-self: center; padding: 20px; border: 1px solid rgba(169,232,242,.18); border-radius: 22px; background: rgba(255,255,255,.06); }
+    .hero-illustration { display:block; width:100%; height:auto; margin: 4px 0 16px; overflow:visible; }
+    .hero-illustration .node-card { fill:rgba(255,255,255,.08); stroke:rgba(169,232,242,.45); stroke-width:1; }
+    .hero-illustration .node-card.accent { fill:rgba(66,213,198,.12); stroke:rgba(66,213,198,.82); }
+    .hero-illustration .node-card.warm { fill:rgba(246,185,92,.12); stroke:rgba(246,185,92,.72); }
+    .hero-illustration .connector { fill:none; stroke:rgba(169,232,242,.42); stroke-width:1.5; stroke-dasharray:4 4; }
+    .hero-illustration text { fill:#c9e4e1; font-family:ui-sans-serif,system-ui,sans-serif; font-size:10px; }
+    .hero-illustration .muted { fill:#7fa6a8; font-size:8px; }
+    .illustration-band { display:grid; grid-template-columns:minmax(0,1fr) minmax(420px, .78fr); gap:24px; align-items:center; margin-top:24px; padding:22px 24px; border:1px solid rgba(19,155,148,.22); border-radius:18px; background:linear-gradient(115deg,rgba(239,250,246,.94),rgba(255,255,255,.72)); }
+    .illustration-band svg { display:block; width:100%; min-width:420px; height:auto; }
+    .illustration-band .ill-copy { padding-right:8px; }
+    .illustration-band .ill-copy .micro-label { margin-bottom:8px; }
+    .illustration-band .ill-copy h3 { margin:0 0 8px; font-size:19px; }
+    .illustration-band .ill-copy p { margin:0; color:var(--ink-soft); font-size:13px; line-height:1.65; }
+    .flow-illustration { display:grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap:10px; align-items:center; margin:0 0 22px; padding:16px; border:1px solid rgba(255,255,255,.10); border-radius:18px; background:linear-gradient(110deg,rgba(255,255,255,.055),rgba(255,255,255,.02)); }
+    .flow-card { min-height:76px; padding:12px; border:1px solid rgba(169,232,242,.18); border-radius:14px; background:rgba(4,12,18,.34); }
+    .flow-card strong { display:block; margin-bottom:5px; color:#e2f4f0; font-size:13px; }
+    .flow-card span { color:#8eb3b2; font-size:10px; line-height:1.4; }
+    .flow-arrow { color:var(--dark-accent); font-size:21px; }
+    .role-lane { position:relative; display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:20px; padding:18px 12px 12px; border:1px solid rgba(19,155,148,.20); border-radius:18px; background:linear-gradient(110deg,rgba(239,250,246,.82),rgba(255,255,255,.58)); }
+    .role-lane::before { content:""; position:absolute; left:10%; right:10%; top:55px; height:2px; background:linear-gradient(90deg,#42d5c6,#a9e8f2,#f6b95c,#f07f6c,#8b7ad9); opacity:.48; }
+    .role-stop { position:relative; z-index:1; text-align:center; }
+    .role-stop .avatar { display:grid; place-items:center; width:64px; height:64px; margin:0 auto 9px; border:1px solid rgba(19,155,148,.22); border-radius:50%; background:#f5fbf9; box-shadow:0 6px 16px rgba(23,59,65,.10); }
+    .role-stop:nth-child(2) .avatar { background:#f2fbfd; border-color:rgba(25,124,148,.25); }
+    .role-stop:nth-child(3) .avatar { background:#fff8ec; border-color:rgba(184,116,22,.25); }
+    .role-stop:nth-child(4) .avatar { background:#fff2ef; border-color:rgba(197,90,75,.25); }
+    .role-stop:nth-child(5) .avatar { background:#f5f2ff; border-color:rgba(108,88,168,.25); }
+    .role-stop svg { width:42px; height:42px; overflow:visible; }
+    .role-stop .head { fill:#42d5c6; }
+    .role-stop .body { fill:none; stroke:#139b94; stroke-width:2.3; stroke-linecap:round; }
+    .role-stop:nth-child(2) .head { fill:#80d6e5; }.role-stop:nth-child(2) .body { stroke:#197c94; }
+    .role-stop:nth-child(3) .head { fill:#f6c66e; }.role-stop:nth-child(3) .body { stroke:#b87416; }
+    .role-stop:nth-child(4) .head { fill:#f29a8a; }.role-stop:nth-child(4) .body { stroke:#c55a4b; }
+    .role-stop:nth-child(5) .head { fill:#b8a8ec; }.role-stop:nth-child(5) .body { stroke:#6c58a8; }
+    .role-stop strong { display:block; color:var(--ink); font-size:11px; }
+    .role-stop span { display:block; margin-top:4px; color:var(--ink-soft); font-size:9px; line-height:1.35; }
+    .handoff-caption { margin:0 0 12px; color:var(--dark-muted); font-size:10px; letter-spacing:.04em; }
+    .board-top { display:flex; justify-content:space-between; color:#9fc7c7; font-size: 11px; }
+    .board-title { margin: 12px 0 20px; font-size: 16px; font-weight: 700; }
+    .board-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .signal { min-height: 94px; padding: 13px; border-radius: 14px; background: rgba(5,20,27,.42); }
+    .signal-label { color:#86a9ab; font-size: 11px; }
+    .signal-value { margin-top: 5px; font-size: 24px; font-weight:700; letter-spacing:-.04em; }
+    .signal-value small { color:#8eb3b2; font-size: 11px; font-weight: 500; letter-spacing: 0; }
+    .signal-line { height: 4px; margin-top: 11px; border-radius: 999px; background: rgba(255,255,255,.12); overflow:hidden; }
+    .signal-line i { display:block; height:100%; width: 78%; background: var(--aqua); border-radius: inherit; }
+    .signal:nth-child(2) .signal-line i { width: 93%; background: var(--sky); }
+    .signal:nth-child(3) .signal-line i { width: 61%; background: var(--amber); }
+    .signal:nth-child(4) .signal-line i { width: 86%; background: var(--aqua); }
+
+    .section { padding-top: 78px; scroll-margin-top: 72px; }
+    .section-head { display:flex; justify-content:space-between; align-items:end; gap: 24px; margin-bottom: 24px; }
+    .eyebrow { margin-bottom: 8px; color: var(--aqua-deep); font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h2 { margin-bottom: 8px; font-size: clamp(26px, 3vw, 40px); line-height: 1.12; letter-spacing: -.04em; }
+    .section-intro { max-width: 650px; margin-bottom: 0; color: var(--ink-soft); font-size: 14px; }
+    .section-note { color: var(--ink-soft); font-size: 12px; }
+
+    .stat-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 30px 0 22px; }
+    .stat { padding: 18px 18px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,.58); }
+    .stat strong { display:block; font-size: 28px; line-height: 1; letter-spacing: -.06em; }
+    .stat span { display:block; margin-top: 8px; color: var(--ink-soft); font-size: 12px; }
+    .accent-aqua { color: var(--aqua-deep); }
+    .accent-amber { color: #b87416; }
+    .accent-coral { color: #c55a4b; }
+
+    .two-up { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+    .definition-layout { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr); gap:18px; margin-bottom:22px; }
+    .definition-card { padding:26px; border:1px solid var(--line); border-radius:var(--radius-md); background:linear-gradient(135deg,#10343c,#174a50); color:#eaf8f5; box-shadow:var(--shadow-soft); }
+    .definition-card .micro-label { color:#a9e8f2; }
+    .definition-card h3 { margin:12px 0 10px; color:#fff; font-size:24px; line-height:1.25; }
+    .definition-card p { margin:0; color:#b9d7d5; font-size:14px; line-height:1.7; }
+    .definition-points { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .definition-point { padding:16px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.64); }
+    .definition-point strong { display:block; color:var(--ink); font-size:13px; }
+    .definition-point span { display:block; margin-top:6px; color:var(--ink-soft); font-size:11px; line-height:1.45; }
+    .value-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:0 0 22px; }
+    .value-card { padding:16px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.58); }
+    .value-card b { display:block; margin-bottom:7px; color:var(--aqua-deep); font-size:14px; }
+    .value-card span { color:var(--ink-soft); font-size:11px; line-height:1.45; }
+    .leader-brief { margin:0 0 22px; padding:20px; border:1px solid rgba(19,155,148,.22); border-radius:18px; background:linear-gradient(120deg,#eaf8f3,#f8fbfa); }
+    .brief-kicker { color:var(--aqua-deep); font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    .brief-title { margin:7px 0 14px; color:var(--ink); font-size:19px; font-weight:800; }
+    .brief-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .brief-item { padding:14px; border-radius:13px; background:rgba(255,255,255,.66); }
+    .brief-item b { display:block; margin-bottom:5px; color:var(--ink); font-size:12px; }
+    .brief-item span { color:var(--ink-soft); font-size:11px; line-height:1.45; }
+    .pain-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 22px; }
+    .pain-card { min-height:150px; padding:19px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.58); }
+    .pain-card .pain-num { display:flex; align-items:center; justify-content:center; width:30px; height:30px; margin-bottom:16px; border-radius:10px; background:#e8f6f2; color:var(--aqua-deep); font:700 12px ui-monospace,monospace; }
+    .pain-card:nth-child(2) .pain-num { background:#fff2dc; color:#b87416; }.pain-card:nth-child(3) .pain-num { background:#fbe7e3; color:#c55a4b; }
+    .pain-card h3 { margin:0 0 7px; color:var(--ink); font-size:15px; }.pain-card p { margin:0; color:var(--ink-soft); font-size:12px; line-height:1.55; }
+    .goal-strip { display:grid; grid-template-columns:1fr 38px 1fr; align-items:center; gap:12px; padding:16px; border:1px solid rgba(19,155,148,.20); border-radius:16px; background:linear-gradient(110deg,#e9f8f3,#f9fbfa); }
+    .goal-box { padding:14px; border-radius:12px; background:rgba(255,255,255,.70); }.goal-box.after { background:#10343c; }.goal-box b { display:block; margin-bottom:5px; color:var(--ink); font-size:12px; }.goal-box.after b { color:#fff; }.goal-box span { color:var(--ink-soft); font-size:11px; line-height:1.45; }.goal-box.after span { color:#b9d7d5; }.goal-arrow { color:var(--aqua-deep); text-align:center; font-size:22px; font-weight:800; }
+    .roadmap { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .roadmap-card { position:relative; min-height:190px; padding:20px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.58); }
+    .roadmap-card::after { content:"→"; position:absolute; top:50%; right:-16px; color:var(--aqua-deep); font-size:23px; font-weight:800; transform:translateY(-50%); }
+    .roadmap-card:last-child::after { display:none; }.roadmap-card.current { border-color:rgba(19,155,148,.35); }.roadmap-card.next { border-color:rgba(184,116,22,.35); }.roadmap-card.target { border-color:rgba(108,88,168,.35); }
+    .roadmap-stage { color:var(--aqua-deep); font:800 11px ui-monospace,monospace; letter-spacing:.08em; }.roadmap-card.next .roadmap-stage { color:#b87416; }.roadmap-card.target .roadmap-stage { color:#6c58a8; }
+    .roadmap-card h3 { margin:12px 0 9px; color:var(--ink); font-size:17px; }.roadmap-card p { margin:0 0 12px; color:var(--ink-soft); font-size:12px; line-height:1.5; }.roadmap-card ul { margin:0; padding-left:17px; color:var(--ink-soft); font-size:11px; line-height:1.7; }
+    .roadmap-heading { margin-top:28px; }.roadmap-heading h3 { margin:8px 0 14px; color:var(--ink); font-size:21px; }
+    .before-after { display:grid; grid-template-columns:1fr 36px 1fr; align-items:stretch; gap:10px; margin-bottom:22px; }
+    .ba-card { padding:17px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.58); }
+    .ba-card.after { border-color:rgba(19,155,148,.28); background:linear-gradient(135deg,#effaf6,#fff); }
+    .ba-card b { display:block; margin-bottom:7px; color:var(--ink); font-size:12px; }
+    .ba-card p { margin:0; color:var(--ink-soft); font-size:11px; line-height:1.55; }
+    .ba-arrow { display:grid; place-items:center; color:var(--aqua-deep); font-size:23px; font-weight:800; }
+    .task-matrix { margin-top:20px; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--panel); }
+    .task-matrix table { width:100%; border-collapse:collapse; }
+    .task-matrix th,.task-matrix td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,.08); text-align:left; font-size:11px; }
+    .task-matrix th { color:var(--ink-soft); background:#edf6f3; font-size:10px; letter-spacing:.06em; }
+    .task-matrix td { color:var(--ink-soft); border-color:var(--line); }.task-matrix td:first-child { color:var(--ink); font-weight:700; }
+    .boundary-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
+    .boundary-card { padding:16px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.56); }
+    .boundary-card h3 { margin:0 0 8px; color:var(--ink); font-size:14px; }.boundary-card ul { margin:0; padding-left:17px; color:var(--ink-soft); font-size:11px; line-height:1.7; }
+    .panel { padding: 25px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--shadow-soft); }
+    .panel-dark { background: var(--night-2); border-color: transparent; color:#eaf8f5; }
+    .panel h3 { margin-bottom: 8px; font-size: 19px; letter-spacing: -.02em; }
+    .panel p { color: var(--ink-soft); font-size: 13px; }
+    .panel-dark p { color:#a9c7c7; }
+    .micro-label { color: var(--aqua-deep); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .panel-dark .micro-label { color: var(--sky); }
+    .value-chain { display:flex; align-items:center; flex-wrap:wrap; gap: 8px; margin-top: 20px; }
+    .chain-item { padding: 10px 12px; border-radius: 12px; background: rgba(66,213,198,.10); color: var(--ink); font-size: 12px; font-weight: 700; }
+    .panel-dark .chain-item { color: #e8fbf7; background: rgba(169,232,242,.10); }
+    .chain-arrow { color: var(--aqua-deep); font-size: 18px; }
+
+    .role-grid { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+    .role { min-height: 164px; padding: 18px; border-radius: 16px; background: var(--panel); border:1px solid var(--line); }
+    .role-mark { display:flex; align-items:center; justify-content:center; width: 36px; height:36px; margin-bottom: 15px; border-radius: 11px; background: #e2f5f0; color: var(--aqua-deep); font-size: 16px; font-weight: 800; }
+    .role:nth-child(2) .role-mark { background:#e4f4f8; color:#197c94; }
+    .role:nth-child(3) .role-mark { background:#fff2dc; color:#b87416; }
+    .role:nth-child(4) .role-mark { background:#fbe7e3; color:#c55a4b; }
+    .role:nth-child(5) .role-mark { background:#ebe8fb; color:#6c58a8; }
+    .role h3 { margin-bottom: 7px; font-size: 14px; }
+    .role p { margin-bottom: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+
+    .workflow { position:relative; display:grid; grid-template-columns: repeat(8, minmax(98px,1fr)); gap: 0; padding: 14px 0 2px; overflow-x:auto; }
+    .workflow::before { content:""; position:absolute; left: 30px; right: 30px; top: 42px; height: 2px; background: linear-gradient(90deg, var(--aqua), var(--sky), var(--amber)); opacity: .55; }
+    .step { position:relative; z-index:1; min-width: 98px; padding: 0 7px; text-align:center; }
+    .step-dot { display:flex; align-items:center; justify-content:center; width: 40px; height:40px; margin: 8px auto 13px; border-radius:50%; background: var(--night); color: var(--aqua); border: 5px solid var(--paper); box-shadow: 0 0 0 1px var(--aqua); font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+    .step:nth-child(5) .step-dot, .step:nth-child(6) .step-dot { color: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
+    .step:nth-child(7) .step-dot, .step:nth-child(8) .step-dot { color: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+    .step strong { display:block; font-size: 12px; }
+    .step span { display:block; margin-top: 4px; color: var(--ink-soft); font-size: 11px; line-height:1.35; }
+
+    .filter-row { display:flex; flex-wrap:wrap; align-items:center; gap: 8px; margin-bottom: 18px; }
+    .filter-btn { padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 12px; cursor:pointer; }
+    .filter-btn.active, .filter-btn:hover { border-color: var(--aqua-deep); background: rgba(66,213,198,.10); color: var(--aqua-deep); }
+    .feature-table { width:100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow:hidden; }
+    .feature-table th, .feature-table td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align:left; vertical-align:top; font-size: 13px; }
+    .feature-table th { background: #edf6f3; color: var(--ink-soft); font-size: 11px; letter-spacing: .08em; }
+    .feature-table tr:last-child td { border-bottom:0; }
+    .feature-table td:first-child { width: 24%; font-weight: 700; }
+    .status { display:inline-flex; align-items:center; gap: 5px; padding: 4px 8px; border-radius:999px; font-size: 11px; white-space:nowrap; }
+    .status::before { content:""; width: 6px; height: 6px; border-radius:50%; background: currentColor; }
+    .status-live { background:#e6f7f1; color:#138c78; }
+    .status-plan { background:#fff2dc; color:#b87416; }
+    .status-scope { background:#e7f2f7; color:#1c7590; }
+    .map-legend { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; margin:4px 0 16px; color:var(--ink-soft); font-size:11px; }
+    .map-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .map-legend i { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--aqua-deep); }
+    .map-legend .scope i { background:#197c94; }.map-legend .plan i { background:#b87416; }
+    .capability-map { overflow-x:auto; padding:20px 18px 18px; border:1px solid rgba(19,155,148,.22); border-radius:18px; background:linear-gradient(145deg,#f7fcfa,#edf7f3); }
+    .route-row { display:grid; grid-template-columns:112px minmax(760px,1fr); align-items:center; gap:14px; min-width:900px; }
+    .route-row + .route-row { margin-top:18px; }
+    .route-label { position:relative; z-index:1; padding:11px 12px; border-radius:12px; background:#10343c; color:#e7fbf7; font-size:12px; font-weight:800; text-align:center; box-shadow:0 8px 18px rgba(23,59,65,.13); }
+    .route-label small { display:block; margin-top:4px; color:#9dd4d0; font-size:9px; font-weight:500; }
+    .route-track { position:relative; display:grid; grid-template-columns:repeat(4,1fr); gap:12px; align-items:center; }
+    .route-track::before { content:""; position:absolute; left:18px; right:18px; top:50%; height:3px; transform:translateY(-50%); border-radius:99px; background:linear-gradient(90deg,#42d5c6,#9beaff); opacity:.72; }
+    .route-row.dealer .route-track::before { background:linear-gradient(90deg,#f6b95c,#ff9b91); }
+    .route-node { position:relative; z-index:2; min-height:76px; padding:13px 12px 11px; border:1px solid rgba(19,155,148,.26); border-radius:14px; background:#fff; box-shadow:0 8px 18px rgba(23,59,65,.08); }
+    .route-node strong { display:block; color:var(--ink); font-size:12px; }
+    .route-node span { display:block; margin-top:5px; color:var(--ink-soft); font-size:10px; line-height:1.35; }
+    .route-node .route-status { display:inline-flex; margin-top:8px; padding:3px 6px; border-radius:99px; background:#e6f7f1; color:#138c78; font-size:9px; }
+    .route-row.dealer .route-node { border-color:rgba(184,116,22,.26); }.route-row.dealer .route-node .route-status { background:#fff2dc; color:#b87416; }
+    .route-branch { display:flex; align-items:center; gap:12px; min-width:900px; margin:18px 0 0 126px; padding:11px 14px; border:1px dashed rgba(184,116,22,.46); border-radius:12px; background:rgba(255,247,230,.86); color:#80611f; font-size:11px; }
+    .route-branch::before { content:""; width:18px; height:18px; border-left:2px solid #d6a447; border-bottom:2px solid #d6a447; transform:translateY(-9px) rotate(-45deg); }
+    .route-branch b { color:#9d6f16; }
+    .map-detail-label { margin:18px 0 10px; color:var(--ink-soft); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+
+    .demo-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .demo-card { display:flex; flex-direction:column; min-height: 100%; overflow:hidden; border: 1px solid var(--line); border-radius: 20px; background:var(--panel); box-shadow: var(--shadow-soft); }
+    .demo-head { padding: 20px 20px 17px; background: var(--night-2); color: #eefbf8; }
+    .demo-index { color: var(--aqua); font-family: ui-monospace, monospace; font-size: 11px; font-weight:700; }
+    .demo-head h3 { margin: 10px 0 5px; font-size: 18px; }
+    .demo-head p { margin:0; color:#abc8c7; font-size:12px; }
+    .demo-body { padding: 18px 20px 20px; }
+    .demo-body ol { margin:0; padding-left: 19px; color: var(--ink-soft); font-size: 12px; }
+    .demo-body li { padding-left: 3px; margin-bottom: 8px; }
+    .demo-body li:last-child { margin-bottom:0; }
+    .shot-grid { display:grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-top: 17px; }
+    .shot { min-height: 68px; display:flex; align-items:end; padding: 9px; border:1px dashed rgba(19,155,148,.40); border-radius: 10px; background: linear-gradient(145deg,#edf8f4,#f8fbfa); color: var(--aqua-deep); font-size: 10px; line-height:1.35; }
+    .shot.pending { align-items:flex-start; flex-direction:column; gap:5px; border-color:rgba(204,153,63,.42); background:linear-gradient(145deg,#fff8e9,#fffdf7); color:#85651e; }
+    .shot.pending small { color:#9c7b31; font-size:9px; line-height:1.35; }
+    .shot b { display:block; margin-right: 4px; font-family: ui-monospace, monospace; }
+    .live-shot { margin-top: 17px; overflow: hidden; border: 1px solid rgba(var(--dark-accent-rgb), .28); border-radius: 12px; background: rgba(2,6,10,.68); }
+    .live-shot img { display:block; width:100%; height:auto; aspect-ratio: 16 / 8.45; object-fit:cover; object-position: center top; }
+    .live-shot figcaption { padding: 9px 10px; color: var(--dark-muted); font-size: 10px; line-height:1.45; }
+    .live-shot figcaption strong { color: #9beaff; font-weight:700; }
+
+    .case-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .case { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); }
+    .case-tag { color: var(--aqua-deep); font-size: 11px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+    .case h3 { margin: 10px 0 8px; font-size: 16px; }
+    .case p { margin-bottom: 0; color: var(--ink-soft); font-size: 12px; }
+    .case ul { margin: 12px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 12px; }
+
+    .support-grid { display:grid; grid-template-columns: 1.1fr .9fr; gap: 18px; }
+    .issue-list { display:grid; gap: 9px; }
+    details { padding: 13px 15px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.62); }
+    summary { cursor:pointer; font-size: 13px; font-weight:700; }
+    details p { margin: 9px 0 0; color: var(--ink-soft); font-size:12px; }
+    .evidence { padding: 23px; border-radius: var(--radius-md); background: #122f38; color:#e7f8f4; }
+    .evidence h3 { margin-bottom: 13px; font-size: 19px; }
+    .evidence ul { margin:0; padding-left: 19px; color:#b9d4d1; font-size:12px; }
+    .evidence li { margin-bottom: 8px; }
+    .evidence li:last-child { margin-bottom:0; }
+    .version-box { margin-top: 15px; padding: 13px; border:1px solid rgba(169,232,242,.2); border-radius: 12px; color:#a8c9c8; font-size:11px; }
+    .version-box b { color:#eaf8f5; }
+
+    .footer { display:flex; justify-content:space-between; gap: 18px; align-items:center; margin-top: 72px; padding: 22px 0 0; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 11px; }
+    .footer a { color: var(--aqua-deep); }
+    .back-top { text-decoration:none; }
+
+    @media (max-width: 1120px) {
+      .shell { grid-template-columns: 220px minmax(0,1fr); }
+      .content { width: min(var(--max), calc(100% - 44px)); }
+      .topbar { padding-left: 24px; padding-right: 24px; }
+      .role-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .demo-grid, .case-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 800px) {
+      .shell { display:block; }
+      .rail { position:relative; height:auto; padding: 18px 16px 12px; }
+      .brand { padding-bottom: 15px; }
+      .rail-label, .rail-footer { display:none; }
+      .nav { display:flex; overflow-x:auto; gap: 5px; margin-top: 0; padding-bottom: 2px; }
+      .nav a { flex: 0 0 auto; padding: 8px 10px; font-size:12px; }
+      .nav-num { display:none; }
+      .topbar { position:relative; padding: 12px 18px; }
+      .content { width: calc(100% - 28px); padding-top: 20px; }
+      .hero { grid-template-columns: 1fr; padding: 30px 24px; min-height: auto; }
+      .hero-board { max-width: 520px; }
+      .illustration-band { grid-template-columns:1fr; }
+      .illustration-band svg { min-width:0; }
+      .stat-grid { grid-template-columns: repeat(2,1fr); }
+      .two-up, .support-grid { grid-template-columns: 1fr; }
+      .role-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .demo-grid, .case-grid { grid-template-columns: 1fr; }
+      .section-head { display:block; }
+      .section-note { margin-top: 10px; }
+      .footer { display:block; }
+      .footer .back-top { display:inline-block; margin-top: 10px; }
+    }
+    @media (max-width: 470px) {
+      h1 { font-size: 36px; }
+      .hero-meta { gap: 12px; }
+      .role-grid, .stat-grid { grid-template-columns: 1fr; }
+      .feature-table { display:block; overflow-x:auto; white-space:nowrap; }
+      .feature-table td { white-space:normal; min-width: 180px; }
+      .feature-table td:first-child { min-width: 150px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+    @media print {
+      .rail, .topbar, .top-actions, .hero-cta, .back-top { display:none !important; }
+      .shell { display:block; }
+      .content { width:100%; padding:0; }
+      .hero { box-shadow:none; break-inside: avoid; }
+      .section { padding-top: 32px; }
+      .panel, .role, .demo-card, .case, details { box-shadow:none; break-inside: avoid; }
+    }
+  </style>
+  <style id="reference-layout-override">
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --bg-2: #10161f;
+      --glass: rgba(255,255,255,.062);
+      --glass-strong: rgba(255,255,255,.11);
+      --glass-line: rgba(255,255,255,.16);
+      --glass-line-soft: rgba(255,255,255,.09);
+      --dark-text: #f6f8fb;
+      --dark-muted: #aeb8c7;
+      --dark-faint: #748195;
+      --dark-accent: #58d8ff;
+      --dark-accent-rgb: 88,216,255;
+    }
+
+    html { background: #080b10; }
+    body {
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at 8% 8%, rgba(var(--dark-accent-rgb), .16), transparent 28rem),
+        radial-gradient(circle at 86% 4%, rgba(255,255,255,.06), transparent 24rem),
+        linear-gradient(180deg, #070a0f 0%, #0b1118 44%, #090d13 100%);
+      color: var(--dark-text);
+      letter-spacing: 0;
+      text-rendering: geometricPrecision;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.86), transparent 70%);
+      z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(115deg, transparent 0%, rgba(var(--dark-accent-rgb), .065) 24%, transparent 50%, rgba(255,255,255,.035) 76%, transparent 100%);
+      opacity: .62;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 30;
+      width: 100%;
+      height: 3px;
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      background: var(--dark-accent);
+      box-shadow: 0 0 18px rgba(var(--dark-accent-rgb), .44);
+    }
+    .shell { position: relative; z-index: 1; display: block; }
+    .rail {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      z-index: 20;
+      transform: translateX(-50%);
+      width: min(1120px, calc(100% - 32px));
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 16px 0 20px;
+      overflow: visible;
+      border: 1px solid var(--glass-line);
+      border-radius: 999px;
+      background: rgba(8,11,16,.76);
+      backdrop-filter: blur(22px) saturate(1.15);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+      box-shadow: 0 18px 52px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.07);
+    }
+    .brand { min-width: 0; padding: 0; gap: 10px; color: var(--dark-text); }
+    .brand-mark { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f7fbff, rgba(255,255,255,.2) 18%, transparent 34%), linear-gradient(135deg, rgba(var(--dark-accent-rgb), .98), rgba(var(--dark-accent-rgb), .28)); box-shadow: 0 0 22px rgba(var(--dark-accent-rgb), .34); }
+    .brand-mark::before, .brand-mark::after { display: none; }
+    .brand-title { color: var(--dark-text); font-size: 14px; font-weight: 760; white-space: nowrap; }
+    .brand-sub, .rail-label, .rail-footer { display: none; }
+    .nav { display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; margin:0; overflow:auto; }
+    .nav a { flex: 0 0 auto; padding:8px 11px; border-radius:999px; color:var(--dark-muted); font-size:13px; transition:180ms ease; white-space:nowrap; }
+    .nav a:hover, .nav a.active { color:var(--dark-text); background:rgba(var(--dark-accent-rgb), .11); }
+    .nav-num { display:none; }
+    .topbar { display:none; }
+    .main { min-width:0; }
+    .content { width:min(1240px, calc(100% - 40px)); margin:0 auto; padding:0 0 96px; }
+    .hero { min-height:100dvh; display:grid; align-items:center; padding:28px 24px 56px; overflow:hidden; border-radius:0; background:transparent; box-shadow:none; }
+    .hero::before { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 0%, rgba(var(--dark-accent-rgb), .08) 26%, transparent 52%, rgba(255,255,255,.035) 76%, transparent 100%); }
+    .hero::after { width:520px; height:520px; right:-190px; top:-210px; border-color:rgba(var(--dark-accent-rgb),.22); box-shadow:0 0 0 34px rgba(var(--dark-accent-rgb),.04), 0 0 0 74px rgba(var(--dark-accent-rgb),.025); }
+    .hero-kicker { display:inline-flex; padding:8px 11px; border:1px solid var(--glass-line); border-radius:999px; color:var(--dark-muted); background:rgba(255,255,255,.045); backdrop-filter:blur(16px); font-weight:700; letter-spacing:.08em; }
+    .live-dot { background:var(--dark-accent); box-shadow:0 0 0 7px rgba(var(--dark-accent-rgb), .09); }
+    h1 { max-width:600px; margin-bottom:0; font-size:clamp(32px, 3.7vw, 46px); line-height:1.12; letter-spacing:-.012em; }
+    .hero-copy { max-width:620px; margin:24px 0 0; color:#c6d0dd; font-size:clamp(16px,1.6vw,19px); line-height:1.68; }
+    .hero-cta { margin-top:28px; gap:10px; }
+    .btn { min-height:46px; padding:0 22px; font-size:14px; transition:transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease; }
+    .btn:hover { transform:translateY(-2px); }
+    .btn-primary { color:#04121b; background:var(--dark-accent); box-shadow:0 16px 38px rgba(var(--dark-accent-rgb),.23); }
+    .btn-ghost { border-color:var(--glass-line); background:rgba(255,255,255,.045); color:var(--dark-text); }
+    .btn-ghost:hover { border-color:rgba(var(--dark-accent-rgb), .55); color:var(--dark-text); }
+    .hero-meta { gap:18px; margin-top:30px; color:var(--dark-muted); }
+    .hero-meta b { color:#fff; font-size:20px; }
+    .hero-board { min-height:420px; padding:22px; border-color:var(--glass-line); border-radius:24px; background:linear-gradient(160deg, rgba(255,255,255,.105), rgba(255,255,255,.032)), #0a1018; box-shadow:0 28px 90px rgba(0,0,0,.34); }
+    .hero-illustration .node-card { fill:rgba(255,255,255,.06); stroke:rgba(var(--dark-accent-rgb),.52); }
+    .hero-illustration .node-card.accent { fill:rgba(var(--dark-accent-rgb),.13); stroke:rgba(var(--dark-accent-rgb),.82); }
+    .hero-illustration .node-card.warm { fill:rgba(246,185,92,.11); stroke:rgba(246,185,92,.72); }
+    .hero-illustration .connector { stroke:rgba(var(--dark-accent-rgb),.42); }
+    .hero-illustration text { fill:#c9e4e1; }
+    .hero-illustration .muted { fill:#7fa6a8; }
+    .board-top { color:var(--dark-muted); }
+    .board-title { color:#fff; font-size:17px; }
+    .signal { background:rgba(7,10,18,.72); border:1px solid var(--glass-line-soft); backdrop-filter:blur(16px); }
+    .signal-label { color:var(--dark-muted); }
+    .signal-value { color:#fff; }
+    .signal-line { background:rgba(255,255,255,.12); }
+    .signal-line i { background:var(--dark-accent); }
+    .section { margin-bottom:34px; padding:clamp(24px,4vw,42px); border:1px solid var(--glass-line-soft); border-radius:22px; background:linear-gradient(180deg, rgba(255,255,255,.068), rgba(255,255,255,.032)), rgba(8,12,18,.64); box-shadow:0 18px 56px rgba(0,0,0,.18); overflow:hidden; }
+    .section:nth-of-type(even) { background:linear-gradient(135deg, rgba(var(--dark-accent-rgb), .085), rgba(255,255,255,.035) 48%, rgba(255,255,255,.02)), rgba(8,12,18,.68); }
+    .section-head { align-items:flex-start; margin-bottom:26px; }
+    .eyebrow { color:var(--dark-accent); letter-spacing:.12em; }
+    h2 { color:#fff; font-size:clamp(28px,3.2vw,40px); line-height:1.16; letter-spacing:-.01em; }
+    h3 { color:#fff; letter-spacing:0; }
+    .section-intro, .section-note, .panel p, .role p, .case p, .case ul, .demo-body ol, details p { color:var(--dark-muted); }
+    .section-note { color:var(--dark-muted); }
+    .stat-grid { grid-template-columns:repeat(4,minmax(0,1fr)); margin:22px 0; }
+    .stat, .panel, .role, .case, details { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+    .stat strong { color:#fff; }
+    .stat span { color:var(--dark-muted); }
+    .panel-dark { background:linear-gradient(135deg, rgba(var(--dark-accent-rgb), .105), rgba(255,255,255,.045)); color:var(--dark-text); }
+    .panel-dark p, .panel-dark .micro-label { color:var(--dark-muted); }
+    .micro-label, .case-tag, .accent-aqua, .accent-amber, .accent-coral { color:var(--dark-accent); }
+    .chain-item { color:#fff; background:rgba(var(--dark-accent-rgb), .10); border:1px solid rgba(var(--dark-accent-rgb),.16); }
+    .panel-dark .chain-item { color:#fff; background:rgba(var(--dark-accent-rgb), .10); }
+    .chain-arrow { color:var(--dark-accent); }
+    .definition-card { border-color:var(--glass-line-soft); background:linear-gradient(135deg,rgba(var(--dark-accent-rgb),.18),rgba(255,255,255,.045)); }
+    .definition-card p { color:#b9d7d5; }
+    .definition-point,.value-card { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); }
+    .definition-point strong { color:#fff; }
+    .definition-point span,.value-card span { color:var(--dark-muted); }
+    .value-card b { color:var(--dark-accent); }
+    .leader-brief { border-color:var(--glass-line-soft); background:linear-gradient(120deg,rgba(var(--dark-accent-rgb),.11),rgba(255,255,255,.035)); }
+    .brief-kicker { color:var(--dark-accent); }.brief-title { color:#fff; }.brief-item { background:rgba(255,255,255,.055); }.brief-item b { color:#fff; }.brief-item span { color:var(--dark-muted); }
+    .pain-card,.roadmap-card { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); }.pain-card .pain-num { background:rgba(var(--dark-accent-rgb),.12); color:var(--dark-accent); }.pain-card:nth-child(2) .pain-num { background:rgba(246,185,92,.12); color:#ffd58d; }.pain-card:nth-child(3) .pain-num { background:rgba(240,127,108,.12); color:#ff9b91; }.pain-card h3,.roadmap-card h3 { color:#fff; }.pain-card p,.roadmap-card p,.roadmap-card ul { color:var(--dark-muted); }
+    .goal-strip { border-color:var(--glass-line-soft); background:linear-gradient(110deg,rgba(var(--dark-accent-rgb),.10),rgba(255,255,255,.035)); }.goal-box { background:rgba(255,255,255,.055); }.goal-box b { color:#fff; }.goal-box span { color:var(--dark-muted); }.goal-box.after { background:rgba(var(--dark-accent-rgb),.16); }.goal-box.after b { color:#fff; }.goal-box.after span { color:#b9d7d5; }.goal-arrow { color:var(--dark-accent); }
+    .roadmap-card.current { border-color:rgba(var(--dark-accent-rgb),.35); }.roadmap-card.next { border-color:rgba(246,185,92,.38); }.roadmap-card.target { border-color:rgba(169,153,236,.42); }.roadmap-stage { color:var(--dark-accent); }.roadmap-card.next .roadmap-stage { color:#f6c66e; }.roadmap-card.target .roadmap-stage { color:#b8a8ec; }.roadmap-card::after { color:var(--dark-accent); }.roadmap-heading h3 { color:#fff; }
+    .ba-card { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); }.ba-card.after { border-color:rgba(var(--dark-accent-rgb),.35); background:linear-gradient(135deg,rgba(var(--dark-accent-rgb),.11),rgba(255,255,255,.035)); }.ba-card b { color:#fff; }.ba-card p { color:var(--dark-muted); }.ba-arrow { color:var(--dark-accent); }
+    .boundary-card { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); }.boundary-card h3 { color:#fff; }.boundary-card ul { color:var(--dark-muted); }
+    .illustration-band { border-color:var(--glass-line-soft); background:linear-gradient(115deg,rgba(var(--dark-accent-rgb),.11),rgba(255,255,255,.035)); }
+    .illustration-band svg { min-width:420px; }
+    .illustration-band .ill-copy h3 { color:#fff; }
+    .illustration-band .ill-copy p { color:var(--dark-muted); }
+    .flow-illustration { border-color:var(--glass-line-soft); background:linear-gradient(110deg,rgba(255,255,255,.055),rgba(255,255,255,.02)); }
+    .flow-card { border-color:var(--glass-line-soft); background:rgba(4,12,18,.34); }
+    .flow-card strong { color:#e2f4f0; }
+    .flow-card span { color:var(--dark-muted); }
+    .role-lane { border-color:var(--glass-line-soft); background:linear-gradient(110deg,rgba(var(--dark-accent-rgb),.08),rgba(255,255,255,.035)); }
+    .role-lane::before { background:linear-gradient(90deg,var(--dark-accent),#9beaff,#f6b95c,#ff8d9c,#a99bea); }
+    .role-stop .avatar { border-color:var(--glass-line-soft); background:rgba(255,255,255,.08); box-shadow:0 8px 22px rgba(0,0,0,.16); }
+    .role-stop:nth-child(2) .avatar,.role-stop:nth-child(3) .avatar,.role-stop:nth-child(4) .avatar,.role-stop:nth-child(5) .avatar { background:rgba(255,255,255,.08); border-color:var(--glass-line-soft); }
+    .role-stop .head { fill:var(--dark-accent); }.role-stop .body { stroke:var(--dark-accent); }
+    .role-stop:nth-child(2) .head { fill:#9beaff; }.role-stop:nth-child(2) .body { stroke:#72c6db; }
+    .role-stop:nth-child(3) .head { fill:#f6c66e; }.role-stop:nth-child(3) .body { stroke:#d79c3f; }
+    .role-stop:nth-child(4) .head { fill:#ff9b91; }.role-stop:nth-child(4) .body { stroke:#e7796d; }
+    .role-stop:nth-child(5) .head { fill:#b8a8ec; }.role-stop:nth-child(5) .body { stroke:#8f7dd0; }
+    .role-stop strong { color:#fff; }.role-stop span { color:var(--dark-muted); }
+    .task-matrix { border-color:var(--glass-line-soft); background:rgba(255,255,255,.035); }.task-matrix th { color:#dce7f7; background:rgba(255,255,255,.06); }.task-matrix td { color:var(--dark-muted); border-color:var(--glass-line-soft); }.task-matrix td:first-child { color:#fff; }
+    .role-mark { background:rgba(var(--dark-accent-rgb),.12) !important; color:var(--dark-accent) !important; }
+    .workflow::before { background:linear-gradient(90deg, var(--dark-accent), #9beaff, #f6b95c); }
+    .step-dot { background:#081017; color:var(--dark-accent); border-color:#0b1118; box-shadow:0 0 0 1px var(--dark-accent); }
+    .step:nth-child(5) .step-dot, .step:nth-child(6) .step-dot { color:#f6b95c; box-shadow:0 0 0 1px #f6b95c; }
+    .step:nth-child(7) .step-dot, .step:nth-child(8) .step-dot { color:#ff8d9c; box-shadow:0 0 0 1px #ff8d9c; }
+    .step strong { color:#fff; }
+    .step span { color:var(--dark-muted); }
+    .filter-btn { border-color:var(--glass-line); color:var(--dark-muted); background:rgba(255,255,255,.03); }
+    .filter-btn.active, .filter-btn:hover { border-color:rgba(var(--dark-accent-rgb),.55); background:rgba(var(--dark-accent-rgb),.11); color:var(--dark-text); }
+    .feature-table { background:rgba(255,255,255,.035); border-color:var(--glass-line-soft); }
+    .feature-table th, .feature-table td { border-color:var(--glass-line-soft); color:var(--dark-muted); }
+    .feature-table th { background:rgba(255,255,255,.06); color:#dce7f7; }
+    .feature-table td:first-child { color:#fff; }
+    .status-live { background:rgba(66,213,198,.12); color:#73ead4; }
+    .status-plan { background:rgba(246,185,92,.12); color:#ffd58d; }
+    .status-scope { background:rgba(var(--dark-accent-rgb),.12); color:#9beaff; }
+    .map-legend { color:var(--dark-muted); }.map-legend i { background:var(--dark-accent); }.map-legend .scope i { background:#9beaff; }.map-legend .plan i { background:#f6b95c; }
+    .capability-map { border-color:var(--glass-line-soft); background:linear-gradient(145deg,rgba(var(--dark-accent-rgb),.10),rgba(255,255,255,.035)); }
+    .route-label { background:rgba(var(--dark-accent-rgb),.16); color:#e7fbf7; box-shadow:0 8px 18px rgba(0,0,0,.18); }.route-label small { color:#9dd4d0; }
+    .route-track::before { background:linear-gradient(90deg,var(--dark-accent),#9beaff); }.route-row.dealer .route-track::before { background:linear-gradient(90deg,#f6b95c,#ff9b91); }
+    .route-node { border-color:var(--glass-line-soft); background:#1a2830; box-shadow:0 8px 18px rgba(0,0,0,.15); }.route-node strong { color:#fff; }.route-node span { color:var(--dark-muted); }.route-node .route-status { background:rgba(66,213,198,.12); color:#73ead4; }
+    .route-row.dealer .route-node { border-color:rgba(246,185,92,.35); }.route-row.dealer .route-node .route-status { background:rgba(246,185,92,.12); color:#ffd58d; }
+    .route-branch { border-color:rgba(246,185,92,.42); background:rgba(246,185,92,.08); color:#c9b17b; }.route-branch::before { border-color:#d6a447; }.route-branch b { color:#f6c66e; }.map-detail-label { color:var(--dark-muted); }
+    .demo-card { border-color:var(--glass-line-soft); background:rgba(255,255,255,.045); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+    .demo-head { background:linear-gradient(135deg, rgba(var(--dark-accent-rgb), .10), rgba(255,255,255,.04)); border-bottom:1px solid var(--glass-line-soft); }
+    .demo-head h3, .demo-head p { color:#fff; }
+    .demo-head p { color:var(--dark-muted); }
+    .demo-index { color:var(--dark-accent); }
+    .shot { border-color:rgba(var(--dark-accent-rgb),.35); background:linear-gradient(145deg, rgba(var(--dark-accent-rgb),.09), rgba(255,255,255,.035)); color:#9beaff; }
+    .shot.pending { border-color:rgba(242,183,78,.42); background:linear-gradient(145deg, rgba(242,183,78,.10), rgba(255,255,255,.035)); color:#f7d692; }
+    .shot.pending small { color:#c9b17b; }
+    .evidence { background:linear-gradient(135deg, rgba(var(--dark-accent-rgb), .12), rgba(255,255,255,.035)), #0a1018; border:1px solid var(--glass-line-soft); }
+    .evidence h3 { color:#fff; }
+    .evidence ul, .version-box { color:var(--dark-muted); }
+    .version-box { border-color:var(--glass-line-soft); }
+    .version-box b { color:#fff; }
+    .footer { color:var(--dark-faint); border-color:var(--glass-line-soft); }
+    .footer a { color:var(--dark-accent); }
+
+    @media (max-width: 1120px) {
+      .role-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .demo-grid, .case-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width: 800px) {
+      .rail { position:sticky; top:0; left:auto; transform:none; width:100%; height:auto; min-height:60px; border-radius:0 0 18px 18px; padding:12px 16px; }
+      .brand-title { font-size:13px; }
+      .nav { justify-content:flex-start; }
+      .hero { min-height:calc(100dvh - 60px); padding-top:40px; }
+      .hero-grid { grid-template-columns:1fr; }
+      .hero-board { min-height:auto; }
+      .flow-illustration { grid-template-columns:1fr; }
+      .flow-arrow { transform:rotate(90deg); justify-self:center; }
+      .role-lane { grid-template-columns:repeat(5,minmax(118px,1fr)); overflow-x:auto; }
+      .capability-map { margin-right:-6px; margin-left:-6px; }
+      .definition-layout { grid-template-columns:1fr; }
+      .pain-grid,.roadmap { grid-template-columns:1fr; }
+      .roadmap-card::after { top:auto; right:auto; bottom:-19px; left:50%; transform:translateX(-50%) rotate(90deg); }
+      .roadmap-card:last-child::after { display:none; }
+      .goal-strip { grid-template-columns:1fr; }.goal-arrow { transform:rotate(90deg); }
+      .brief-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .before-after { grid-template-columns:1fr; }.ba-arrow { transform:rotate(90deg); }
+      .boundary-grid { grid-template-columns:1fr; }
+      .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .value-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .role-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .demo-grid, .case-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width: 470px) {
+      .content { width:calc(100% - 24px); }
+      .hero { padding-left:12px; padding-right:12px; }
+      .stat-grid, .role-grid { grid-template-columns:1fr; }
+      .value-grid, .definition-points { grid-template-columns:1fr; }
+      .brief-grid { grid-template-columns:1fr; }
+      .feature-table { display:block; overflow-x:auto; white-space:nowrap; }
+      .feature-table td { min-width:180px; white-space:normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <div class="shell" id="top">
+    <nav class="rail" aria-label="页面导航">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-title">设备中心培训<span class="brand-sub">DEVICE CENTER · 线上版</span></div>
+      </div>
+      <div class="rail-label">Contents</div>
+      <div class="nav">
+        <a href="#overview"><span class="nav-num">01</span>产品概览</a>
+        <a href="#roles"><span class="nav-num">02</span>角色与边界</a>
+        <a href="#workflow"><span class="nav-num">03</span>业务流程</a>
+        <a href="#features"><span class="nav-num">04</span>功能地图</a>
+        <a href="#demos"><span class="nav-num">05</span>重点演示</a>
+        <a href="#cases"><span class="nav-num">06</span>业务案例</a>
+      </div>
+      <div class="rail-footer">
+        <strong>培训基准</strong>
+        当前实际线上版本<br>
+        登录完成后的功能操作<br><br>
+        适用于 30–45 分钟内部宣讲
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="crumb"><b>内部培训资料</b>　/　设备中心平台与经销商模块</div>
+        <div class="top-actions">
+          <a class="top-btn" href="https://operations.eye4.cn/micro-op/#/77" target="_blank" rel="noreferrer">打开线上环境 ↗</a>
+          <button class="top-btn" id="printBtn" type="button">打印 / 导出 PDF</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="hero" aria-labelledby="hero-title">
+          <div>
+            <div class="hero-kicker"><span class="live-dot" aria-hidden="true"></span>PRODUCT TRAINING · CURRENT ONLINE VERSION</div>
+            <h1 id="hero-title">把设备事实，变成跨部门共识。</h1>
+            <p class="hero-copy">这是一个面向企业内部运营与渠道协作的设备管理平台。培训围绕设备查询、详情判断、APP 测试账号和平台操作日志，帮助成员理解产品价值并建立共同工作路径。</p>
+            <div class="hero-cta">
+              <a class="btn btn-primary" href="#overview">查看项目全景 ↓</a>
+              <a class="btn btn-ghost" href="https://operations.eye4.cn/micro-op/#/77" target="_blank" rel="noreferrer">访问线上平台 ↗</a>
+              <button class="btn btn-ghost" id="heroPrintBtn" type="button">打印 / 导出 PDF</button>
+            </div>
+            <div class="hero-meta">
+              <div><b>统一定位</b>设备、组织与测试对象</div>
+              <div><b>协同判断</b>状态、服务与责任边界</div>
+              <div><b>过程留痕</b>测试记录与操作日志</div>
+            </div>
+          </div>
+          <div class="hero-board" aria-label="培训主线概览">
+            <div class="board-top"><span>PROJECT VALUE BOARD</span><span>LIVE</span></div>
+            <div class="board-title">从对象定位到协作留痕的四段主线</div>
+            <svg class="hero-illustration" viewBox="0 0 460 145" role="img" aria-label="设备、平台、经销商和协作角色之间的关系图">
+              <path class="connector" d="M88 42 C145 42 153 70 196 70 M372 42 C315 42 307 70 264 70 M88 112 C145 112 153 82 196 82 M372 112 C315 112 307 82 264 82"/>
+              <rect class="node-card" x="18" y="20" width="140" height="42" rx="12"/><text x="31" y="39">设备事实</text><text class="muted" x="31" y="53">身份 · 状态 · 服务</text>
+              <rect class="node-card warm" x="302" y="20" width="140" height="42" rx="12"/><text x="315" y="39">组织协作</text><text class="muted" x="315" y="53">经销商 · 测试账号</text>
+              <rect class="node-card accent" x="176" y="52" width="108" height="43" rx="14"/><text x="193" y="71">设备中心</text><text class="muted" x="193" y="85">统一事实入口</text>
+              <rect class="node-card" x="18" y="91" width="140" height="35" rx="11"/><text x="31" y="113">客服 / 技术</text>
+              <rect class="node-card" x="302" y="91" width="140" height="35" rx="11"/><text x="315" y="113">运维 / 产品</text>
+            </svg>
+            <div class="board-grid">
+              <div class="signal"><div class="signal-label">统一定位</div><div class="signal-value">01</div><div class="signal-line"><i></i></div></div>
+              <div class="signal"><div class="signal-label">协同判断</div><div class="signal-value">02</div><div class="signal-line"><i></i></div></div>
+              <div class="signal"><div class="signal-label">测试验证</div><div class="signal-value">03</div><div class="signal-line"><i></i></div></div>
+              <div class="signal"><div class="signal-label">过程留痕</div><div class="signal-value">04</div><div class="signal-line"><i></i></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="overview">
+          <div class="section-head">
+            <div><div class="eyebrow">01 / Platform positioning</div><h2>平台定位：设备与渠道协作工作台</h2><p class="section-intro">它把设备事实、经销商组织和测试操作放进同一条工作路径，让不同部门围绕同一份信息完成定位、判断和协作。</p></div>
+            <div class="section-note">线上页面与当前业务规则优先</div>
+          </div>
+          <div class="leader-brief" aria-label="领导一页看懂">
+            <div class="brief-kicker">LEADERSHIP VIEW · 一页看懂</div>
+            <div class="brief-title">这个项目把“找信息、做判断、跨部门协作、留证据”串成一条线上工作路径。</div>
+            <div class="brief-grid">
+              <div class="brief-item"><b>为什么建设</b><span>减少设备信息分散、测试过程不透明和问题反复确认。</span></div>
+              <div class="brief-item"><b>解决什么</b><span>统一查看设备、经销商组织、测试账号与操作记录。</span></div>
+              <div class="brief-item"><b>带来什么</b><span>让客服、技术、运维、产品和渠道管理共享同一份事实。</span></div>
+              <div class="brief-item"><b>现在到哪</b><span>当前线上版本可用于设备查询、经销商协作和重点场景演示。</span></div>
+            </div>
+          </div>
+          <div class="pain-grid" aria-label="项目建设背景">
+            <article class="pain-card"><div class="pain-num">01</div><h3>信息分散</h3><p>设备、用户、组织和服务信息分布在不同入口，跨部门沟通需要反复确认。</p></article>
+            <article class="pain-card"><div class="pain-num">02</div><h3>测试难追踪</h3><p>经销商测试账号与设备关系不够清晰，测试过程和结果难以复核。</p></article>
+            <article class="pain-card"><div class="pain-num">03</div><h3>协作缺证据</h3><p>问题反馈常停留在描述层面，缺少统一字段和可追溯的操作记录。</p></article>
+          </div>
+          <div class="goal-strip" aria-label="项目建设目标">
+            <div class="goal-box"><b>建设前</b><span>找到信息靠经验，判断问题靠沟通，测试结果靠人工记忆。</span></div>
+            <div class="goal-arrow" aria-hidden="true">→</div>
+            <div class="goal-box after"><b>建设目标</b><span>以设备为核心对象，以组织和角色为协作边界，以状态、测试和日志形成共同证据链。</span></div>
+          </div>
+          <div class="before-after" aria-label="使用平台前后对比">
+            <div class="ba-card"><b>使用平台前</b><p>设备信息分散在多个入口或聊天记录中，测试账号和设备关系难以核对，问题反馈常常缺少共同证据。</p></div>
+            <div class="ba-arrow" aria-hidden="true">→</div>
+            <div class="ba-card after"><b>使用平台后</b><p>按设备或经销商定位对象，按字段判断状态，按测试记录和操作日志完成跨部门协作与复核。</p></div>
+          </div>
+          <div class="definition-layout">
+            <article class="definition-card">
+              <div class="micro-label">PRODUCT DEFINITION</div>
+              <h3>面向企业内部运营与渠道协作的设备管理平台</h3>
+              <p>登录后，成员可以按设备或经销商组织查找对象，读取状态、服务、测试和日志等事实，再按职责把问题交给客服、技术支持、运维、产品或经销商管理人员。</p>
+            </article>
+            <div class="definition-points">
+              <div class="definition-point"><strong>管理对象</strong><span>设备、用户、经销商组织、测试账号与操作记录</span></div>
+              <div class="definition-point"><strong>服务对象</strong><span>客服、售后、技术、运维、运营、产品与渠道管理</span></div>
+              <div class="definition-point"><strong>工作边界</strong><span>帮助判断和协作，不替代客服工单、研发排障或业务审批</span></div>
+              <div class="definition-point"><strong>使用结果</strong><span>找到对象、看懂状态、完成操作、留下证据</span></div>
+            </div>
+          </div>
+          <div class="value-grid" aria-label="产品核心价值">
+            <div class="value-card"><b>查得快</b><span>用设备 ID、经销商或组织范围快速定位对象。</span></div>
+            <div class="value-card"><b>判得准</b><span>把激活、在线、服务、测试和日志放在同一判断链路。</span></div>
+            <div class="value-card"><b>协作顺</b><span>不同部门按同一套字段和责任边界接力处理。</span></div>
+            <div class="value-card"><b>留得住</b><span>通过测试记录与平台日志保留可复核的操作证据。</span></div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><strong class="accent-aqua">设备</strong><span>身份、激活、绑定、状态、服务、日志</span></div>
+            <div class="stat"><strong class="accent-aqua">组织</strong><span>经销商列表、详情、组织范围</span></div>
+            <div class="stat"><strong class="accent-amber">测试</strong><span>APP 测试账号、设备测试记录</span></div>
+            <div class="stat"><strong class="accent-coral">追溯</strong><span>平台操作日志与问题反馈证据</span></div>
+          </div>
+          <div class="illustration-band" aria-label="平台与经销商协作关系图">
+            <div class="ill-copy"><div class="micro-label">ONE SHARED EVIDENCE CHAIN</div><h3>同一条证据链，连接两类工作面</h3><p>设备中心回答“设备现在是什么状态”，经销商模块回答“谁在什么组织范围内进行测试”，日志把每一次操作串成可追溯记录。</p></div>
+            <svg viewBox="0 0 620 180" role="img" aria-label="设备事实、组织协作和操作留痕形成业务闭环">
+              <defs><linearGradient id="bandLine" x1="0" x2="1"><stop offset="0" stop-color="#42d5c6"/><stop offset=".52" stop-color="#9beaff"/><stop offset="1" stop-color="#f6b95c"/></linearGradient></defs>
+              <path d="M160 90 H218 M402 90 H460" fill="none" stroke="url(#bandLine)" stroke-width="3"/>
+              <path d="M205 82 l13 8 -13 8 M447 82 l13 8 -13 8" fill="none" stroke="#9beaff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="12" y="42" width="148" height="96" rx="16" fill="#123f46" stroke="#42d5c6" stroke-width="2"/>
+              <rect x="218" y="42" width="184" height="96" rx="16" fill="#12323b" stroke="#9beaff" stroke-width="2"/>
+              <rect x="460" y="42" width="148" height="96" rx="16" fill="#413627" stroke="#f6b95c" stroke-width="2"/>
+              <circle cx="39" cy="66" r="9" fill="#42d5c6"/><circle cx="245" cy="66" r="9" fill="#9beaff"/><circle cx="487" cy="66" r="9" fill="#f6b95c"/>
+              <text x="57" y="72" fill="#fff" font-size="15" font-weight="700">设备事实</text>
+              <text x="263" y="72" fill="#fff" font-size="15" font-weight="700">协作判断</text>
+              <text x="505" y="72" fill="#fff" font-size="15" font-weight="700">操作留痕</text>
+              <text x="28" y="101" fill="#b9d7d5" font-size="12">设备 ID · 状态 · 服务</text>
+              <text x="234" y="101" fill="#c9e4e1" font-size="12">客服 · 技术 · 运营 · 渠道</text>
+              <text x="476" y="101" fill="#f3d69a" font-size="12">测试记录 · 平台日志</text>
+              <text x="28" y="122" fill="#7fa6a8" font-size="11">先定位对象</text>
+              <text x="234" y="122" fill="#7fa6a8" font-size="11">再形成结论</text>
+              <text x="476" y="122" fill="#c9b17b" font-size="11">最后可复核</text>
+            </svg>
+          </div>
+          <div class="two-up">
+            <article class="panel panel-dark">
+              <div class="micro-label">Platform</div>
+              <h3>设备中心主平台</h3>
+              <p>面向客服、售后、运维、技术支持和平台管理人员，集中查看设备事实，辅助判断设备异常、归属和服务状态。</p>
+              <div class="value-chain"><span class="chain-item">查询</span><span class="chain-arrow">→</span><span class="chain-item">详情</span><span class="chain-arrow">→</span><span class="chain-item">状态 / 服务</span></div>
+            </article>
+            <article class="panel">
+              <div class="micro-label">Dealer</div>
+              <h3>经销商相关模块</h3>
+              <p>面向经销商管理人员和运营协作人员，围绕组织信息维护 APP 测试账号、测试记录、自动唤醒配置和操作日志。</p>
+              <div class="value-chain"><span class="chain-item">组织</span><span class="chain-arrow">→</span><span class="chain-item">测试账号</span><span class="chain-arrow">→</span><span class="chain-item">记录</span></div>
+            </article>
+          </div>
+          <div class="boundary-grid" aria-label="产品边界">
+            <div class="boundary-card"><h3>平台负责</h3><ul><li>设备事实与生命周期信息</li><li>经销商组织与测试账号协作</li><li>测试记录与平台操作追溯</li></ul></div>
+            <div class="boundary-card"><h3>平台不替代</h3><ul><li>客服工单和客户沟通流程</li><li>研发代码级故障排查工具</li><li>正式审批、结算或完整数据看板</li></ul></div>
+          </div>
+          <div class="roadmap-heading"><div class="micro-label">ROADMAP · 未来形态</div><h3>从查询工具，走向设备运营与渠道协作工作台</h3></div>
+          <div class="roadmap" aria-label="平台当前与未来路线">
+            <article class="roadmap-card current"><div class="roadmap-stage">当前阶段</div><h3>统一事实入口</h3><p>先把设备、经销商和测试相关信息集中起来。</p><ul><li>设备查询与详情</li><li>经销商组织与测试账号</li><li>测试记录与操作日志</li></ul></article>
+            <article class="roadmap-card next"><div class="roadmap-stage">后续方向</div><h3>扩大协作覆盖</h3><p>围绕更多业务场景减少重复判断和手工协作。</p><ul><li>主动预警与批量操作</li><li>数据看板增强</li><li>更完整的业务规则支持</li></ul></article>
+            <article class="roadmap-card target"><div class="roadmap-stage">目标形态</div><h3>设备运营工作台</h3><p>以设备为核心，连接组织、角色、状态和行动。</p><ul><li>统一对象与责任边界</li><li>统一证据链与协作路径</li><li>统一运营视角与治理能力</li></ul></article>
+          </div>
+        </section>
+
+        <section class="section" id="roles">
+          <div class="section-head">
+            <div><div class="eyebrow">02 / Roles</div><h2>先看事实，再找对的人</h2><p class="section-intro">不同角色关注不同证据。页面权限和高风险操作以当前账号实际可见范围为准。</p></div>
+          </div>
+          <div class="role-grid">
+            <article class="role"><div class="role-mark">客</div><h3>客服 / 售后</h3><p>设备是否存在、激活、绑定，服务是否有效。</p></article>
+            <article class="role"><div class="role-mark">技</div><h3>运维 / 技术支持</h3><p>在线状态、心跳、网络、日志、物联网卡。</p></article>
+            <article class="role"><div class="role-mark">运</div><h3>运营 / 产品</h3><p>经销商范围、业务规则、测试数据和版本变化。</p></article>
+            <article class="role"><div class="role-mark">经</div><h3>经销商管理</h3><p>APP 测试账号、设备测试记录、账号维护。</p></article>
+            <article class="role"><div class="role-mark">管</div><h3>超管 / 平台管理员</h3><p>授权范围内的高风险操作和平台审计。</p></article>
+          </div>
+          <div class="role-lane" aria-label="跨部门角色接力示意">
+            <div class="role-stop"><div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="head" cx="24" cy="16" r="7"/><path class="body" d="M11 39c1-8 6-12 13-12s12 4 13 12M18 34h12"/></svg></div><strong>客服先接单</strong><span>确认对象与用户描述</span></div>
+            <div class="role-stop"><div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="head" cx="24" cy="16" r="7"/><path class="body" d="M11 39c1-8 6-12 13-12s12 4 13 12M18 34h12"/></svg></div><strong>技术看状态</strong><span>读取在线与日志事实</span></div>
+            <div class="role-stop"><div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="head" cx="24" cy="16" r="7"/><path class="body" d="M11 39c1-8 6-12 13-12s12 4 13 12M18 34h12"/></svg></div><strong>运营判规则</strong><span>确认组织与业务口径</span></div>
+            <div class="role-stop"><div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="head" cx="24" cy="16" r="7"/><path class="body" d="M11 39c1-8 6-12 13-12s12 4 13 12M18 34h12"/></svg></div><strong>经销商测试</strong><span>按授权完成抽检验证</span></div>
+            <div class="role-stop"><div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><circle class="head" cx="24" cy="16" r="7"/><path class="body" d="M11 39c1-8 6-12 13-12s12 4 13 12M18 34h12"/></svg></div><strong>平台留痕</strong><span>日志形成协作证据</span></div>
+          </div>
+          <div class="task-matrix" aria-label="角色任务与产出矩阵">
+            <table><thead><tr><th>角色</th><th>什么时候进入平台</th><th>重点查看</th><th>最终产出</th></tr></thead><tbody>
+              <tr><td>客服 / 售后</td><td>收到设备或用户问题</td><td>设备是否存在、激活、绑定、服务</td><td>是否转技术支持</td></tr>
+              <tr><td>运维 / 技术支持</td><td>需要判断设备状态</td><td>在线、心跳、网络、日志、物联网卡</td><td>初步故障结论</td></tr>
+              <tr><td>运营 / 产品</td><td>核对组织、规则或版本变化</td><td>经销商范围、测试数据、操作日志</td><td>业务口径或优化项</td></tr>
+              <tr><td>经销商管理</td><td>需要安排渠道抽检</td><td>测试账号、设备测试记录</td><td>测试结果与解绑确认</td></tr>
+            </tbody></table>
+          </div>
+        </section>
+
+        <section class="section" id="workflow">
+          <div class="section-head">
+            <div><div class="eyebrow">03 / Workflow</div><h2>标准使用流程</h2><p class="section-intro">所有模块都沿用同一条主线：定位对象 → 阅读证据 → 执行授权操作 → 记录结果 → 完成协作闭环。</p></div>
+          </div>
+          <p class="handoff-caption">业务处理的关键不是“看完页面”，而是让正确角色在正确节点接手。</p>
+          <div class="flow-illustration" aria-label="跨部门闭环示意">
+            <div class="flow-card"><strong>① 定位对象</strong><span>设备 ID、经销商组织或测试账号</span></div><div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-card"><strong>② 阅读证据</strong><span>状态、服务、测试记录和操作日志</span></div><div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-card"><strong>③ 形成结论</strong><span>按责任边界转交客服、技术、运维或产品</span></div>
+          </div>
+          <div class="workflow" aria-label="标准使用流程">
+            <div class="step"><div class="step-dot">01</div><strong>进入平台</strong><span>完成登录</span></div>
+            <div class="step"><div class="step-dot">02</div><strong>选择模块</strong><span>设备中心 / 经销商</span></div>
+            <div class="step"><div class="step-dot">03</div><strong>定位对象</strong><span>设备 ID / 组织</span></div>
+            <div class="step"><div class="step-dot">04</div><strong>查看详情</strong><span>状态、服务、记录</span></div>
+            <div class="step"><div class="step-dot">05</div><strong>执行操作</strong><span>按授权范围</span></div>
+            <div class="step"><div class="step-dot">06</div><strong>核对结果</strong><span>提示与列表结果</span></div>
+            <div class="step"><div class="step-dot">07</div><strong>转交协作</strong><span>客服 / 技术 / 运维 / 产品</span></div>
+            <div class="step"><div class="step-dot">08</div><strong>反馈闭环</strong><span>补齐证据与结论</span></div>
+          </div>
+        </section>
+
+        <section class="section" id="features">
+          <div class="section-head">
+            <div><div class="eyebrow">04 / Feature map</div><h2>功能地图：当前能力与规划边界</h2><p class="section-intro">培训以当前可用、当前可演示能力为主；规划中能力只用于说明后续方向，不作为当前版本承诺。</p></div>
+          </div>
+          <div class="filter-row" role="group" aria-label="功能状态筛选">
+            <button class="filter-btn active" type="button" data-filter="all">全部功能</button>
+            <button class="filter-btn" type="button" data-filter="live">当前可用 / 可演示</button>
+            <button class="filter-btn" type="button" data-filter="plan">规划中</button>
+          </div>
+          <div class="map-legend" aria-label="功能地图图例"><span><i></i>当前可用 / 可演示</span><span class="scope"><i></i>按线上范围</span><span class="plan"><i></i>规划中</span></div>
+          <div class="capability-map" aria-label="设备中心与经销商模块产品能力路线图">
+            <div class="route-row">
+              <div class="route-label">设备中心<small>设备事实主线</small></div>
+              <div class="route-track">
+                <div class="route-node"><strong>设备查询</strong><span>定位设备 ID 与基础信息</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>设备详情</strong><span>激活、归属、绑定与生命周期</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>状态 / 服务</strong><span>在线、心跳、物联网卡和增值服务</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>日志追溯</strong><span>问题定位与跨部门证据</span><em class="route-status">当前可演示</em></div>
+              </div>
+            </div>
+            <div class="route-row dealer">
+              <div class="route-label">经销商模块<small>组织协作主线</small></div>
+              <div class="route-track">
+                <div class="route-node"><strong>经销商列表</strong><span>按组织范围定位目标经销商</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>APP 测试账号</strong><span>创建并维护测试对象</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>设备测试记录</strong><span>追踪测试账号添加过的设备</span><em class="route-status">当前可演示</em></div>
+                <div class="route-node"><strong>操作日志</strong><span>核对操作人、对象、时间和结果</span><em class="route-status">当前可演示</em></div>
+              </div>
+            </div>
+            <div class="route-branch"><b>规划延伸</b><span>主动预警 → 批量操作 → 数据看板增强 → 审批流 / 复杂迁移任务</span></div>
+          </div>
+          <div class="map-detail-label">功能详细索引</div>
+          <table class="feature-table">
+            <thead><tr><th>功能区</th><th>你可以用它做什么</th><th>状态</th><th>培训提示</th></tr></thead>
+            <tbody>
+              <tr data-state="live"><td>设备查询与详情</td><td>定位设备，查看基础信息、绑定关系、状态、服务与生命周期事实。</td><td><span class="status status-live">当前可演示</span></td><td>先看摘要，再按用户、状态、服务、日志和物联网卡补充判断。</td></tr>
+              <tr data-state="live"><td>设备状态 / 日志 / 物联网卡</td><td>查看在线、心跳、P2P、MQTT、存储、4G 卡片和设备日志。</td><td><span class="status status-live">当前可演示</span></td><td>用于问题定位和跨部门沟通，字段随设备类型存在差异。</td></tr>
+              <tr data-state="live"><td>经销商列表与详情</td><td>按组织层级查看经销商 ID、简称、创建时间和设备数量。</td><td><span class="status status-live">当前可演示</span></td><td>先确认经销商和组织范围，再创建测试账号。</td></tr>
+              <tr data-state="live"><td>APP 测试账号 / 测试记录</td><td>创建、维护经销商测试账号，并追踪测试账号添加过的设备。</td><td><span class="status status-live">当前可演示</span></td><td>测试账号不作为真实消费者账号使用，结束后在 APP 端解绑设备。</td></tr>
+              <tr data-state="live"><td>平台操作日志</td><td>核对账号创建、密码重置等后台操作的对象、操作人、时间和结果。</td><td><span class="status status-live">当前可演示</span></td><td>日志是审计依据，也是问题反馈中的共同事实。</td></tr>
+              <tr data-state="scope"><td>自动唤醒配置</td><td>按经销商组织维护默认配置并查看历史记录。</td><td><span class="status status-scope">按线上范围</span></td><td>默认值修改不自动迁移已绑定设备及用户现有配置。</td></tr>
+              <tr data-state="plan"><td>主动预警 / 批量操作 / 数据看板增强</td><td>面向后续运营自动化和规模化治理的能力方向。</td><td><span class="status status-plan">规划中</span></td><td>不作为当前版本功能对外承诺。</td></tr>
+              <tr data-state="plan"><td>审批流 / 批量组织覆盖 / 复杂迁移任务</td><td>面向后续组织治理和复杂任务编排的能力方向。</td><td><span class="status status-plan">规划中</span></td><td>需以正式需求、版本说明和上线结果为准。</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section" id="demos">
+          <div class="section-head">
+            <div><div class="eyebrow">05 / Live demos</div><h2>三项重点演示</h2><p class="section-intro">每个演示都对应一类真实工作：设备问题判断、经销商抽检协作、后台操作追溯。</p></div>
+            <div class="section-note">已嵌入线上页面截图；账号创建类页面按只读原则保留操作说明</div>
+          </div>
+          <div class="demo-grid">
+            <article class="demo-card">
+              <div class="demo-head"><div class="demo-index">DEMO 01</div><h3>设备查询与设备详情</h3><p>在一个详情页内完成设备身份、归属、状态和服务判断。</p></div>
+              <div class="demo-body"><ol><li>进入设备查询，输入设备 ID。</li><li>打开详情，先看激活、在线和可用状态。</li><li>依次查看用户、状态、增值服务、日志和物联网卡。</li><li>根据证据判断转交客服、技术支持、运维或产品。</li></ol><figure class="live-shot"><img src="assets/online/02-device-detail.jpg" alt="线上设备详情页截图，显示设备已激活、运行中、设备型号、IMEI、固件和功能页签"><figcaption><strong>线上截图 02</strong>　设备详情当前页面：已激活、运行中、未拉黑，展示 IMEI、设备型号、固件版本及用户 / 服务 / 日志 / 状态 / 物联网卡入口。</figcaption></figure><div class="shot-grid"><div class="shot pending"><b>01 · 待补充</b>设备查询页<br><small>浏览器当前锁屏，恢复解锁后补抓当前线上页面。</small></div><div class="shot"><b>03</b>详情功能 Tab<br>用户 / 状态 / 服务 / 日志</div></div></div>
+            </article>
+            <article class="demo-card">
+              <div class="demo-head"><div class="demo-index">DEMO 02</div><h3>经销商 APP 测试账号</h3><p>创建可追溯的测试账号，并核对测试行为。</p></div>
+              <div class="demo-body"><ol><li>按名称或 ID 检索目标经销商。</li><li>打开 APP 测试账号，创建并确认组织范围。</li><li>查看临时密码，按安全要求交付。</li><li>查看设备测试记录，必要时重置密码；测试后确认 APP 端解绑。</li></ol><div class="shot-grid"><div class="shot pending"><b>04 · 待补充</b>经销商列表<br><small>需恢复线上浏览器后抓取当前页面。</small></div><div class="shot pending"><b>05 · 待补充</b>APP 测试账号<br><small>只读查看详情，不提交创建或重置。</small></div><div class="shot pending"><b>06 · 待补充</b>账号状态提示<br><small>不展示或记录真实密码。</small></div><div class="shot pending"><b>07 · 待补充</b>设备测试记录<br><small>保留页面字段与筛选位置。</small></div></div></div>
+            </article>
+            <article class="demo-card">
+              <div class="demo-head"><div class="demo-index">DEMO 03</div><h3>平台操作日志</h3><p>回答“谁在什么时间对什么对象做了什么操作”。</p></div>
+              <div class="demo-body"><ol><li>打开操作日志入口，选择日期或时间范围。</li><li>核对操作人、对象、动作、所属经销商和结果。</li><li>对照业务反馈确认成功、重复或需要重试。</li><li>将日志信息复制到问题单或协作记录中。</li></ol><div class="shot-grid"><div class="shot pending"><b>08 · 待补充</b>日志查询<br><small>需恢复线上浏览器后抓取筛选条件与列表。</small></div><div class="shot pending"><b>09 · 待补充</b>日志详情<br><small>只读查看操作人、对象、动作和结果。</small></div></div></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="cases">
+          <div class="section-head">
+            <div><div class="eyebrow">06 / Scenarios</div><h2>典型业务场景</h2><p class="section-intro">把页面操作放回业务语境，才能知道下一步该看什么、该找谁。</p></div>
+          </div>
+          <div class="case-grid">
+            <article class="case"><div class="case-tag">Case A · 设备异常</div><h3>设备离线或无法预览</h3><p>从设备 ID 开始，按事实链路逐层判断。</p><ul><li>客服确认设备和用户信息</li><li>技术支持查看在线、心跳、P2P/MQTT、日志</li><li>运维核查服务链路、节点或同步</li><li>产品判断版本、规则或已知问题</li></ul></article>
+            <article class="case"><div class="case-tag">Case B · 渠道抽检</div><h3>经销商需要抽检设备</h3><p>用测试账号隔离抽检行为，保留过程记录。</p><ul><li>管理人员确认经销商和组织</li><li>创建测试账号并安全交付临时密码</li><li>测试人员在 APP 中添加设备并抽检</li><li>查看测试记录，测试后解绑设备</li></ul></article>
+            <article class="case"><div class="case-tag">Case C · 后台追溯</div><h3>核对账号操作过程</h3><p>用平台操作日志建立跨部门共识。</p><ul><li>按日期查询日志</li><li>核对操作类型、对象、操作人、时间、结果</li><li>判断是否成功、重复或需要重试</li><li>将日志作为问题反馈证据</li></ul></article>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div>培训资料 · 当前线上版本 · 产品定义与业务路径说明</div>
+          <div><a href="https://operations.eye4.cn/micro-op/#/77" target="_blank" rel="noreferrer">线上环境 ↗</a>　<a class="back-top" href="#top">回到顶部 ↑</a></div>
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const progress = document.getElementById('progress');
+      const navLinks = Array.from(document.querySelectorAll('.nav a'));
+      const sections = navLinks.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+      const filterButtons = Array.from(document.querySelectorAll('[data-filter]'));
+      const rows = Array.from(document.querySelectorAll('tbody tr[data-state]'));
+      const printButtons = [document.getElementById('printBtn'), document.getElementById('heroPrintBtn')].filter(Boolean);
+
+      const setActiveNav = (id) => {
+        navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${id}`));
+      };
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => { if (entry.isIntersecting) setActiveNav(entry.target.id); });
+        }, { rootMargin: '-18% 0px -68% 0px', threshold: 0 });
+        sections.forEach(section => observer.observe(section));
+      }
+
+      const updateProgress = () => {
+        if (!progress) return;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+        progress.style.transform = `scaleX(${ratio})`;
+      };
+      window.addEventListener('scroll', updateProgress, { passive: true });
+      window.addEventListener('resize', updateProgress);
+      updateProgress();
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const filter = button.dataset.filter;
+          filterButtons.forEach(item => item.classList.toggle('active', item === button));
+          rows.forEach(row => { row.hidden = filter !== 'all' && row.dataset.state !== filter; });
+        });
+      });
+
+      printButtons.forEach(button => button.addEventListener('click', () => window.print()));
+    })();
+  </script>
+</body>
+</html>
